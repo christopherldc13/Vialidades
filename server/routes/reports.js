@@ -1,0 +1,173 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const Report = require('../models/Report');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const auth = require('../middleware/auth');
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure Multer Storage for Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+        // Dynamically set resource_type based on mimetype
+        const isVideo = file.mimetype.startsWith('video/');
+        return {
+            folder: 'vialidades_reports',
+            resource_type: isVideo ? 'video' : 'image',
+            allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'avi'],
+            transformation: isVideo ? [] : [{ width: 1000, crop: "limit" }] // Optimize images only
+        };
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Create Report
+router.post('/', auth, upload.array('media', 5), async (req, res) => {
+    try {
+        const { type, description, lat, lng, address } = req.body;
+        const userId = req.user.id;
+
+        if (!type || !description || !lat || !lng) {
+            return res.status(400).json({ msg: 'Please enter all fields' });
+        }
+
+        // Check for sanctions
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        if (user.sanctions >= 3) {
+            return res.status(403).json({ msg: 'You are banned from creating reports due to multiple sanctions.' });
+        }
+
+        const media = [];
+
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                // Determine type from file (Cloudinary storage adds this info or we infer from mimetype)
+                const isVideo = file.mimetype.startsWith('video/');
+                media.push({
+                    url: file.path, // Cloudinary URL
+                    type: isVideo ? 'video' : 'image',
+                    public_id: file.filename
+                });
+            }
+        }
+
+        const newReport = new Report({
+            userId,
+            type,
+            description,
+            location: { lat, lng, address },
+            media, // New field
+            photos: media.filter(m => m.type === 'image'), // Backward compatibility
+            status: 'pending'
+        });
+
+        const report = await newReport.save();
+        res.json(report);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Get Reports - Logic:
+// If query 'my=true', return user's reports.
+// If query 'status=pending' & user is admin/mod, return pending.
+// Default: return status='approved' (Public Feed).
+router.get('/', auth, async (req, res) => {
+    try {
+        const { my, status } = req.query;
+        let query = {};
+
+        if (my === 'true') {
+            query.userId = req.user.id;
+        } else if (['moderator', 'admin'].includes(req.user.role)) {
+            query.status = 'approved';
+            // Admins/Mods can see everything, or filter by status
+            if (status) query.status = status;
+        } else {
+            // Regular users ONLY see approved reports in the feed
+            query.status = 'approved';
+        }
+
+        const reports = await Report.find(query).sort({ timestamp: -1 }).populate('userId', 'username avatar');
+        res.json(reports);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Moderate Report
+router.patch('/:id/moderate', async (req, res) => {
+    const { status, rejectionReason, moderatorId } = req.body;
+    try {
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ msg: 'Invalid status' });
+        }
+
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Report not found' });
+
+        report.status = status;
+        report.moderatorId = moderatorId;
+        if (status === 'rejected') report.rejectionReason = rejectionReason;
+
+        await report.save();
+
+        // Update User Reputation
+        const user = await User.findById(report.userId);
+        if (user) {
+            if (status === 'approved') {
+                user.reputation += 10;
+            } else if (status === 'rejected') {
+                user.reputation -= 5;
+                // Check for sanction
+                if (req.body.sanctionUser) {
+                    user.sanctions = (user.sanctions || 0) + 1;
+                    user.reputation -= 20; // Extra penalty for sanction
+                }
+            }
+            await user.save();
+
+            // Create Notification
+            let notifType = status === 'approved' ? 'success' : 'error';
+            let notifMsg = `Tu reporte de ${report.type} ha sido ${status === 'approved' ? 'APROBADO ✅' : 'RECHAZADO ❌'}.`;
+
+            if (req.body.sanctionUser) {
+                notifType = 'warning';
+                notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado por incumplir las normas. Se te han restado puntos de reputación y añadido una falta.`;
+            } else if (status === 'rejected' && rejectionReason) {
+                notifMsg += ` Razón: ${rejectionReason}`;
+            }
+
+            const notification = new Notification({
+                userId: user._id,
+                type: notifType,
+                message: notifMsg,
+                relatedReportId: report._id
+            });
+            await notification.save();
+        }
+
+        res.json(report);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+module.exports = router;
