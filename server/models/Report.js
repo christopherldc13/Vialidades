@@ -21,6 +21,7 @@ const ReportSchema = new mongoose.Schema({
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     moderatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: { type: String },
+    wasSanctioned: { type: Boolean, default: false },
     timestamp: { type: Date, default: Date.now }
 });
 

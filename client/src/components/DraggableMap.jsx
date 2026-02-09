@@ -48,18 +48,42 @@ const LocationMarker = ({ position, setPosition }) => {
     );
 };
 
-const DraggableMap = ({ location, setLocation }) => {
+const DraggableMap = ({ location, setLocation, setAddress }) => {
     // Default to a central location (Dominican Republic)
     const [center, setCenter] = useState({ lat: 18.7357, lng: -70.1627 });
     const [zoom, setZoom] = useState(8);
     const [loadingLocation, setLoadingLocation] = useState(false);
 
+    // Reverse Geocoding Function
+    const fetchAddress = async (lat, lng) => {
+        if (!setAddress) return;
+        try {
+            // Nominatim OpenStreetMap API (Free)
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+            const data = await res.json();
+            if (data && data.display_name) {
+                // Construct a cleaner address
+                const addr = data.address;
+                const road = addr.road || addr.pedestrian || addr.street || '';
+                const neighborhood = addr.neighbourhood || addr.suburb || '';
+                const city = addr.city || addr.town || addr.village || '';
+                const state = addr.state || '';
+
+                const parts = [road, neighborhood, city, state].filter(p => p).join(', ');
+                setAddress(parts || data.display_name);
+            }
+        } catch (err) {
+            console.error("Geocoding failed", err);
+        }
+    };
+
     const updateLocation = (coords) => {
-        const newPos = { lat: coords.latitude, lng: coords.longitude };
+        const newPos = { lat: coords.latitude || coords.lat, lng: coords.longitude || coords.lng };
         setCenter(newPos);
         setLocation(newPos);
         setZoom(16);
         setLoadingLocation(false);
+        fetchAddress(newPos.lat, newPos.lng);
     };
 
     const fetchIpLocation = async () => {
@@ -71,6 +95,7 @@ const DraggableMap = ({ location, setLocation }) => {
                 setCenter(newPos);
                 setLocation(newPos);
                 setZoom(13);
+                fetchAddress(newPos.lat, newPos.lng); // Fetch address for IP location too
                 // Inform the user that this is just an approximation
                 alert("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el pin 📍 a tu ubicación exacta.");
             }
@@ -113,6 +138,12 @@ const DraggableMap = ({ location, setLocation }) => {
         getLocation();
     }, []); // Run only once on mount
 
+    // Update address when manual pin drop happens
+    const handleSetLocation = (newPos) => {
+        setLocation(newPos);
+        fetchAddress(newPos.lat, newPos.lng);
+    };
+
     return (
         <div style={{ height: '300px', width: '100%', borderRadius: '1rem', overflow: 'hidden', border: '2px solid #e2e8f0', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
             <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }} key={`${center.lat}-${center.lng}`}>
@@ -120,7 +151,7 @@ const DraggableMap = ({ location, setLocation }) => {
                     attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                 />
-                <LocationMarker position={location || center} setPosition={setLocation} />
+                <LocationMarker position={location || center} setPosition={handleSetLocation} />
             </MapContainer>
 
             <button

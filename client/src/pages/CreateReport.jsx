@@ -65,6 +65,10 @@ const CreateReport = () => {
         setPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     };
 
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    const [address, setAddress] = useState('');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -77,6 +81,7 @@ const CreateReport = () => {
         formData.append('description', description);
         formData.append('lat', location.lat);
         formData.append('lng', location.lng);
+        formData.append('address', address); // Send the address
 
         files.forEach(file => {
             formData.append('media', file);
@@ -86,7 +91,7 @@ const CreateReport = () => {
             setLoading(true);
             await axios.post('/api/reports', formData);
             setLoading(false);
-            navigate('/dashboard');
+            setShowSuccessModal(true); // Show modal instead of navigating immediately
         } catch (err) {
             console.error(err);
             setLoading(false);
@@ -106,7 +111,7 @@ const CreateReport = () => {
         <div>
             <Navbar />
             <div className="auth-container" style={{ alignItems: 'flex-start', paddingTop: '2rem' }}>
-                <div className="card" style={{ maxWidth: '600px' }}>
+                <div className="card" style={{ maxWidth: '600px', position: 'relative' }}>
                     <h2 className="text-center">Nuevo Reporte</h2>
                     <form onSubmit={handleSubmit}>
                         {/* Read-Only User Field */}
@@ -156,7 +161,25 @@ const CreateReport = () => {
                             <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem' }}>
                                 Arrastra el marcador 📍 a la ubicación exacta del incidente.
                             </p>
-                            <DraggableMap location={location} setLocation={setLocation} />
+                            <DraggableMap location={location} setLocation={setLocation} setAddress={setAddress} />
+
+                            {/* Address Display */}
+                            {address && (
+                                <div style={{
+                                    background: '#f1f5f9',
+                                    padding: '0.75rem',
+                                    borderRadius: '0.5rem',
+                                    marginBottom: '0.5rem',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '0.9rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}>
+                                    <span>📍</span>
+                                    <strong>{address}</strong>
+                                </div>
+                            )}
 
                             {location && (
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
@@ -287,10 +310,35 @@ const CreateReport = () => {
                             )}
                         </div>
 
-                        <button type="submit" disabled={loading}>
-                            {loading ? 'Enviando...' : 'Enviar Reporte'}
+                        <button type="submit" disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
+                            {loading ? 'Enviando Reporte...' : 'Enviar Reporte'}
                         </button>
                     </form>
+
+                    {/* Success Modal Overlay */}
+                    {showSuccessModal && (
+                        <div className="modal-overlay">
+                            <div className="modal-content">
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                                <h3>¡Reporte Enviado!</h3>
+                                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
+                                    Gracias por ayudar a la comunidad. Tu reporte será revisado pronto.
+                                </p>
+                                <div className="modal-actions" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+                                    <button onClick={() => navigate('/dashboard')} className="primary">
+                                        Ir al Panel Principal
+                                    </button>
+                                    <button
+                                        onClick={() => window.location.reload()}
+                                        className="secondary"
+                                        style={{ width: '100%' }}
+                                    >
+                                        Crear Otro Reporte
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

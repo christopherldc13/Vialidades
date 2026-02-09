@@ -1,4 +1,5 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
 import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera } from 'lucide-react';
@@ -34,6 +35,47 @@ const Profile = () => {
 
     const repData = getReputationData(user.reputation);
 
+    const [uploading, setUploading] = useState(false); // Fix hook usage if needed, but assuming import
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Helper to trigger file input
+    const triggerFileInput = () => {
+        document.getElementById('avatarInput').click();
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        // Optional: Sending username/email again isn't strictly necessary if backend allows partial updates
+        // but backend logic checks if(username) etc. so sending just avatar is fine.
+
+        try {
+            setUploading(true);
+            const token = localStorage.getItem('token');
+            await axios.patch('/api/auth/profile', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'x-auth-token': token
+                }
+            });
+
+            setUploading(false);
+            setShowSuccessModal(true);
+
+            // Reload user data from context or update locally after delay or modal close
+            // For now, we wait for user to close modal to reload
+        } catch (err) {
+            setUploading(false);
+            console.error("Upload error", err);
+            const msg = err.response?.data?.msg || err.message || "Error al subir la imagen";
+            alert(`Error: ${msg}`);
+        }
+    };
+
     return (
         <div>
             <Navbar />
@@ -50,31 +92,70 @@ const Profile = () => {
                             justifyContent: 'center',
                             border: '4px solid white',
                             boxShadow: '0 0 0 2px #cbd5e1', // Outer ring for better definition
-                            overflow: 'hidden'
+                            overflow: 'hidden',
+                            position: 'relative'
                         }}>
+                            {uploading && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'rgba(0,0,0,0.5)',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    zIndex: 10
+                                }}>
+                                    <div style={{
+                                        width: '30px',
+                                        height: '30px',
+                                        border: '3px solid rgba(255,255,255,0.3)',
+                                        borderTopColor: 'white',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }} />
+                                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                                </div>
+                            )}
+
                             {user.avatar ? (
                                 <img src={user.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                                 <User size={64} color="var(--text-secondary)" />
                             )}
                         </div>
-                        <button style={{
-                            position: 'absolute',
-                            bottom: '0',
-                            right: '0',
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: 'var(--primary)',
-                            border: '3px solid white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            padding: 0,
-                            marginTop: 0,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}>
+
+                        <input
+                            type="file"
+                            id="avatarInput"
+                            style={{ display: 'none' }}
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                        />
+
+                        <button
+                            onClick={triggerFileInput}
+                            disabled={uploading}
+                            style={{
+                                position: 'absolute',
+                                bottom: '0',
+                                right: '0',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: uploading ? '#94a3b8' : 'var(--primary)',
+                                border: '3px solid white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: uploading ? 'default' : 'pointer',
+                                padding: 0,
+                                marginTop: 0,
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                            }}>
                             <Camera size={20} color="white" />
                         </button>
                     </div>
@@ -98,9 +179,31 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    <button className="secondary" style={{ marginTop: '2rem' }}>
+                    {/* Success Modal */}
+                    {showSuccessModal && (
+                        <div className="modal-overlay" style={{
+                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                            background: 'rgba(0,0,0,0.5)', display: 'flex',
+                            justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                        }}>
+                            <div className="modal-content" style={{ maxWidth: '300px' }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                                <h3>¡Foto Actualizada!</h3>
+                                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Tu imagen de perfil se ha cambiado con éxito.</p>
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="primary"
+                                >
+                                    Genial
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pending: Edit Info Modal */}
+                    {/* <button className="secondary" style={{ marginTop: '2rem' }}>
                         Editar Información
-                    </button>
+                    </button> */}
                 </div>
             </div>
         </div>

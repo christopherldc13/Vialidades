@@ -107,6 +107,29 @@ router.post('/login', async (req, res) => {
     }
 });
 
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const multer = require('multer');
+
+// Configure Cloudinary (Same as in reports.js)
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure Storage
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'vialidades_avatars',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+        transformation: [{ width: 500, height: 500, crop: 'limit' }]
+    }
+});
+
+const upload = multer({ storage: storage });
+
 const auth = require('../middleware/auth');
 
 // Get User (Verify Token Middleware)
@@ -120,8 +143,8 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// Update Profile
-router.patch('/profile', auth, async (req, res) => {
+// Update Profile (Support Avatar Upload)
+router.patch('/profile', auth, upload.single('avatar'), async (req, res) => {
     const { username, email } = req.body;
     try {
         let user = await User.findById(req.user.id);
@@ -129,6 +152,11 @@ router.patch('/profile', auth, async (req, res) => {
 
         if (username) user.username = username;
         if (email) user.email = email;
+
+        // If file uploaded, update avatar
+        if (req.file) {
+            user.avatar = req.file.path;
+        }
 
         await user.save();
         res.json(user);

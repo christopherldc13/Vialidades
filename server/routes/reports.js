@@ -95,9 +95,20 @@ router.get('/', auth, async (req, res) => {
         if (my === 'true') {
             query.userId = req.user.id;
         } else if (['moderator', 'admin'].includes(req.user.role)) {
-            query.status = 'approved';
-            // Admins/Mods can see everything, or filter by status
-            if (status) query.status = status;
+            // Default to approved if no status provided, but allow overriding
+            if (status === 'all') {
+                // Do not filter by status, return everything
+            } else if (status === 'sanctioned') {
+                query.wasSanctioned = true;
+            } else if (status === 'rejected') {
+                // EXCLUDE sanctioned reports from the 'rejected' tab to keep them distinct
+                query.status = 'rejected';
+                query.wasSanctioned = { $ne: true };
+            } else if (status) {
+                query.status = status;
+            } else {
+                query.status = 'approved';
+            }
         } else {
             // Regular users ONLY see approved reports in the feed
             query.status = 'approved';
@@ -114,6 +125,8 @@ router.get('/', auth, async (req, res) => {
 // Moderate Report
 router.patch('/:id/moderate', async (req, res) => {
     const { status, rejectionReason, moderatorId } = req.body;
+    console.log("MODERATION REQUEST:", req.body); // DEBUG LOG
+    console.log("Sanction User Flag:", req.body.sanctionUser); // DEBUG LOG
     try {
         if (!['approved', 'rejected'].includes(status)) {
             return res.status(400).json({ msg: 'Invalid status' });
@@ -123,20 +136,32 @@ router.patch('/:id/moderate', async (req, res) => {
         if (!report) return res.status(404).json({ msg: 'Report not found' });
 
         report.status = status;
-        report.moderatorId = moderatorId;
-        if (status === 'rejected') report.rejectionReason = rejectionReason;
+        if (status === 'rejected') {
+            report.rejectionReason = rejectionReason;
+            // Robust boolean check: Handle true, "true", 1
+            const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
+            if (isSanctioning) {
+                report.wasSanctioned = true;
+            }
+        }
 
+        // SAVE REPORT IMMEDIATELY to ensure status and sanction are persisted
+        // regardless of potential errors in user/notification logic
         await report.save();
 
-        // Update User Reputation
+        // Fetch user next to apply reputation logic
         const user = await User.findById(report.userId);
         if (user) {
             if (status === 'approved') {
                 user.reputation += 10;
             } else if (status === 'rejected') {
                 user.reputation -= 5;
-                // Check for sanction
-                if (req.body.sanctionUser) {
+                // Check for sanction penalty ON THE USER
+                const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
+                if (isSanctioning) {
+                    if (!report.rejectionReason && !req.body.rejectionReason) {
+                        // Ideally we should validate this before, but let's ensure we save it
+                    }
                     user.sanctions = (user.sanctions || 0) + 1;
                     user.reputation -= 20; // Extra penalty for sanction
                 }
@@ -149,7 +174,7 @@ router.patch('/:id/moderate', async (req, res) => {
 
             if (req.body.sanctionUser) {
                 notifType = 'warning';
-                notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado por incumplir las normas. Se te han restado puntos de reputación y añadido una falta.`;
+                notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado. Razón: ${rejectionReason || 'Violación de normas'}. Se te han restado puntos y tienes una falta (Total: ${user.sanctions}/3).`;
             } else if (status === 'rejected' && rejectionReason) {
                 notifMsg += ` Razón: ${rejectionReason}`;
             }
@@ -162,6 +187,8 @@ router.patch('/:id/moderate', async (req, res) => {
             });
             await notification.save();
         }
+
+        // Report already saved above.
 
         res.json(report);
     } catch (err) {
