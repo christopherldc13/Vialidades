@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Trash2 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 
 const NotificationList = () => {
@@ -32,6 +32,18 @@ const NotificationList = () => {
             setNotifications(notifications.map(n =>
                 n._id === id ? { ...n, read: true } : n
             ));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const deleteNotification = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm('¿Estás seguro de que deseas eliminar esta notificación?')) return;
+
+        try {
+            await axios.delete(`/api/notifications/${id}`);
+            setNotifications(prev => prev.filter(n => n._id !== id));
         } catch (err) {
             console.error(err);
         }
@@ -104,12 +116,19 @@ const NotificationList = () => {
                                         {new Date(notification.createdAt).toLocaleDateString()} • {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
+                                <Trash2
+                                    size={16}
+                                    color="#ef4444"
+                                    style={{ marginLeft: 'auto', cursor: 'pointer', flexShrink: 0 }}
+                                    onClick={(e) => deleteNotification(e, notification._id)}
+                                />
                             </div>
                         ))
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

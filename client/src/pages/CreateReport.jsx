@@ -3,13 +3,16 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Camera } from 'lucide-react';
+import { Camera, Video } from 'lucide-react';
 import DraggableMap from '../components/DraggableMap';
 
 const CreateReport = () => {
     const [type, setType] = useState('Traffic');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState(null);
+    const [address, setAddress] = useState('');
+
+
     const [files, setFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -29,6 +32,33 @@ const CreateReport = () => {
             previews.forEach(url => URL.revokeObjectURL(url));
         };
     }, []);
+
+    // Load Draft from LocalStorage
+    useEffect(() => {
+        const savedDraft = localStorage.getItem('report_draft');
+        if (savedDraft) {
+            try {
+                const draft = JSON.parse(savedDraft);
+                if (draft.type) setType(draft.type);
+                if (draft.description) setDescription(draft.description);
+                // Validate location structure before setting
+                if (draft.location && typeof draft.location.lat === 'number' && typeof draft.location.lng === 'number') {
+                    setLocation(draft.location);
+                }
+                if (draft.address) setAddress(draft.address);
+            } catch (e) {
+                console.error("Error loading draft", e);
+                // If draft is corrupted, clear it
+                localStorage.removeItem('report_draft');
+            }
+        }
+    }, []);
+
+    // Save Draft to LocalStorage
+    useEffect(() => {
+        const draft = { type, description, location, address };
+        localStorage.setItem('report_draft', JSON.stringify(draft));
+    }, [type, description, location, address]);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -66,9 +96,6 @@ const CreateReport = () => {
     };
 
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-    const [address, setAddress] = useState('');
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -91,6 +118,7 @@ const CreateReport = () => {
             setLoading(true);
             await axios.post('/api/reports', formData);
             setLoading(false);
+            localStorage.removeItem('report_draft'); // Clear draft on success
             setShowSuccessModal(true); // Show modal instead of navigating immediately
         } catch (err) {
             console.error(err);
@@ -201,30 +229,55 @@ const CreateReport = () => {
 
                         <div className="input-group">
                             <label>Fotos / Videos</label>
-                            <div className="file-upload-wrapper" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', border: 'none', background: 'transparent', padding: 0 }}>
-                                {/* Camera Option */}
+                            <div className="file-upload-wrapper" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', border: 'none', background: 'transparent', padding: 0 }}>
+                                {/* Photo Camera Option */}
                                 <input
                                     type="file"
-                                    accept="image/*,video/*"
+                                    accept="image/*"
                                     capture="environment"
                                     onChange={handleFileChange}
                                     style={{ display: 'none' }}
-                                    id="camera-upload"
+                                    id="camera-photo-upload"
                                 />
-                                <label htmlFor="camera-upload" style={{
+                                <label htmlFor="camera-photo-upload" style={{
                                     cursor: 'pointer',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    padding: '1.5rem',
+                                    padding: '1rem',
                                     border: '1px solid #e2e8f0',
                                     borderRadius: 'var(--radius)',
                                     background: '#f8fafc',
                                     height: '100%'
                                 }}>
-                                    <Camera size={32} color="var(--primary)" style={{ marginBottom: '0.5rem' }} />
-                                    <span style={{ fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Cámara</span>
+                                    <Camera size={24} color="var(--primary)" style={{ marginBottom: '0.25rem' }} />
+                                    <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Foto</span>
+                                </label>
+
+                                {/* Video Camera Option */}
+                                <input
+                                    type="file"
+                                    accept="video/*"
+                                    capture="environment"
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }}
+                                    id="camera-video-upload"
+                                />
+                                <label htmlFor="camera-video-upload" style={{
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '1rem',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: 'var(--radius)',
+                                    background: '#f8fafc',
+                                    height: '100%'
+                                }}>
+                                    <Video size={24} color="var(--primary)" style={{ marginBottom: '0.25rem' }} />
+                                    <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Video</span>
                                 </label>
 
                                 {/* Gallery Option */}
@@ -242,14 +295,14 @@ const CreateReport = () => {
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    padding: '1.5rem',
+                                    padding: '1rem',
                                     border: '1px solid #e2e8f0',
                                     borderRadius: 'var(--radius)',
                                     background: '#f8fafc',
                                     height: '100%'
                                 }}>
-                                    <div style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>🖼️</div>
-                                    <span style={{ fontWeight: 600, fontSize: '0.9rem', textAlign: 'center' }}>Galería</span>
+                                    <div style={{ marginBottom: '0.25rem', fontSize: '1.2rem' }}>🖼️</div>
+                                    <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Galería</span>
                                 </label>
                             </div>
 

@@ -143,6 +143,36 @@ router.patch('/:id/moderate', async (req, res) => {
             if (isSanctioning) {
                 report.wasSanctioned = true;
             }
+        } else if (status === 'approved') {
+            // Apply Automatic Face Blurring for Approved Reports
+            let modified = false;
+            console.log("Applying face blur to report:", report._id);
+
+            if (report.media && report.media.length > 0) {
+                report.media.forEach(item => {
+                    if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
+                        console.log("Blurring image:", item.url);
+                        // Inject the transformation after /upload/
+                        item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
+                        console.log("New URL:", item.url);
+                        modified = true;
+                    }
+                });
+            }
+            // Backward compatibility for photos array
+            if (report.photos && report.photos.length > 0) {
+                report.photos.forEach(item => {
+                    if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
+                        item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
+                        modified = true;
+                    }
+                });
+            }
+
+            if (modified) {
+                report.markModified('media');
+                report.markModified('photos');
+            }
         }
 
         // SAVE REPORT IMMEDIATELY to ensure status and sanction are persisted
@@ -153,9 +183,9 @@ router.patch('/:id/moderate', async (req, res) => {
         const user = await User.findById(report.userId);
         if (user) {
             if (status === 'approved') {
-                user.reputation += 10;
+                user.reputation += 5;
+                if (user.reputation > 100) user.reputation = 100;
             } else if (status === 'rejected') {
-                user.reputation -= 5;
                 // Check for sanction penalty ON THE USER
                 const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
                 if (isSanctioning) {
@@ -163,7 +193,9 @@ router.patch('/:id/moderate', async (req, res) => {
                         // Ideally we should validate this before, but let's ensure we save it
                     }
                     user.sanctions = (user.sanctions || 0) + 1;
-                    user.reputation -= 20; // Extra penalty for sanction
+                    user.reputation -= 25; // Sanction penalty
+                } else {
+                    user.reputation -= 1; // Normal rejection penalty
                 }
             }
             await user.save();
