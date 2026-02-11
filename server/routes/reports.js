@@ -125,8 +125,12 @@ router.get('/', auth, async (req, res) => {
 // Moderate Report
 router.patch('/:id/moderate', async (req, res) => {
     const { status, rejectionReason, moderatorId } = req.body;
-    console.log("MODERATION REQUEST:", req.body); // DEBUG LOG
-    console.log("Sanction User Flag:", req.body.sanctionUser); // DEBUG LOG
+    console.log("MODERATION REQUEST BODY:", req.body);
+
+    // Robust boolean conversion
+    const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
+    console.log("Calculated isSanctioning:", isSanctioning);
+
     try {
         if (!['approved', 'rejected'].includes(status)) {
             return res.status(400).json({ msg: 'Invalid status' });
@@ -138,28 +142,20 @@ router.patch('/:id/moderate', async (req, res) => {
         report.status = status;
         if (status === 'rejected') {
             report.rejectionReason = rejectionReason;
-            // Robust boolean check: Handle true, "true", 1
-            const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
             if (isSanctioning) {
                 report.wasSanctioned = true;
             }
         } else if (status === 'approved') {
             // Apply Automatic Face Blurring for Approved Reports
             let modified = false;
-            console.log("Applying face blur to report:", report._id);
-
             if (report.media && report.media.length > 0) {
                 report.media.forEach(item => {
                     if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
-                        console.log("Blurring image:", item.url);
-                        // Inject the transformation after /upload/
                         item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
-                        console.log("New URL:", item.url);
                         modified = true;
                     }
                 });
             }
-            // Backward compatibility for photos array
             if (report.photos && report.photos.length > 0) {
                 report.photos.forEach(item => {
                     if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
@@ -175,36 +171,38 @@ router.patch('/:id/moderate', async (req, res) => {
             }
         }
 
-        // SAVE REPORT IMMEDIATELY to ensure status and sanction are persisted
-        // regardless of potential errors in user/notification logic
+        // SAVE REPORT IMMEDIATELY
         await report.save();
 
         // Fetch user next to apply reputation logic
         const user = await User.findById(report.userId);
         if (user) {
+            console.log(`[DEBUG] User ${user.username} BEFORE: Rep=${user.reputation}, Sanctions=${user.sanctions}`);
+
             if (status === 'approved') {
                 user.reputation += 5;
                 if (user.reputation > 100) user.reputation = 100;
             } else if (status === 'rejected') {
-                // Check for sanction penalty ON THE USER
-                const isSanctioning = req.body.sanctionUser === true || req.body.sanctionUser === 'true';
                 if (isSanctioning) {
                     if (!report.rejectionReason && !req.body.rejectionReason) {
                         // Ideally we should validate this before, but let's ensure we save it
                     }
                     user.sanctions = (user.sanctions || 0) + 1;
                     user.reputation -= 25; // Sanction penalty
+                    console.log(`[DEBUG] Applied Sanction. New Rep=${user.reputation}, New Sanctions=${user.sanctions}`);
                 } else {
                     user.reputation -= 1; // Normal rejection penalty
+                    console.log(`[DEBUG] Applied Normal Rejection. New Rep=${user.reputation}`);
                 }
             }
             await user.save();
+            console.log(`[DEBUG] User saved successfully.`);
 
             // Create Notification
             let notifType = status === 'approved' ? 'success' : 'error';
             let notifMsg = `Tu reporte de ${report.type} ha sido ${status === 'approved' ? 'APROBADO ✅' : 'RECHAZADO ❌'}.`;
 
-            if (req.body.sanctionUser) {
+            if (isSanctioning) {
                 notifType = 'warning';
                 notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado. Razón: ${rejectionReason || 'Violación de normas'}. Se te han restado puntos y tienes una falta (Total: ${user.sanctions}/3).`;
             } else if (status === 'rejected' && rejectionReason) {
@@ -218,13 +216,13 @@ router.patch('/:id/moderate', async (req, res) => {
                 relatedReportId: report._id
             });
             await notification.save();
+        } else {
+            console.log("[DEBUG] User not found for report:", report.userId);
         }
-
-        // Report already saved above.
 
         res.json(report);
     } catch (err) {
-        console.error(err.message);
+        console.error("Error in moderation:", err);
         res.status(500).send('Server Error');
     }
 });

@@ -8,6 +8,7 @@ import DraggableMap from '../components/DraggableMap';
 
 const CreateReport = () => {
     const [type, setType] = useState('Traffic');
+    const [customType, setCustomType] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState(null);
     const [address, setAddress] = useState('');
@@ -39,7 +40,14 @@ const CreateReport = () => {
         if (savedDraft) {
             try {
                 const draft = JSON.parse(savedDraft);
-                if (draft.type) setType(draft.type);
+                if (draft.type) {
+                    if (['Traffic', 'Accident', 'Violation', 'Hazard'].includes(draft.type)) {
+                        setType(draft.type);
+                    } else {
+                        setType('Other');
+                        setCustomType(draft.type);
+                    }
+                }
                 if (draft.description) setDescription(draft.description);
                 // Validate location structure before setting
                 if (draft.location && typeof draft.location.lat === 'number' && typeof draft.location.lng === 'number') {
@@ -56,9 +64,10 @@ const CreateReport = () => {
 
     // Save Draft to LocalStorage
     useEffect(() => {
-        const draft = { type, description, location, address };
+        const typeToSave = type === 'Other' ? customType : type;
+        const draft = { type: typeToSave, description, location, address };
         localStorage.setItem('report_draft', JSON.stringify(draft));
-    }, [type, description, location, address]);
+    }, [type, customType, description, location, address]);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -102,9 +111,12 @@ const CreateReport = () => {
         if (!user) return alert('Debes iniciar sesión para reportar.');
         if (!location) return alert('Por favor selecciona la ubicación.');
 
+        const finalType = type === 'Other' ? customType : type;
+        if (!finalType.trim()) return alert('Por favor especifica el tipo de incidente.');
+
         const formData = new FormData();
         // userId is handled by backend from token
-        formData.append('type', type);
+        formData.append('type', finalType);
         formData.append('description', description);
         formData.append('lat', location.lat);
         formData.append('lng', location.lng);
@@ -156,9 +168,17 @@ const CreateReport = () => {
                                 alignItems: 'center',
                                 gap: '0.5rem'
                             }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
-                                    {user.username.charAt(0).toUpperCase()}
-                                </div>
+                                {user.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        alt="Avatar"
+                                        style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                    />
+                                ) : (
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
+                                        {user.username.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                                 {user.username}
                             </div>
                         </div>
@@ -170,7 +190,18 @@ const CreateReport = () => {
                                 <option value="Accident">💥 Accidente</option>
                                 <option value="Violation">🚫 Infracción</option>
                                 <option value="Hazard">⚠️ Peligro en la vía</option>
+                                <option value="Other">⚪ Otro</option>
                             </select>
+                            {type === 'Other' && (
+                                <input
+                                    type="text"
+                                    value={customType}
+                                    onChange={(e) => setCustomType(e.target.value)}
+                                    placeholder="Especifique el tipo de incidente"
+                                    required
+                                    style={{ marginTop: '0.5rem' }}
+                                />
+                            )}
                         </div>
 
                         <div className="input-group">
@@ -187,7 +218,7 @@ const CreateReport = () => {
                         <div className="input-group">
                             <label>Ubicación</label>
                             <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem' }}>
-                                Arrastra el marcador 📍 a la ubicación exacta del incidente.
+                                Arrastra el marcador 📍 a la ubicación exacta del incidente o escriba la ubicación exacta.
                             </p>
                             <DraggableMap location={location} setLocation={setLocation} setAddress={setAddress} />
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import { Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 
 
@@ -11,7 +11,8 @@ import AuthContext from '../context/AuthContext';
 const Dashboard = () => {
     const [reports, setReports] = useState([]);
     const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0 });
-    const [viewMode, setViewMode] = useState('community'); // 'community' | 'my'
+    const [searchParams, setSearchParams] = useSearchParams();
+    const viewMode = searchParams.get('view') || 'community';
     const { user } = useContext(AuthContext);
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
@@ -70,13 +71,13 @@ const Dashboard = () => {
                         {!isModerator && (
                             <div className="toggle-group">
                                 <button
-                                    onClick={() => setViewMode('community')}
+                                    onClick={() => setSearchParams({ view: 'community' })}
                                     className={`toggle-btn ${viewMode === 'community' ? 'active' : ''}`}
                                 >
                                     Comunidad
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('my')}
+                                    onClick={() => setSearchParams({ view: 'my' })}
                                     className={`toggle-btn ${viewMode === 'my' ? 'active' : ''}`}
                                 >
                                     Mis Reportes

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import AuthContext from '../context/AuthContext';
-import { Bell, User, LogOut } from 'lucide-react';
+import { Bell, User, LogOut, ClipboardList } from 'lucide-react';
 import NotificationList from './NotificationList';
 
 const Navbar = () => {
@@ -25,7 +25,10 @@ const Navbar = () => {
                 <Link to="/dashboard" className="nav-brand">
                     Vialidades
                 </Link>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    <Link to="/dashboard?view=my" title="Mis Reportes" style={{ color: 'var(--text-main)', padding: '0.5rem', borderRadius: '50%', background: 'var(--bg-input)' }}>
+                        <ClipboardList size={20} />
+                    </Link>
                     <Link to="/profile" style={{ color: 'var(--text-main)', padding: '0.5rem', borderRadius: '50%', background: 'var(--bg-input)' }}>
                         <User size={20} />
                     </Link>

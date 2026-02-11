@@ -144,40 +144,156 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
         fetchAddress(newPos.lat, newPos.lng);
     };
 
-    return (
-        <div style={{ height: '300px', width: '100%', borderRadius: '1rem', overflow: 'hidden', border: '2px solid #e2e8f0', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
-            <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }} key={`${center.lat}-${center.lng}`}>
-                <TileLayer
-                    attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                />
-                <LocationMarker position={location || center} setPosition={handleSetLocation} />
-            </MapContainer>
+    // Search Functionality
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const searchTimeoutRef = useRef(null);
 
-            <button
-                type="button"
-                onClick={getLocation}
-                style={{
-                    position: 'absolute',
-                    top: '10px',
-                    right: '10px',
-                    zIndex: 400,
-                    width: 'auto',
-                    padding: '0.5rem 1rem',
-                    background: 'white',
-                    color: 'var(--primary)',
-                    border: '2px solid white',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    fontSize: '0.8rem',
-                    textTransform: 'none',
-                    margin: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                }}
-            >
-                {loadingLocation ? '📍 Ubicando...' : '📍 Ubícame'}
-            </button>
+    const handleSearchInput = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        if (query.length < 3) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        setIsSearching(true);
+        searchTimeoutRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const data = await res.json();
+                setSearchResults(data);
+                setShowResults(true);
+            } catch (err) {
+                console.error("Search failed", err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 1000); // Debounce 1s to be kind to Nominatim API
+    };
+
+    const handleSelectResult = (result) => {
+        const newPos = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+        setCenter(newPos);
+        setLocation(newPos);
+        setZoom(16);
+        setAddress(result.display_name);
+        setSearchQuery(result.display_name);
+        setShowResults(false);
+    };
+
+    return (
+        <div style={{ position: 'relative', width: '100%', marginBottom: '1rem' }}>
+            {/* Search Box */}
+            <div style={{ position: 'relative', marginBottom: '0.5rem', zIndex: 401 }}>
+               <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchInput}
+                    placeholder="Buscar ubicación..."
+                    onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+                    style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        paddingRight: '2.5rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}
+                />
+                 {isSearching && (
+                    <div style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        fontSize: '0.8rem',
+                        color: '#94a3b8'
+                    }}>
+                        ⌛
+                    </div>
+                )}
+                {/* Search Results Dropdown */}
+                {showResults && searchResults.length > 0 && (
+                    <ul style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '0.5rem',
+                        marginTop: '4px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        zIndex: 1000,
+                        listStyle: 'none',
+                        padding: 0,
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}>
+                        {searchResults.map((result, index) => (
+                            <li
+                                key={index}
+                                onClick={() => handleSelectResult(result)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    cursor: 'pointer',
+                                    borderBottom: index < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                    fontSize: '0.9rem',
+                                    textAlign: 'left'
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
+                                onMouseLeave={(e) => e.target.style.background = 'white'}
+                            >
+                                {result.display_name}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            <div style={{ height: '300px', width: '100%', borderRadius: '1rem', overflow: 'hidden', border: '2px solid #e2e8f0', position: 'relative', zIndex: 1 }}>
+                <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }} key={`${center.lat}-${center.lng}`}>
+                    <TileLayer
+                        attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                    />
+                    <LocationMarker position={location || center} setPosition={handleSetLocation} />
+                </MapContainer>
+
+                <button
+                    type="button"
+                    onClick={getLocation}
+                    style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        zIndex: 400,
+                        width: 'auto',
+                        padding: '0.5rem 1rem',
+                        background: 'white',
+                        color: 'var(--primary)',
+                        border: '2px solid white',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                        fontSize: '0.8rem',
+                        textTransform: 'none',
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}
+                >
+                    {loadingLocation ? '📍 Ubicando...' : '📍 Ubícame'}
+                </button>
+            </div>
         </div>
     );
 };
