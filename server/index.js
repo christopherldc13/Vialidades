@@ -44,9 +44,12 @@ mongoose.connect(process.env.MONGO_URI, {
         console.error('Explanation: Unable to connect to MongoDB Atlas. This is likely due to a firewall or DNS blocking the connection.');
     });
 
-app.get('/', (req, res) => {
-    res.send('Vialidades API Running');
-});
+// Development API root check (optional, but better scoped)
+if (process.env.NODE_ENV !== 'production') {
+    app.get('/', (req, res) => {
+        res.send('Vialidades API Running');
+    });
+}
 
 // Global Error Handler for Multer / Cloudinary / Express Unhandled Rejections
 app.use((err, req, res, next) => {
