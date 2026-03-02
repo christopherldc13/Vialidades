@@ -8,12 +8,13 @@ const Notification = require('../models/Notification');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const auth = require('../middleware/auth');
+const { sendReportStatusEmail } = require('../utils/emailService');
 
 // Configure Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: (process.env.CLOUDINARY_CLOUD_NAME || '').replace(/[\r\n\t\0 ]+/g, ''),
+    api_key: (process.env.CLOUDINARY_API_KEY || '').replace(/[\r\n\t\0 ]+/g, ''),
+    api_secret: (process.env.CLOUDINARY_API_SECRET || '').replace(/[\r\n\t\0 ]+/g, '')
 });
 
 // Configure Multer Storage for Cloudinary
@@ -25,7 +26,7 @@ const storage = new CloudinaryStorage({
         return {
             folder: 'vialidades_reports',
             resource_type: isVideo ? 'video' : 'image',
-            allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov', 'avi'],
+            // allowed_formats removed to allow iOS HEIC and native formats
             transformation: isVideo ? [] : [{ width: 1000, crop: "limit" }] // Optimize images only
         };
     }
@@ -79,6 +80,22 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
         res.json(report);
     } catch (err) {
         console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// --- PUBLIC ENDPOINT FOR LANDING PAGE HEATMAP ---
+router.get('/public', async (req, res) => {
+    try {
+        // Only return approved reports.
+        // Select only the absolutely necessary fields (plus title/desc for popups) to keep the payload safe.
+        const reports = await Report.find({ status: 'approved' })
+            .select('location.lat location.lng type title description -_id')
+            .lean();
+
+        res.json(reports);
+    } catch (err) {
+        console.error('Error fetching public reports:', err.message);
         res.status(500).send('Server Error');
     }
 });
@@ -216,6 +233,11 @@ router.patch('/:id/moderate', async (req, res) => {
                 relatedReportId: report._id
             });
             await notification.save();
+
+            // Send Email Notification
+            sendReportStatusEmail(user.email, user.username, report.type, status, rejectionReason)
+                .catch(err => console.error("Could not send report status email:", err));
+
         } else {
             console.log("[DEBUG] User not found for report:", report.userId);
         }

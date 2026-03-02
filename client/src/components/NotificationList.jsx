@@ -74,13 +74,13 @@ const NotificationList = () => {
             {showDropdown && (
                 <div style={{
                     position: 'absolute', top: '100%', right: -10,
-                    width: '320px', maxHeight: '400px', overflowY: 'auto',
-                    background: 'white', /* Force white background */
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                    width: 'clamp(280px, 90vw, 360px)', maxHeight: '400px', overflowY: 'auto',
+                    background: 'var(--surface-solid)', /* Force matched background */
+                    boxShadow: 'var(--shadow-xl)',
                     borderRadius: '12px', border: '1px solid #e2e8f0',
                     zIndex: 1000, marginTop: '10px'
                 }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                    <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
                         <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>Notificaciones</h4>
                         <X size={16} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setShowDropdown(false)} />
                     </div>
@@ -95,8 +95,8 @@ const NotificationList = () => {
                                 onClick={() => !notification.read && markAsRead(notification._id)}
                                 style={{
                                     padding: '0.75rem 1rem',
-                                    borderBottom: '1px solid #f1f5f9',
-                                    background: notification.read ? 'white' : '#f0f9ff', /* Light blue for unread */
+                                    borderBottom: '1px solid var(--border-color)',
+                                    background: notification.read ? 'var(--surface-solid)' : 'var(--bg-input)', /* Light blue for unread */
                                     cursor: 'pointer',
                                     transition: 'background 0.2s',
                                     display: 'flex', gap: '0.75rem', alignItems: 'start',

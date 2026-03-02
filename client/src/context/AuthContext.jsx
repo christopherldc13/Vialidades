@@ -46,14 +46,28 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (username, email, password) => {
+    const register = async (userData) => {
         try {
-            await axios.post('/api/auth/register', { username, email, password });
+            await axios.post('/api/auth/register', userData);
             // Do NOT log in automatically. Just return success.
             return { success: true };
         } catch (err) {
             console.error("Register Error:", err);
             return { success: false, msg: err.response?.data?.msg || 'Registration failed' };
+        }
+    };
+
+    const verifyEmail = async (email, code) => {
+        try {
+            const res = await axios.post('/api/auth/verify', { email, code });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            axios.defaults.headers.common['x-auth-token'] = res.data.token;
+            setUser(res.data.user);
+            return { success: true };
+        } catch (err) {
+            console.error("Verify Error:", err);
+            return { success: false, msg: err.response?.data?.msg || 'Verification failed' };
         }
     };
 
@@ -65,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, verifyEmail, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

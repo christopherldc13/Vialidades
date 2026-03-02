@@ -194,7 +194,7 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
         <div style={{ position: 'relative', width: '100%', marginBottom: '1rem' }}>
             {/* Search Box */}
             <div style={{ position: 'relative', marginBottom: '0.5rem', zIndex: 401 }}>
-               <input
+                <input
                     type="text"
                     value={searchQuery}
                     onChange={handleSearchInput}
@@ -209,7 +209,7 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                     }}
                 />
-                 {isSearching && (
+                {isSearching && (
                     <div style={{
                         position: 'absolute',
                         right: '10px',
@@ -228,8 +228,8 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                         top: '100%',
                         left: 0,
                         right: 0,
-                        background: 'white',
-                        border: '1px solid #e2e8f0',
+                        background: 'var(--surface-solid)',
+                        border: '1px solid var(--border-color)',
                         borderRadius: '0.5rem',
                         marginTop: '4px',
                         maxHeight: '200px',
@@ -250,8 +250,8 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                                     fontSize: '0.9rem',
                                     textAlign: 'left'
                                 }}
-                                onMouseEnter={(e) => e.target.style.background = '#f8fafc'}
-                                onMouseLeave={(e) => e.target.style.background = 'white'}
+                                onMouseEnter={(e) => e.target.style.background = 'var(--bg-input)'}
+                                onMouseLeave={(e) => e.target.style.background = 'var(--surface-solid)'}
                             >
                                 {result.display_name}
                             </li>
@@ -279,10 +279,10 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                         zIndex: 400,
                         width: 'auto',
                         padding: '0.5rem 1rem',
-                        background: 'white',
+                        background: 'var(--surface-solid)',
                         color: 'var(--primary)',
-                        border: '2px solid white',
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                        border: '2px solid var(--border-color)',
+                        boxShadow: 'var(--shadow-sm)',
                         fontSize: '0.8rem',
                         textTransform: 'none',
                         margin: 0,

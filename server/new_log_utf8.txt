@@ -1,0 +1,47 @@
+﻿DNS Servers set to Google DNS (8.8.8.8)
+[dotenv@17.2.4] injecting env (8) from .env -- tip: ­ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+[dotenv@17.2.4] injecting env (0) from .env -- tip: ­ƒøá´©Å  run anywhere with `dotenvx run -- yourcommand`
+[dotenv@17.2.4] injecting env (0) from .env -- tip: ÔÜÖ´©Å  enable debug logging with { debug: true }
+Server running on port 5000
+MongoDB Connected Successfully
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/auth/me
+[HTTP IN] GET /api/auth/me
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications
+[HTTP IN] PATCH /api/auth/profile
+node : ƒöÑ GLOBAL EXACT 
+ERROR OBJECT CAUGHT:
+En línea: 1 Carácter: 164
++ ... ect { Stop-Process 
+-Id $_ -Force } ; node 
+index.js > new_log.txt 2>&1
++                          
+                ~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (ƒö   
+ Ñ GLOBAL EXACT ERROR O    
+BJECT CAUGHT::String)     
+[], RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+{
+  "message": "Invalid 
+Signature 0e7c21e2b50061f39
+79d6911b6782f4020d11756. 
+String to sign - 'folder=vi
+alidades_avatars&timestamp=
+1772408586'.",
+  "name": "Error",
+  "http_code": 401,
+  "storageErrors": []
+}
+[HTTP IN] GET /api/notifications
+[HTTP IN] GET /api/notifications

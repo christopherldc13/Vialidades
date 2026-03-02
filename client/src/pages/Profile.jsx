@@ -2,7 +2,7 @@ import { useContext, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
-import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera } from 'lucide-react';
+import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X } from 'lucide-react';
 
 const Profile = () => {
     const { user, loading } = useContext(AuthContext);
@@ -35,8 +35,45 @@ const Profile = () => {
 
     const repData = getReputationData(user.reputation);
 
-    const [uploading, setUploading] = useState(false); // Fix hook usage if needed, but assuming import
+    const [uploading, setUploading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    const [editForm, setEditForm] = useState({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
+        cedula: user?.cedula || '',
+        gender: user?.gender || '',
+        birthDate: user?.birthDate ? user.birthDate.split('T')[0] : '',
+        birthProvince: user?.birthProvince || ''
+    });
+
+    const handleEditChange = (e) => {
+        setEditForm({ ...editForm, [e.target.name]: e.target.value });
+    };
+
+    const handleSaveProfile = async () => {
+        try {
+            setSaving(true);
+            const token = localStorage.getItem('token');
+            await axios.patch('/api/auth/profile', editForm, {
+                headers: {
+                    'x-auth-token': token
+                }
+            });
+            // Give user visual feedback
+            setIsEditing(false);
+            setSaving(false);
+            alert('Perfil actualizado con éxito. Refresca para ver los cambios completos (o context reload).');
+            window.location.reload();
+        } catch (error) {
+            setSaving(false);
+            console.error('Error saving profile:', error);
+            alert('Error al guardar el perfil: ' + (error.response?.data?.msg || error.message));
+        }
+    };
 
     // Helper to trigger file input
     const triggerFileInput = () => {
@@ -79,8 +116,8 @@ const Profile = () => {
     return (
         <div>
             <Navbar />
-            <div className="auth-container" style={{ alignItems: 'flex-start', paddingTop: '2rem' }}>
-                <div className="card" style={{ textAlign: 'center', maxWidth: '500px' }}>
+            <div className="auth-container profile-container">
+                <div className="card profile-card">
                     <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}>
                         <div style={{
                             width: '100%',
@@ -90,8 +127,8 @@ const Profile = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            border: '4px solid white',
-                            boxShadow: '0 0 0 2px #cbd5e1', // Outer ring for better definition
+                            border: '4px solid var(--surface)',
+                            boxShadow: '0 0 0 2px var(--border-color)', // Outer ring for better definition
                             overflow: 'hidden',
                             position: 'relative'
                         }}>
@@ -112,7 +149,7 @@ const Profile = () => {
                                         width: '30px',
                                         height: '30px',
                                         border: '3px solid rgba(255,255,255,0.3)',
-                                        borderTopColor: 'white',
+                                        borderTopColor: 'var(--text-main)',
                                         borderRadius: '50%',
                                         animation: 'spin 1s linear infinite'
                                     }} />
@@ -130,38 +167,110 @@ const Profile = () => {
                         <input
                             type="file"
                             id="avatarInput"
-                            style={{ display: 'none' }}
+                            className="avatar-input-hidden"
                             accept="image/*"
                             onChange={handleImageUpload}
                             disabled={uploading}
                         />
 
                         <button
+                            className="avatar-upload-btn"
                             onClick={triggerFileInput}
                             disabled={uploading}
                             style={{
-                                position: 'absolute',
-                                bottom: '0',
-                                right: '0',
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                background: uploading ? '#94a3b8' : 'var(--primary)',
-                                border: '3px solid white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                background: uploading ? 'var(--text-muted)' : 'var(--primary)',
                                 cursor: uploading ? 'default' : 'pointer',
-                                padding: 0,
-                                marginTop: 0,
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
                             }}>
-                            <Camera size={20} color="white" />
+                            <Camera size={20} color="var(--bg-page)" />
                         </button>
                     </div>
 
-                    <h2>{user.username}</h2>
-                    <p className="text-muted" style={{ marginBottom: '2rem' }}>{user.email}</p>
+                    {!isEditing ? (
+                        <>
+                            <h2 style={{ marginBottom: '0.25rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
+                                <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', padding: 0, width: 'auto', margin: 0, color: 'var(--text-muted)', cursor: 'pointer', boxShadow: 'none' }}>
+                                    <Edit2 size={18} />
+                                </button>
+                            </h2>
+                            <p className="text-muted" style={{ marginBottom: '1rem', fontWeight: '500' }}>@{user.username} • {user.email}</p>
+                        </>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', justifyContent: 'center' }}>
+                            <input
+                                type="text"
+                                name="firstName"
+                                placeholder="Nombre(s)"
+                                value={editForm.firstName}
+                                onChange={handleEditChange}
+                                style={{ textAlign: 'center' }}
+                            />
+                            <input
+                                type="text"
+                                name="lastName"
+                                placeholder="Apellido(s)"
+                                value={editForm.lastName}
+                                onChange={handleEditChange}
+                                style={{ textAlign: 'center' }}
+                            />
+                        </div>
+                    )}
+
+                    <div className="profile-info-grid">
+                        <div className="profile-info-item">
+                            <span className="profile-info-label">Teléfono</span>
+                            {isEditing ? (
+                                <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
+                            ) : (
+                                <div className="profile-info-value">{user.phone || 'No especificado'}</div>
+                            )}
+                        </div>
+                        <div className="profile-info-item">
+                            <span className="profile-info-label">Cédula</span>
+                            {isEditing ? (
+                                <input type="text" value={user.cedula || 'No especificada'} disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }} />
+                            ) : (
+                                <div className="profile-info-value">{user.cedula || 'No especificada'}</div>
+                            )}
+                        </div>
+                        <div className="profile-info-item">
+                            <span className="profile-info-label">Sexo</span>
+                            {isEditing ? (
+                                <select disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }}>
+                                    <option>{user.gender === 'M' ? 'Masculino' : user.gender === 'F' ? 'Femenino' : user.gender || 'No especificado'}</option>
+                                </select>
+                            ) : (
+                                <div className="profile-info-value">{user.gender === 'M' ? 'Masculino' : user.gender === 'F' ? 'Femenino' : user.gender || 'No especificado'}</div>
+                            )}
+                        </div>
+                        <div className="profile-info-item">
+                            <span className="profile-info-label">Nacimiento</span>
+                            {isEditing ? (
+                                <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
+                            ) : (
+                                <div className="profile-info-value">{user.birthDate ? new Date(user.birthDate).toLocaleDateString() : 'No especificada'}</div>
+                            )}
+                        </div>
+                        <div className="profile-info-item full-width">
+                            <span className="profile-info-label">Provincia</span>
+                            {isEditing ? (
+                                <input type="text" value={user.birthProvince || 'No especificada'} disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }} />
+                            ) : (
+                                <div className="profile-info-value">{user.birthProvince || 'No especificada'}</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {isEditing && (
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
+                            <button onClick={handleSaveProfile} disabled={saving} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: 'auto', background: 'var(--success)', marginTop: 0, padding: '0.8rem 1.5rem' }}>
+                                <Check size={18} /> {saving ? 'Guardando...' : 'Guardar'}
+                            </button>
+                            <button onClick={() => setIsEditing(false)} disabled={saving} className="secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: 'auto', marginTop: 0, padding: '0.8rem 1.5rem' }}>
+                                <X size={18} /> Cancelar
+                            </button>
+                        </div>
+                    )}
 
                     <div className="stats-grid">
                         <div className={`rep-badge ${repData.class}`}>
@@ -200,10 +309,7 @@ const Profile = () => {
                         </div>
                     )}
 
-                    {/* Pending: Edit Info Modal */}
-                    {/* <button className="secondary" style={{ marginTop: '2rem' }}>
-                        Editar Información
-                    </button> */}
+                    {/* Edit mode already implemented above */}
                 </div>
             </div>
         </div>

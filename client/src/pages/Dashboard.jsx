@@ -53,7 +53,7 @@ const Dashboard = () => {
         if (!report.photos || report.photos.length === 0) return null;
         const url = report.photos[0].url;
         if (url.startsWith('blob:') || url.startsWith('http')) return url;
-        return `http://localhost:5000/${url}`;
+        return import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`;
     };
 
     return (
@@ -89,19 +89,19 @@ const Dashboard = () => {
                     {/* Moderator Stats */}
                     {isModerator && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginTop: '1.5rem', marginBottom: '2rem' }}>
-                            <div className="stat-card" style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Pendientes</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{stats.pending}</div>
                             </div>
-                            <div className="stat-card" style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Aprobados</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.approved}</div>
                             </div>
-                            <div className="stat-card" style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Rechazados</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--error)' }}>{stats.rejected}</div>
                             </div>
-                            <div className="stat-card" style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
                                 <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Sancionados</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#b91c1c' }}>{stats.sanctioned}</div>
                             </div>

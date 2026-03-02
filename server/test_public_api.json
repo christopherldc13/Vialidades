@@ -1,0 +1,58 @@
+[
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.2421528,
+      "lng": -70.4500617
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.227710456667264,
+      "lng": -70.5028913637537
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.2421528,
+      "lng": -70.4500617
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.2421526,
+      "lng": -70.4500619
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.2421526,
+      "lng": -70.4500621
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.242153,
+      "lng": -70.4500615
+    }
+  },
+  {
+    "type": "Traffic",
+    "location": {
+      "lat": 19.2628,
+      "lng": -70.4624
+    }
+  },
+  {
+    "type": "Violation",
+    "location": {
+      "lat": 19.383708429408387,
+      "lng": -70.53426504135133
+    }
+  }
+]

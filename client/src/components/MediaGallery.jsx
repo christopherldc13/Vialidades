@@ -102,7 +102,7 @@ const MediaGallery = ({ media }) => {
                     // Handle legacy string URLs vs object {url, type}
                     const url = typeof item === 'string' ? item : item.url;
                     const type = typeof item === 'string' ? 'image' : (item.type || 'image');
-                    const fullUrl = url.startsWith('http') ? url : `http://localhost:5000/${url}`;
+                    const fullUrl = url.startsWith('http') ? url : (import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`);
 
                     return (
                         <div
@@ -137,7 +137,7 @@ const MediaGallery = ({ media }) => {
                             onClick={prev}
                             style={{
                                 position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)',
-                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid white', borderRadius: '50%',
+                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid var(--border-color)', borderRadius: '50%',
                                 width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 cursor: 'pointer', zIndex: 10,
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
@@ -154,7 +154,7 @@ const MediaGallery = ({ media }) => {
                             onClick={next}
                             style={{
                                 position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)',
-                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid white', borderRadius: '50%',
+                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid var(--border-color)', borderRadius: '50%',
                                 width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 cursor: 'pointer', zIndex: 10,
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
@@ -178,7 +178,7 @@ const MediaGallery = ({ media }) => {
                                 key={idx}
                                 style={{
                                     width: '10px', height: '10px', borderRadius: '50%',
-                                    background: idx === currentIndex ? 'white' : 'rgba(255,255,255,0.4)',
+                                    background: idx === currentIndex ? 'var(--primary)' : 'var(--border-color)',
                                     boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
                                     transition: 'all 0.3s',
                                     border: '1px solid rgba(0,0,0,0.1)'

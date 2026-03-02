@@ -57,7 +57,7 @@ const ModerateReports = () => {
     }
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
             <Navbar />
             <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem 1rem 5rem' }}>
 
@@ -89,7 +89,7 @@ const ModerateReports = () => {
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                                 padding: '1rem 1.5rem',
-                                background: filter === tab.id ? '#fff' : 'rgba(255,255,255,0.5)',
+                                background: filter === tab.id ? 'var(--surface-solid)' : 'var(--bg-input)',
                                 border: filter === tab.id ? '2px solid var(--primary)' : '1px solid transparent',
                                 borderRadius: '16px',
                                 fontSize: '1rem',
@@ -111,7 +111,7 @@ const ModerateReports = () => {
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>Cargando reportes...</div>
                 ) : reports.length === 0 ? (
-                    <div style={{ padding: '4rem', textAlign: 'center', background: 'white', borderRadius: '20px', marginTop: '2rem' }}>
+                    <div style={{ padding: '4rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '20px', marginTop: '2rem' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✨</div>
                         <h3 style={{ color: '#1e293b' }}>No hay reportes en esta sección</h3>
                         <p style={{ color: '#64748b' }}>Selecciona otro filtro o vuelve más tarde.</p>
@@ -121,8 +121,8 @@ const ModerateReports = () => {
                         {reports.map((report) => (
                             <div key={report._id} style={{
                                 display: 'flex', flexDirection: 'column',
-                                background: 'white', borderRadius: '20px',
-                                border: '1px solid rgba(0,0,0,0.05)',
+                                background: 'var(--surface-solid)', borderRadius: '20px',
+                                border: '1px solid var(--border-color)',
                                 overflow: 'hidden',
                                 transition: 'transform 0.2s',
                                 boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
@@ -131,7 +131,7 @@ const ModerateReports = () => {
                             >
                                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                                     {/* Media Side */}
-                                    <div style={{ flex: '1 1 300px', maxWidth: '400px', background: '#f1f5f9', position: 'relative', minHeight: '250px' }}>
+                                    <div style={{ flex: '1 1 300px', maxWidth: '400px', background: 'var(--bg-input)', position: 'relative', minHeight: '250px' }}>
                                         <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
 
                                         <div style={{
@@ -149,14 +149,14 @@ const ModerateReports = () => {
                                     <div style={{ flex: '1 1 300px', padding: '2rem' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                             <div>
-                                                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>{report.type}</h3>
-                                                <div style={{ fontSize: '0.9rem', color: '#64748b' }}>
+                                                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{report.type}</h3>
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
                                                     Por <strong>{report.userId?.username || 'Usuario Desconocido'}</strong> • {new Date(report.timestamp).toLocaleDateString()}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <p style={{ color: '#475569', lineHeight: '1.6', marginBottom: '1rem' }}>
+                                        <p style={{ color: 'var(--text-main)', lineHeight: '1.6', marginBottom: '1rem' }}>
                                             {report.description}
                                         </p>
 
