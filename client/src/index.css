@@ -5,7 +5,8 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #f8fafc; /* Lighter default background */
+  background-color: #f8fafc;
+  /* Lighter default background */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -14,7 +15,9 @@
 }
 
 /* Base Reset for true responsiveness */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -29,7 +32,8 @@ body {
   width: 100%;
   min-height: 100vh;
   /* Removed: display: flex, place-items: center as it breaks standard flowing layouts */
-  overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  /* Prevent horizontal scroll on mobile */
 }
 
 a {
@@ -38,26 +42,39 @@ a {
   text-decoration: inherit;
   transition: color 0.2s ease;
 }
+
 a:hover {
   color: #4f46e5;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin-top: 0;
   line-height: 1.2;
 }
 
 h1 {
   /* Fluid typography: responsive to viewport width */
-  font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem); 
+  font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem);
 }
 
-img, picture, video, canvas, svg {
+img,
+picture,
+video,
+canvas,
+svg {
   display: block;
   max-width: 100%;
 }
 
-input, button, textarea, select {
+input,
+button,
+textarea,
+select {
   font: inherit;
 }
 
