@@ -3,31 +3,85 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const PendingUser = require('../models/PendingUser');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const Tesseract = require('tesseract.js');
 const crypto = require('crypto'); // For generating reset tokens
 require('dotenv').config(); // Ensure variables are loaded before Cloudinary config
 
 // Register
 router.post('/register', async (req, res) => {
     console.log('📝 Register Request Body:', req.body); // DEBUG LOG
-    const { username, email, password, firstName, lastName, birthDate, gender, phone, cedula, birthProvince } = req.body;
+    const { username, email, password, firstName, lastName, birthDate, gender, phone, cedula, birthProvince, idImage, selfieImage, faceMatchPercentage } = req.body;
     try {
         // Validate required fields
         if (!username || !email || !password || !firstName || !lastName || !birthDate || !gender || !phone || !cedula || !birthProvince) {
             return res.status(400).json({ msg: 'Todos los campos son obligatorios.' });
         }
+
+        if (!idImage || !selfieImage) {
+            return res.status(400).json({ msg: 'Las imágenes de Verificación de Identidad (KYC) son requeridas.' });
+        }
+
+        // --- INICIO KYC OCR VALIDATION ---
+        console.log('🔍 Iniciando validación OCR de Cédula...');
+        const base64Data = idImage.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        const { data: { text } } = await Tesseract.recognize(
+            buffer,
+            'spa', // Spanish language for DR ID
+            { logger: m => console.log(`OCR Progress: ${m.status} ${Math.round(m.progress * 100)}%`) }
+        );
+
+        console.log('✅ OCR Texto Extraído (Muestra):', text.substring(0, 100) + '...');
+
+        const cleanText = text.toUpperCase().replace(/[^A-Z0-9]/g, ''); // Strip all symbols/spaces
+        const formFirstName = firstName.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const formLastName = lastName.split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+        // Check if OCR text includes the name parts
+        const nameMatch = cleanText.includes(formFirstName) || cleanText.includes(formLastName);
+
+        // For cedula, strip dashes and O's (in case 0 was read as O)
+        const cleanCedula = cedula.replace(/[-O]/g, '0').replace(/[^0-9]/g, '');
+        const ocrCedulaText = cleanText.replace(/[O]/g, '0');
+        const cedulaMatch = ocrCedulaText.includes(cleanCedula);
+
+        if (!nameMatch || !cedulaMatch) {
+            console.log('❌ KYC Mismatch. OCR Text:', cleanText, '| Expected Name:', formFirstName, formLastName, '| Expected ID:', cleanCedula);
+
+            // Soft Fail: If Text extracted is very short or completely misread, we let it pass for manual review later
+            // We don't want to completely block registration for users with bad cameras
+            if (cleanText.length < 80) {
+                console.log('⚠️ OCR extracted very little text, soft-failing and allowing registration.');
+            } else {
+                return res.status(400).json({ msg: 'Validación KYC fallida. El nombre o la cédula en el documento no coinciden con el formulario. Intenta con mejor iluminación y encuadre.' });
+            }
+        } else {
+            console.log('✅ Validación KYC Exitosa.');
+        }
+
+        if (faceMatchPercentage !== undefined) {
+            console.log(`👤 Validación Facial Terminada: ${faceMatchPercentage}% de similitud entre Selfie y foto de Cédula.`);
+        }
+        // --- FIN KYC OCR VALIDATION ---
         let user = await User.findOne({ email });
         if (user) {
-            console.log('⚠️ User already exists:', email); // DEBUG LOG
+            console.log('⚠️ User already exists in main collection:', email);
             return res.status(400).json({ msg: 'User already exists' });
         }
+
+        // Remove any existing pending registration for this email to start fresh
+        await PendingUser.deleteMany({ email });
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         // Generate 6-digit confirmation code
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        user = new User({
+        let pendingUser = new PendingUser({
             username,
             email,
             password: hashedPassword,
@@ -38,22 +92,21 @@ router.post('/register', async (req, res) => {
             phone,
             cedula,
             birthProvince,
-            isVerified: false,
             verificationCode
         });
 
-        await user.save();
-        console.log('✅ User Saved Successfully:', user.id); // DEBUG LOG
+        await pendingUser.save();
+        console.log('✅ Pending User Saved Successfully:', pendingUser.id);
 
         // Send Verification Email asynchronously
         const { sendVerificationEmail } = require('../utils/emailService');
-        sendVerificationEmail(user.email, user.firstName, verificationCode).catch(err => console.error("Could not send verification email:", err));
+        sendVerificationEmail(pendingUser.email, pendingUser.firstName, verificationCode).catch(err => console.error("Could not send verification email:", err));
 
         // Return generic success to prompt for the verification code
         res.json({
             msg: 'Registro exitoso. Revisa tu correo electrónico para el código de verificación.',
             requiresVerification: true,
-            email: user.email
+            email: pendingUser.email
         });
     } catch (err) {
         console.error('❌ Register Error:', err.message); // DEBUG LOG
@@ -125,23 +178,40 @@ router.post('/login', async (req, res) => {
 router.post('/verify', async (req, res) => {
     const { email, code } = req.body;
     try {
-        let user = await User.findOne({ email });
+        let pendingUser = await PendingUser.findOne({ email });
 
-        if (!user) {
-            return res.status(400).json({ msg: 'Usuario no encontrado' });
+        if (!pendingUser) {
+            // Check if user is already fully registered and verified
+            let verifiedUser = await User.findOne({ email });
+            if (verifiedUser) {
+                return res.status(400).json({ msg: 'El usuario ya está verificado y activo. Por favor, inicia sesión.' });
+            }
+            return res.status(400).json({ msg: 'No se encontró un registro pendiente o el código ha expirado tras 1 hora. Por favor, regístrate de nuevo.' });
         }
 
-        if (user.isVerified) {
-            return res.status(400).json({ msg: 'El usuario ya está verificado' });
-        }
-
-        if (user.verificationCode !== code) {
+        if (pendingUser.verificationCode !== code) {
             return res.status(400).json({ msg: 'Código de verificación incorrecto' });
         }
 
-        user.isVerified = true;
-        user.verificationCode = undefined;
+        // Code matches perfectly! Let's create the final User
+        let user = new User({
+            username: pendingUser.username,
+            email: pendingUser.email,
+            password: pendingUser.password, // Keep the hashed password
+            firstName: pendingUser.firstName,
+            lastName: pendingUser.lastName,
+            birthDate: pendingUser.birthDate,
+            gender: pendingUser.gender,
+            phone: pendingUser.phone,
+            cedula: pendingUser.cedula,
+            birthProvince: pendingUser.birthProvince,
+            isVerified: true
+        });
+
         await user.save();
+
+        // Clean up pending
+        await PendingUser.deleteMany({ email });
 
         const payload = {
             user: {

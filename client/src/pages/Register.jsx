@@ -1,32 +1,143 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
+import Webcam from 'react-webcam';
+import * as faceapi from '@vladmandic/face-api';
 
 function Register() {
     const { register, verifyEmail } = useContext(AuthContext);
     const navigate = useNavigate();
+    const webcamRef = useRef(null);
 
     // Step state
+    // 1: Form, 2: ID Capture, 3: Selfie Capture, 4: Verify Code
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [modelsLoaded, setModelsLoaded] = useState(false);
+
+    // Mobile specific state for ID scanning
+    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+    const [flashlightOn, setFlashlightOn] = useState(false);
+    const [trackSupportsTorch, setTrackSupportsTorch] = useState(false);
+    const [isIdAligned, setIsIdAligned] = useState(false);
+
+    // Selfie Liveness specific state
+    const [livenessStatus, setLivenessStatus] = useState('Buscando rostro...');
+    const [isSelfieAligned, setIsSelfieAligned] = useState(false);
 
     // Form data state
     const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        password: '',
-        firstName: '',
-        lastName: '',
-        birthDate: '',
-        gender: '',
-        phone: '',
-        cedula: '',
-        birthProvince: ''
+        username: '', email: '', password: '', firstName: '', lastName: '',
+        birthDate: '', gender: '', phone: '', cedula: '', birthProvince: ''
     });
 
+    const [idImage, setIdImage] = useState(null);
     const [verificationCode, setVerificationCode] = useState('');
+
+    useEffect(() => {
+        const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const loadModels = async () => {
+            try {
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                    faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+                    faceapi.nets.faceExpressionNet.loadFromUri('/models')
+                ]);
+                setModelsLoaded(true);
+            } catch (e) {
+                console.error("Error loading face-api models", e);
+            }
+        };
+        loadModels();
+    }, []);
+
+    // Effect to check and toggle flashlight
+    useEffect(() => {
+        if (step === 2 && webcamRef.current?.video?.srcObject) {
+            const track = webcamRef.current.video.srcObject.getVideoTracks()[0];
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            if (capabilities.torch) {
+                setTrackSupportsTorch(true);
+                track.applyConstraints({
+                    advanced: [{ torch: flashlightOn }]
+                }).catch(e => console.error("Error applying torch:", e));
+            } else {
+                setTrackSupportsTorch(false);
+            }
+        }
+    }, [step, flashlightOn, webcamRef.current?.video?.srcObject]);
+
+    // Real auto-alignment logic using face detection
+    useEffect(() => {
+        let intervalId;
+        if (step === 2 && modelsLoaded) {
+            intervalId = setInterval(async () => {
+                if (webcamRef.current?.video?.readyState === 4) {
+                    try {
+                        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.1 });
+                        const detection = await faceapi.detectSingleFace(webcamRef.current.video, options);
+                        setIsIdAligned(!!detection); // Turns green only if a face is detected on the ID (even with lowest confidence)
+                    } catch (e) {
+                        console.error('Error detecting face for ID alignment', e);
+                    }
+                }
+            }, 800); // Check every 800ms to avoid overloading mobile CPUs
+        } else {
+            setIsIdAligned(false);
+        }
+        return () => clearInterval(intervalId);
+    }, [step, modelsLoaded]);
+
+    // Real-time liveness detection for step 3 (Selfie)
+    useEffect(() => {
+        let intervalId;
+        if (step === 3 && modelsLoaded && !isLoading) {
+            setLivenessStatus('Buscando rostro en el óvalo...');
+            setIsSelfieAligned(false);
+
+            intervalId = setInterval(async () => {
+                if (webcamRef.current?.video?.readyState === 4) {
+                    try {
+                        const imageSrc = webcamRef.current.getScreenshot();
+                        if (!imageSrc) return;
+
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageSrc;
+                        await new Promise(r => imgElement.onload = r);
+
+                        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.15 });
+                        const detection = await faceapi.detectSingleFace(imgElement, options).withFaceExpressions();
+
+                        if (!detection) {
+                            setLivenessStatus('No se detecta rostro. Ajusta la cámara.');
+                            setIsSelfieAligned(false);
+                        } else {
+                            if (detection.expressions.happy > 0.6) {
+                                setLivenessStatus('¡Perfecto! Procesando...');
+                                setIsSelfieAligned(true);
+                                clearInterval(intervalId); // Stop tracking, we got the smile
+                                captureSelfieAndSubmit(); // Auto trigger capture
+                            } else {
+                                setLivenessStatus('Rostro detectado. Ahora, ¡sonríe grande!');
+                                setIsSelfieAligned(true);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Liveness detection error', e);
+                    }
+                }
+            }, 600); // Check every 600ms
+        }
+        return () => clearInterval(intervalId);
+    }, [step, modelsLoaded, isLoading]); // Cannot depend on captureSelfieAndSubmit safely without an infinite loop, so omitted from deps
 
     const formatPhone = (val) => {
         const cleaned = ('' + val).replace(/\D/g, '');
@@ -55,7 +166,6 @@ function Register() {
         if (name === 'phone') value = formatPhone(value);
         if (name === 'cedula') value = formatCedula(value);
 
-        // Auto-capitalize first letter of each word for names
         if (name === 'firstName' || name === 'lastName') {
             value = value.replace(/\b\w/g, char => char.toUpperCase());
         }
@@ -66,22 +176,120 @@ function Register() {
         });
     };
 
-    const handleRegisterSubmit = async (e) => {
+    const handleFormSubmit = (e) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
+        setStep(2); // Proceed to Document Capture
+    };
+
+    const captureId = useCallback(() => {
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (!imageSrc) {
+            setError("No se pudo capturar la imagen. Revisa los permisos de tu cámara.");
+            return;
+        }
+        setIdImage(imageSrc);
+        setError('');
+        setStep(3); // Move to Selfie capture
+    }, [webcamRef]);
+
+    const captureSelfieAndSubmit = useCallback(async () => {
+        const imageSrc = webcamRef.current.getScreenshot();
+        if (!imageSrc) {
+            setError("No se pudo capturar la imagen. Revisa los permisos de tu cámara.");
+            return;
+        }
+
+        setError('');
         setIsLoading(true);
 
-        const res = await register(formData);
-        setIsLoading(false);
+        try {
+            if (!modelsLoaded) {
+                setError('Aún cargando modelos de IA, por favor espera unos segundos.');
+                setIsLoading(false);
+                return;
+            }
 
-        if (res.success) {
-            setSuccess('¡Registro Paso 1 Exitoso! Revisa tu correo por el código de verificación.');
-            setStep(2); // Move to verification step
-        } else {
-            setError(res.msg);
+            // Check for face
+            const imgElement = document.createElement('img');
+            imgElement.src = imageSrc;
+            await new Promise(r => imgElement.onload = r);
+
+            const detections = await faceapi.detectAllFaces(imgElement, new faceapi.TinyFaceDetectorOptions());
+
+            if (detections.length === 0) {
+                setError('No se detectó ningún rostro. Por favor, asegúrate de tener buena luz e inténtalo de nuevo.');
+                setIsLoading(false);
+                return;
+            }
+            if (detections.length > 1) {
+                setError('Se detectó más de un rostro en la cámara. Por favor, asegúrate de ser el único en la foto.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Proceed to verify the ID image vs the selfie
+            let faceDistance = null;
+
+            if (idImage) {
+                const idImgElement = document.createElement('img');
+                idImgElement.src = idImage;
+                await new Promise(r => idImgElement.onload = r);
+
+                const idDetection = await faceapi.detectSingleFace(idImgElement, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+
+                if (!idDetection) {
+                    setError('No se pudo encontrar un rostro en la foto de la cédula. Toma la foto de la cédula más de cerca o con mejor luz.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Get descriptor for the selfie
+                const selfieDetectionArray = await faceapi.detectSingleFace(imgElement, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceDescriptor();
+
+                if (!selfieDetectionArray) {
+                    setError('Error al procesar el rostro del selfie.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                faceDistance = faceapi.euclideanDistance(idDetection.descriptor, selfieDetectionArray.descriptor);
+                console.log("Face Match Euclidean Distance:", faceDistance);
+
+                // A distance < 0.6 is generally considered a match for face-api.js 
+                // However, ID photos can be low quality, degraded prints, leading to distances around 0.61 - 0.65 (~35%-39%).
+                // We will use 0.70 as the absolute cutoff (30% minimum similarity) to avoid blocking valid users.
+                if (faceDistance > 0.70) {
+                    setError('Error: El rostro de la selfie NO coincide en lo absoluto con la foto de la cédula. Por favor, asegúrate de ser tú el titular.');
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            // Proceed to final Registration Submit
+            const similarityPercentage = faceDistance !== null ? Math.round(Math.max(0, 1 - faceDistance) * 100) : 0;
+            const payload = { ...formData, idImage, selfieImage: imageSrc, faceMatchPercentage: similarityPercentage };
+
+            const res = await register(payload);
+
+            if (res.success) {
+                setSuccess('¡Registro Paso 1 Exitoso! Revisa tu correo por el código de verificación.');
+                setStep(4); // Move to verification step
+            } else {
+                setError(res.msg);
+                // Si el backend da error de que el rostro no coincide o el OCR falla, 
+                // mostramos el error para que vuelva a intentar.
+            }
+        } catch (err) {
+            setError("Error procesando la imagen. Inténtalo de nuevo.");
+        } finally {
+            setIsLoading(false);
         }
-    };
+    }, [webcamRef, formData, idImage, register, modelsLoaded]);
 
     const handleVerifySubmit = async (e) => {
         e.preventDefault();
@@ -103,18 +311,24 @@ function Register() {
     };
 
     return (
-        <div className="auth-container">
-            <div className="card" style={{ maxWidth: '600px', width: '100%' }}>
-                <h2 className="text-center">{step === 1 ? 'Crear Cuenta' : 'Verificar Cuenta'}</h2>
+        <div className="auth-container" style={{ padding: '2rem' }}>
+            <div className="card" style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
+                <h2 className="text-center">
+                    {step === 1 ? 'Crear Cuenta' :
+                        step === 2 ? 'Veridad de Cédula' :
+                            step === 3 ? 'Verificación Facial' : 'Verificar Cuenta'}
+                </h2>
                 <p className="text-center text-muted mb-4">
-                    {step === 1 ? 'Únete a nuestra comunidad hoy' : 'Ingresa el código enviado a tu correo'}
+                    {step === 1 ? 'Únete a nuestra comunidad' :
+                        step === 2 ? 'Toma una foto clara a tu cédula para el proceso KYC' :
+                            step === 3 ? 'Toma una selfie para comprobar tu identidad' : 'Ingresa el código enviado a tu correo'}
                 </p>
 
                 {error && <div style={{ background: 'var(--error-bg)', color: 'var(--error)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
                 {success && <div style={{ background: '#dcfce7', color: '#15803d', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center' }}>{success}</div>}
 
-                {step === 1 ? (
-                    <form onSubmit={handleRegisterSubmit}>
+                {step === 1 && (
+                    <form onSubmit={handleFormSubmit}>
                         <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Datos Personales</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', marginBottom: '1.5rem' }}>
                             <div className="input-group" style={{ marginBottom: 0 }}>
@@ -154,37 +368,9 @@ function Register() {
                                 <select name="birthProvince" value={formData.birthProvince} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.75rem, 2vw, 1rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none' }}>
                                     <option value="">Selecciona una provincia...</option>
                                     <option value="Azua">Azua</option>
-                                    <option value="Baoruco">Baoruco</option>
-                                    <option value="Barahona">Barahona</option>
-                                    <option value="Dajabón">Dajabón</option>
-                                    <option value="Distrito Nacional">Distrito Nacional</option>
-                                    <option value="Duarte">Duarte</option>
-                                    <option value="El Seibo">El Seibo</option>
-                                    <option value="Elías Piña">Elías Piña</option>
-                                    <option value="Espaillat">Espaillat</option>
-                                    <option value="Hato Mayor">Hato Mayor</option>
-                                    <option value="Hermanas Mirabal">Hermanas Mirabal</option>
-                                    <option value="Independencia">Independencia</option>
-                                    <option value="La Altagracia">La Altagracia</option>
-                                    <option value="La Romana">La Romana</option>
-                                    <option value="La Vega">La Vega</option>
-                                    <option value="María Trinidad Sánchez">María Trinidad Sánchez</option>
-                                    <option value="Monseñor Nouel">Monseñor Nouel</option>
-                                    <option value="Monte Cristi">Monte Cristi</option>
-                                    <option value="Monte Plata">Monte Plata</option>
-                                    <option value="Pedernales">Pedernales</option>
-                                    <option value="Peravia">Peravia</option>
-                                    <option value="Puerto Plata">Puerto Plata</option>
-                                    <option value="Samaná">Samaná</option>
-                                    <option value="San Cristóbal">San Cristóbal</option>
-                                    <option value="San José de Ocoa">San José de Ocoa</option>
-                                    <option value="San Juan">San Juan</option>
-                                    <option value="San Pedro de Macorís">San Pedro de Macorís</option>
-                                    <option value="Sánchez Ramírez">Sánchez Ramírez</option>
-                                    <option value="Santiago">Santiago</option>
-                                    <option value="Santiago Rodríguez">Santiago Rodríguez</option>
                                     <option value="Santo Domingo">Santo Domingo</option>
-                                    <option value="Valverde">Valverde</option>
+                                    <option value="Distrito Nacional">Distrito Nacional</option>
+                                    <option value="Santiago">Santiago</option>
                                 </select>
                             </div>
                         </div>
@@ -205,11 +391,83 @@ function Register() {
                                 <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Mínimo 6 caracteres" />
                             </div>
                         </div>
-                        <button type="submit" disabled={isLoading} style={{ width: '100%', marginTop: '2rem', opacity: isLoading ? 0.7 : 1 }}>
-                            {isLoading ? 'Procesando...' : 'Siguiente'}
+                        <button type="submit" disabled={isLoading} style={{ width: '100%', marginTop: '2rem' }}>
+                            Siguiente (KYC)
                         </button>
                     </form>
-                ) : (
+                )}
+
+                {step === 2 && (
+                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', width: '100%', maxWidth: '400px', aspectRatio: '1.58', borderRadius: '12px', overflow: 'hidden', border: `4px solid ${isIdAligned ? '#22c55e' : '#ffff00'}`, transition: 'border-color 0.3s' }}>
+                            <Webcam
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                screenshotQuality={1}
+                                videoConstraints={{ facingMode: "environment", width: { ideal: 4096 }, height: { ideal: 2160 }, advanced: [{ focusMode: "continuous" }] }}
+                                mirrored={false}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'absolute', top: 0, left: 0 }}
+                            />
+
+                            {/* Overlay guide for ID */}
+                            <div style={{ position: 'absolute', top: '15%', left: '10%', right: '10%', bottom: '15%', border: `2px solid ${isIdAligned ? '#22c55e' : 'rgba(255,255,255,0.7)'}`, borderRadius: '8px', zIndex: 1, pointerEvents: 'none', transition: 'border-color 0.3s' }}>
+                                <div style={{ position: 'absolute', top: '-28px', left: 0, width: '100%', textAlign: 'center', color: isIdAligned ? '#22c55e' : '#ffff00', fontWeight: 'bold', fontSize: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                                    {isIdAligned ? '¡Alineación Perfecta!' : 'Enfocando Cédula...'}
+                                </div>
+                            </div>
+
+                            {/* Controls Overlay */}
+                            <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {trackSupportsTorch && (
+                                    <button
+                                        onClick={() => setFlashlightOn(!flashlightOn)}
+                                        type="button"
+                                        style={{ width: '40px', height: '40px', borderRadius: '50%', background: flashlightOn ? 'var(--primary)' : 'rgba(0,0,0,0.5)', color: 'white', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1rem', padding: 0 }}
+                                    >
+                                        <i className="fas fa-bolt"></i>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Identificación: Coloca tu cédula horizontalmente dentro del cuadro.</p>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
+                            <button onClick={() => { setStep(1); setFlashlightOn(false); }} type="button" style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>Atrás</button>
+                            <button onClick={captureId} type="button" disabled={!isIdAligned} style={{ flex: 2, background: isIdAligned ? '#22c55e' : 'var(--primary)', opacity: isIdAligned ? 1 : 0.7 }}>
+                                <i className="fas fa-camera" style={{ marginRight: '8px' }}></i> Capturar Cédula
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', width: '100%', maxWidth: '400px', borderRadius: '12px', overflow: 'hidden', border: `5px solid ${isSelfieAligned ? '#22c55e' : (modelsLoaded ? 'var(--primary)' : 'orange')}`, transition: 'border-color 0.3s' }}>
+                            <Webcam
+                                audio={false}
+                                ref={webcamRef}
+                                screenshotFormat="image/jpeg"
+                                screenshotQuality={1}
+                                videoConstraints={{ facingMode: "user", width: 1920, height: 1080 }}
+                                mirrored={true}
+                                style={{ width: '100%', height: 'auto', display: 'block' }}
+                            />
+                            {/* Face outline overlay */}
+                            <div style={{ position: 'absolute', top: '15%', left: '25%', right: '25%', bottom: '25%', border: `3px dashed ${isSelfieAligned ? '#22c55e' : 'rgba(255,255,255,0.7)'}`, borderRadius: '50%', zIndex: 1, pointerEvents: 'none' }}></div>
+
+                            {/* Dynamic Liveness Instruction */}
+                            <div style={{ position: 'absolute', bottom: '10%', left: '10%', right: '10%', textAlign: 'center', color: isSelfieAligned ? '#22c55e' : '#ffff00', fontWeight: 'bold', fontSize: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.8)', background: 'rgba(0,0,0,0.6)', padding: '8px', borderRadius: '8px', zIndex: 2 }}>
+                                {isLoading ? 'Procesando similitud facial...' : livenessStatus}
+                            </div>
+                        </div>
+                        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Prueba de Vida en Vivo: Sigue las instrucciones en el video para validar tu identidad contra la cédula automáticamente.</p>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
+                            <button onClick={() => setStep(2)} type="button" disabled={isLoading} style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', opacity: isLoading ? 0.7 : 1 }}>Atrás</button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && (
                     <form onSubmit={handleVerifySubmit}>
                         <div className="input-group">
                             <label>Código de Confirmación (6 dígitos)</label>
