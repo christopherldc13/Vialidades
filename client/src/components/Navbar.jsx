@@ -18,7 +18,7 @@ const Navbar = () => {
     const confirmLogout = () => {
         setShowLogoutModal(false);
         logout();
-        window.location.href = '/';
+        navigate('/');
     };
 
     return (

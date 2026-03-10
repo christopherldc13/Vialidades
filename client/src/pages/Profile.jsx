@@ -66,8 +66,7 @@ const Profile = () => {
             // Give user visual feedback
             setIsEditing(false);
             setSaving(false);
-            alert('Perfil actualizado con éxito. Refresca para ver los cambios completos (o context reload).');
-            window.location.reload();
+            alert('Perfil actualizado con éxito.');
         } catch (error) {
             setSaving(false);
             console.error('Error saving profile:', error);
@@ -300,7 +299,7 @@ const Profile = () => {
                                 <h3>¡Foto Actualizada!</h3>
                                 <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Tu imagen de perfil se ha cambiado con éxito.</p>
                                 <button
-                                    onClick={() => window.location.reload()}
+                                    onClick={() => setShowSuccessModal(false)}
                                     className="primary"
                                 >
                                     Genial

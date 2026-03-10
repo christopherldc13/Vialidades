@@ -70,12 +70,33 @@ router.post('/register', async (req, res) => {
         }
 
         // --- INICIO KYC OCR VALIDATION ---
-        console.log('🔍 Iniciando validación OCR de Cédula...');
+        console.log('🔍 Iniciando validación OCR de Cédula con PRE-PROCESAMIENTO AVANZADO...');
         const base64Data = idImage.replace(/^data:image\/\w+;base64,/, "");
-        const buffer = Buffer.from(base64Data, 'base64');
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+
+        // PRE-PROCESAMIENTO DE IMAGEN CON JIMP
+        const { Jimp } = require('jimp');
+        let processedBuffer = imageBuffer;
+
+        try {
+            console.log('⚙️ Procesando imagen para mejorar legibilidad del OCR...');
+            const image = await Jimp.read(imageBuffer);
+
+            // Convertir a escala de grises, aumentar contraste y redimensionar
+            image.greyscale()      // Elimina colores que confunden al OCR
+                .contrast(0.5)    // Aumenta el contraste al 50%
+                .normalize()      // Normaliza los canales
+                .scale(2);        // Aumenta la resolución al doble
+
+            processedBuffer = await image.getBuffer('image/jpeg');
+            console.log('✅ Imagen procesada correctamente.');
+        } catch (jimpErr) {
+            console.error('⚠️ Error al procesar imagen con Jimp, usando original:', jimpErr.message);
+            // Fallback to original buffer if Jimp fails
+        }
 
         const { data: { text } } = await Tesseract.recognize(
-            buffer,
+            processedBuffer,
             'spa', // Spanish language for DR ID
             { logger: m => console.log(`OCR Progress: ${m.status} ${Math.round(m.progress * 100)}%`) }
         );
@@ -86,19 +107,33 @@ router.post('/register', async (req, res) => {
         const formFirstName = firstName.toUpperCase().replace(/[^A-Z0-9]/g, '');
         const formLastName = lastName.split(' ')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-        // Check if OCR text includes the name parts
-        const nameMatch = cleanText.includes(formFirstName) || cleanText.includes(formLastName);
+        // Name match checks if any major part of the name is exactly present.
+        const nameParts = [...firstName.toUpperCase().split(' '), ...lastName.toUpperCase().split(' ')]
+            .map(p => p.replace(/[^A-Z0-9]/g, ''))
+            .filter(p => p.length >= 3);
+
+        let nameMatch = false;
+        for (const part of nameParts) {
+            if (cleanText.includes(part)) {
+                nameMatch = true;
+                break;
+            }
+        }
 
         // For cedula, user input is clean of dashes/O's
         const cleanCedula = cedula.replace(/[^0-9]/g, '');
-        const ocrCedulaText = cleanText.replace(/[O]/g, '0');
-        const cedulaMatch = ocrCedulaText.includes(cleanCedula);
+        // Replace common OCR mismatches
+        const ocrCedulaText = cleanText.replace(/[OQ]/g, '0').replace(/[I]/g, '1').replace(/[S]/g, '5').replace(/[Z]/g, '2').replace(/[B]/g, '8');
+
+        // Exactitud estricta para la Cédula (los 11 números deben coincidir exactamente)
+        let cedulaMatch = ocrCedulaText.includes(cleanCedula);
 
         if (!nameMatch || !cedulaMatch) {
             console.log('❌ KYC Mismatch. OCR Text:', cleanText, '| Expected Name:', formFirstName, formLastName, '| Expected ID:', cleanCedula);
             return res.status(400).json({ msg: 'Validación KYC fallida. El nombre o la cédula en el documento no coinciden con el formulario. Intenta con mejor iluminación y encuadre y que los datos coincidan.' });
         } else {
-            console.log('✅ Validación KYC Exitosa.');
+            console.log(`✅ Validación KYC Exitosa.`);
+            console.log(`🔍 Textos detectados y aprobados -> Nombre esperado: ${formFirstName} ${formLastName} | Cédula esperada: ${cleanCedula}`);
         }
 
         if (faceMatchPercentage !== undefined) {
@@ -140,9 +175,11 @@ router.post('/register', async (req, res) => {
         await pendingUser.save();
         console.log('✅ Pending User Saved Successfully:', pendingUser.id);
 
-        // Send Verification Email asynchronously
+        // Send Verification Email asynchronously, delayed by 21 seconds to match the frontend OCR artificial loader!
         const { sendVerificationEmail } = require('../utils/emailService');
-        sendVerificationEmail(pendingUser.email, pendingUser.firstName, verificationCode).catch(err => console.error("Could not send verification email:", err));
+        setTimeout(() => {
+            sendVerificationEmail(pendingUser.email, pendingUser.firstName, verificationCode).catch(err => console.error("Could not send verification email:", err));
+        }, 21000);
 
         // Return generic success to prompt for the verification code
         res.json({

@@ -420,7 +420,17 @@ const CreateReport = () => {
                                         Ir al Panel Principal
                                     </button>
                                     <button
-                                        onClick={() => window.location.reload()}
+                                        onClick={() => {
+                                            setShowSuccessModal(false);
+                                            setType('Traffic');
+                                            setCustomType('');
+                                            setDescription('');
+                                            setLocation(null);
+                                            setAddress('');
+                                            setFiles([]);
+                                            previews.forEach(url => URL.revokeObjectURL(url));
+                                            setPreviews([]);
+                                        }}
                                         className="secondary"
                                         style={{ width: '100%' }}
                                     >
