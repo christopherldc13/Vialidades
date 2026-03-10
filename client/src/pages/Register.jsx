@@ -5,7 +5,7 @@ import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 
 function Register() {
-    const { register, verifyEmail } = useContext(AuthContext);
+    const { register, verifyEmail, checkRegistrationDuplicates } = useContext(AuthContext);
     const navigate = useNavigate();
     const webcamRef = useRef(null);
 
@@ -176,10 +176,19 @@ function Register() {
         });
     };
 
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setStep(2); // Proceed to Document Capture
+        setIsLoading(true);
+
+        const res = await checkRegistrationDuplicates(formData);
+        setIsLoading(false);
+
+        if (res.success) {
+            setStep(2); // Proceed to Document Capture
+        } else {
+            setError(res.msg); // Muestra el mensaje de error específico
+        }
     };
 
     const captureId = useCallback(() => {

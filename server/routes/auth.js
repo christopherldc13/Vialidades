@@ -9,6 +9,52 @@ const Tesseract = require('tesseract.js');
 const crypto = require('crypto'); // For generating reset tokens
 require('dotenv').config(); // Ensure variables are loaded before Cloudinary config
 
+// Check for duplicates before KYC
+router.post('/check-duplicates', async (req, res) => {
+    const { username, email, cedula, phone, firstName, lastName } = req.body;
+    try {
+        // Validate required fields
+        if (!username || !email || !firstName || !lastName || !phone || !cedula) {
+            return res.status(400).json({ msg: 'Todos los campos son obligatorios.' });
+        }
+
+        const normalizedFirstName = firstName.trim().toLowerCase();
+        const normalizedLastName = lastName.trim().toLowerCase();
+
+        const existingUser = await User.findOne({
+            $or: [
+                { username },
+                { email },
+                { cedula },
+                { phone }
+            ]
+        });
+
+        if (existingUser) {
+            if (existingUser.cedula === cedula) return res.status(400).json({ msg: 'Esta cédula ya está registrada.' });
+            if (existingUser.username === username) return res.status(400).json({ msg: 'Este nombre de usuario ya está en uso.' });
+            if (existingUser.email === email) return res.status(400).json({ msg: 'Este correo electrónico ya está registrado.' });
+            if (existingUser.phone === phone) return res.status(400).json({ msg: 'Este número de teléfono ya está registrado.' });
+        }
+
+        // Name and Last Name combined check (case insensitive)
+        const nameMatch = await User.findOne({
+            firstName: { $regex: new RegExp(`^${normalizedFirstName}$`, 'i') },
+            lastName: { $regex: new RegExp(`^${normalizedLastName}$`, 'i') }
+        });
+
+        if (nameMatch) {
+            return res.status(400).json({ msg: 'Ya existe un usuario con este Nombre y Apellido.' });
+        }
+
+        res.json({ success: true, msg: 'Datos válidos, puede proceder al KYC.' });
+
+    } catch (err) {
+        console.error('❌ Check Duplicates Error:', err.message);
+        res.status(500).send('Server Error al validar datos: ' + err.message);
+    }
+});
+
 // Register
 router.post('/register', async (req, res) => {
     console.log('📝 Register Request Body:', req.body); // DEBUG LOG
@@ -43,27 +89,23 @@ router.post('/register', async (req, res) => {
         // Check if OCR text includes the name parts
         const nameMatch = cleanText.includes(formFirstName) || cleanText.includes(formLastName);
 
-        // For cedula, strip dashes and O's (in case 0 was read as O)
-        const cleanCedula = cedula.replace(/[-O]/g, '0').replace(/[^0-9]/g, '');
+        // For cedula, user input is clean of dashes/O's
+        const cleanCedula = cedula.replace(/[^0-9]/g, '');
         const ocrCedulaText = cleanText.replace(/[O]/g, '0');
         const cedulaMatch = ocrCedulaText.includes(cleanCedula);
 
         if (!nameMatch || !cedulaMatch) {
             console.log('❌ KYC Mismatch. OCR Text:', cleanText, '| Expected Name:', formFirstName, formLastName, '| Expected ID:', cleanCedula);
-
-            // Soft Fail: If Text extracted is very short or completely misread, we let it pass for manual review later
-            // We don't want to completely block registration for users with bad cameras
-            if (cleanText.length < 80) {
-                console.log('⚠️ OCR extracted very little text, soft-failing and allowing registration.');
-            } else {
-                return res.status(400).json({ msg: 'Validación KYC fallida. El nombre o la cédula en el documento no coinciden con el formulario. Intenta con mejor iluminación y encuadre.' });
-            }
+            return res.status(400).json({ msg: 'Validación KYC fallida. El nombre o la cédula en el documento no coinciden con el formulario. Intenta con mejor iluminación y encuadre y que los datos coincidan.' });
         } else {
             console.log('✅ Validación KYC Exitosa.');
         }
 
         if (faceMatchPercentage !== undefined) {
             console.log(`👤 Validación Facial Terminada: ${faceMatchPercentage}% de similitud entre Selfie y foto de Cédula.`);
+            if (faceMatchPercentage < 30) {
+                return res.status(400).json({ msg: 'Validación facial fallida. Tu selfie no corresponde con la foto de la cédula.' });
+            }
         }
         // --- FIN KYC OCR VALIDATION ---
         let user = await User.findOne({ email });

@@ -78,8 +78,18 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const checkRegistrationDuplicates = async (userData) => {
+        try {
+            const res = await axios.post('/api/auth/check-duplicates', userData);
+            return { success: true };
+        } catch (err) {
+            console.error("Duplicate Check Error:", err);
+            return { success: false, msg: err.response?.data?.msg || 'Error al validar datos' };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, verifyEmail, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, verifyEmail, logout, loading, checkRegistrationDuplicates }}>
             {children}
         </AuthContext.Provider>
     );
