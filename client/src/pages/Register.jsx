@@ -399,42 +399,44 @@ function Register() {
     };
 
     return (
-        <div className="auth-container" style={{ padding: '2rem' }}>
-            <div className="card" style={{ maxWidth: '600px', width: '100%', margin: '0 auto' }}>
-                <h2 className="text-center">
-                    {step === 1 ? 'Crear Cuenta' :
-                        step === 2 ? 'Veridad de Cédula' :
-                            step === 3 ? 'Verificación Facial' : 'Verificar Cuenta'}
-                </h2>
-                <p className="text-center text-muted mb-4">
-                    {step === 1 ? 'Únete a nuestra comunidad' :
-                        step === 2 ? 'Toma una foto clara a tu cédula para el proceso KYC' :
-                            step === 3 ? 'Toma una selfie para comprobar tu identidad' : 'Ingresa el código enviado a tu correo'}
-                </p>
+        <div className="landing-container auth-wrapper modern-login-wrapper" style={{ padding: '0' }}>
+            <div className="card modern-login-card" style={{ maxWidth: '650px', padding: 'clamp(1.5rem, 3vh, 2.5rem) clamp(1rem, 2.5vw, 2rem)' }}>
+                <div className="login-header">
+                    <h2>
+                        {step === 1 ? 'Crear Cuenta' :
+                            step === 2 ? 'Veridad de Cédula' :
+                                step === 3 ? 'Verificación Facial' : 'Verificar Cuenta'}
+                    </h2>
+                    <p className="text-muted">
+                        {step === 1 ? 'Únete a nuestra plataforma' :
+                            step === 2 ? 'Toma una foto clara a tu cédula para el proceso KYC' :
+                                step === 3 ? 'Toma una selfie para comprobar tu identidad' : 'Ingresa el código enviado a tu correo'}
+                    </p>
+                </div>
 
-                {error && <div style={{ background: 'var(--error-bg)', color: 'var(--error)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
-                {success && <div style={{ background: '#dcfce7', color: '#15803d', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center' }}>{success}</div>}
+                {error && <div className="login-error-alert">{error}</div>}
+                {success && <div style={{ background: '#dcfce7', borderLeft: '4px solid #10b981', color: '#15803d', padding: 'clamp(0.75rem, 2vh, 1rem)', borderRadius: '0.5rem', marginBottom: 'clamp(1rem, 2vh, 1.5rem)', fontSize: '0.85rem', fontWeight: 500, textAlign: 'center' }}>{success}</div>}
 
                 {step === 1 && (
                     <form onSubmit={handleFormSubmit}>
-                        <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Datos Personales</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.05rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Datos Personales</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'clamp(0.75rem, 2vh, 1.25rem)', marginBottom: '1.5rem' }}>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Nombre</label>
-                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required placeholder="Ej: Juan" />
+                                <label style={{ fontSize: '0.85rem' }}>Nombre</label>
+                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required placeholder="Ej: Juan" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Apellido</label>
-                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required placeholder="Ej: Pérez" />
+                                <label style={{ fontSize: '0.85rem' }}>Apellido</label>
+                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required placeholder="Ej: Pérez" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
 
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Fecha de Nacimiento</label>
-                                <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} required max={new Date().toISOString().split("T")[0]} />
+                                <label style={{ fontSize: '0.85rem' }}>Fecha de Nacimiento</label>
+                                <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} required max={new Date().toISOString().split("T")[0]} style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Sexo</label>
-                                <select name="gender" value={formData.gender} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.75rem, 2vw, 1rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none' }}>
+                                <label style={{ fontSize: '0.85rem' }}>Sexo</label>
+                                <select name="gender" value={formData.gender} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none', fontSize: '0.9rem' }}>
                                     <option value="">Selecciona...</option>
                                     <option value="M">Masculino</option>
                                     <option value="F">Femenino</option>
@@ -443,17 +445,17 @@ function Register() {
                             </div>
 
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Teléfono</label>
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required placeholder="Ej: 809-555-5555" maxLength="12" />
+                                <label style={{ fontSize: '0.85rem' }}>Teléfono</label>
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required placeholder="Ej: 809-555-5555" maxLength="12" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Cédula</label>
-                                <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} required placeholder="Ej: 000-0000000-0" maxLength="13" />
+                                <label style={{ fontSize: '0.85rem' }}>Cédula</label>
+                                <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} required placeholder="Ej: 000-0000000-0" maxLength="13" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
 
                             <div className="input-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                                <label>Provincia de Nacimiento</label>
-                                <select name="birthProvince" value={formData.birthProvince} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.75rem, 2vw, 1rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none' }}>
+                                <label style={{ fontSize: '0.85rem' }}>Provincia de Nacimiento</label>
+                                <select name="birthProvince" value={formData.birthProvince} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none', fontSize: '0.9rem' }}>
                                     <option value="">Selecciona una provincia...</option>
                                     <option value="Azua">Azua</option>
                                     <option value="Santo Domingo">Santo Domingo</option>
@@ -463,23 +465,23 @@ function Register() {
                             </div>
                         </div>
 
-                        <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Datos de la Cuenta</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
+                        <h3 style={{ fontSize: '1.05rem', marginBottom: '1rem', color: 'var(--primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Datos de la Cuenta</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'clamp(0.75rem, 2vh, 1.25rem)' }}>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Nombre de Usuario</label>
-                                <input type="text" name="username" value={formData.username} onChange={handleChange} required placeholder="Tu alias en el sistema" />
+                                <label style={{ fontSize: '0.85rem' }}>Nombre de Usuario</label>
+                                <input type="text" name="username" value={formData.username} onChange={handleChange} required placeholder="Tu alias en el sistema" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
                             <div className="input-group" style={{ marginBottom: 0 }}>
-                                <label>Correo Electrónico</label>
-                                <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="tucorreo@ejemplo.com" />
+                                <label style={{ fontSize: '0.85rem' }}>Correo Electrónico</label>
+                                <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="tucorreo@ejemplo.com" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
 
                             <div className="input-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                                <label>Contraseña</label>
-                                <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Mínimo 6 caracteres" />
+                                <label style={{ fontSize: '0.85rem' }}>Contraseña</label>
+                                <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Mínimo 6 caracteres" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
                             </div>
                         </div>
-                        <button type="submit" disabled={isLoading} style={{ width: '100%', marginTop: '2rem' }}>
+                        <button type="submit" disabled={isLoading} className="login-submit-btn" style={{ marginTop: 'clamp(1.5rem, 3vh, 2rem)' }}>
                             Siguiente (KYC)
                         </button>
                     </form>
@@ -494,10 +496,10 @@ function Register() {
                                 <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
                                     El sistema detectará y capturará la foto de tu cédula automáticamente para validar tu nombre, cédula y rostro en el siguiente paso.
                                 </p>
-                                <button onClick={() => setIsIdScannerActive(true)} type="button" style={{ width: '100%', marginBottom: '10px', background: 'var(--primary)', color: 'white' }}>
+                                <button onClick={() => setIsIdScannerActive(true)} type="button" className="login-submit-btn" style={{ marginBottom: '10px' }}>
                                     <i className="fas fa-camera" style={{ marginRight: '8px' }}></i> Iniciar Escáner
                                 </button>
-                                <button onClick={() => { setStep(1); setFlashlightOn(false); setError(''); setSuccess(''); setIdImage(null); }} type="button" style={{ width: '100%', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+                                <button onClick={() => { setStep(1); setFlashlightOn(false); setError(''); setSuccess(''); setIdImage(null); }} type="button" style={{ width: '100%', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem' }}>
                                     Atrás
                                 </button>
                             </div>
@@ -541,7 +543,7 @@ function Register() {
                                 </div>
                                 <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Identificación: Coloca tu cédula horizontalmente dentro del cuadro.</p>
                                 <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
-                                    <button onClick={() => { setIsIdScannerActive(false); setFlashlightOn(false); }} type="button" style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>Cancelar Escáner</button>
+                                    <button onClick={() => { setIsIdScannerActive(false); setFlashlightOn(false); }} type="button" style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem' }}>Cancelar Escáner</button>
                                 </div>
                             </>
                         )}
@@ -587,7 +589,7 @@ function Register() {
                         </div>
                         <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Prueba de Vida en Vivo: Sigue las instrucciones en el video para validar tu identidad contra la cédula automáticamente.</p>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
-                            <button onClick={() => { setStep(2); setError(''); setSuccess(''); }} type="button" disabled={isLoading} style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', opacity: isLoading ? 0.7 : 1 }}>Atrás</button>
+                            <button onClick={() => { setStep(2); setError(''); setSuccess(''); }} type="button" disabled={isLoading} style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', opacity: isLoading ? 0.7 : 1, padding: '0.75rem', borderRadius: '0.75rem' }}>Atrás</button>
                         </div>
                     </div>
                 )}
@@ -603,14 +605,14 @@ function Register() {
                                 required
                                 maxLength="6"
                                 placeholder="Ej: 123456"
-                                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px' }}
+                                style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', padding: '1rem' }}
                             />
                         </div>
-                        <button type="submit" disabled={isLoading || verificationCode.length !== 6} style={{ width: '100%', opacity: (isLoading || verificationCode.length !== 6) ? 0.7 : 1 }}>
+                        <button type="submit" className="login-submit-btn" disabled={isLoading || verificationCode.length !== 6} style={{ width: '100%', opacity: (isLoading || verificationCode.length !== 6) ? 0.5 : 1 }}>
                             {isLoading ? 'Verificando...' : 'Confirmar y Entrar'}
                         </button>
-                        <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                            <button type="button" onClick={() => { setStep(1); setError(''); setSuccess(''); setIdImage(null); setVerificationCode(''); }} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', textDecoration: 'underline', cursor: 'pointer' }}>
+                        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                            <button type="button" onClick={() => { setStep(1); setError(''); setSuccess(''); setIdImage(null); setVerificationCode(''); }} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.9rem' }}>
                                 Volver al registro
                             </button>
                         </div>
@@ -618,9 +620,17 @@ function Register() {
                 )}
 
                 {step === 1 && (
-                    <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                        ¿Ya tienes una cuenta? <Link to="/login">Inicia Sesión</Link>
-                    </p>
+                    <div className="login-divider" style={{ marginTop: '1.5rem' }}>
+                        <div className="divider-line"></div>
+                        <span>¿Ya tienes una cuenta?</span>
+                    </div>
+                )}
+                {step === 1 && (
+                    <div className="login-footer" style={{ marginTop: '1rem' }}>
+                        <Link to="/login" className="register-link">
+                            Iniciar Sesión
+                        </Link>
+                    </div>
                 )}
             </div>
         </div>

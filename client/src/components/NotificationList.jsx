@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 
-const NotificationList = () => {
+const NotificationList = ({ className }) => {
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const { user } = useContext(AuthContext);
@@ -67,12 +67,13 @@ const NotificationList = () => {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <div style={{ position: 'relative' }}>
-            <div
-                style={{ position: 'relative', cursor: 'pointer' }}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: '100%' }}>
+            <button
+                className={className}
+                style={{ position: 'relative', outline: 'none' }}
                 onClick={() => setShowDropdown(!showDropdown)}
             >
-                <Bell size={24} color="var(--text-main)" />
+                <Bell size={20} />
                 {unreadCount > 0 && (
                     <span style={{
                         position: 'absolute', top: -2, right: -2,
@@ -84,64 +85,65 @@ const NotificationList = () => {
                         {unreadCount}
                     </span>
                 )}
-            </div>
+            </button>
 
-            {showDropdown && (
-                <div style={{
-                    position: 'absolute', top: '100%', right: -10,
-                    width: 'clamp(280px, 90vw, 360px)', maxHeight: '400px', overflowY: 'auto',
-                    background: 'var(--surface-solid)', /* Force matched background */
-                    boxShadow: 'var(--shadow-xl)',
-                    borderRadius: '12px', border: '1px solid #e2e8f0',
-                    zIndex: 1000, marginTop: '10px'
-                }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>Notificaciones</h4>
-                        <X size={16} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setShowDropdown(false)} />
-                    </div>
-                    {notifications.length === 0 ? (
-                        <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                            No tienes notificaciones
+            {
+                showDropdown && (
+                    <div style={{
+                        position: 'absolute', top: '100%', right: -10,
+                        width: 'clamp(280px, 90vw, 360px)', maxHeight: '400px', overflowY: 'auto',
+                        background: 'var(--surface-solid)', /* Force matched background */
+                        boxShadow: 'var(--shadow-xl)',
+                        borderRadius: '12px', border: '1px solid #e2e8f0',
+                        zIndex: 1000, marginTop: '10px'
+                    }}>
+                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>Notificaciones</h4>
+                            <X size={16} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setShowDropdown(false)} />
                         </div>
-                    ) : (
-                        notifications.map(notification => (
-                            <div
-                                key={notification._id}
-                                onClick={() => !notification.read && markAsRead(notification._id)}
-                                style={{
-                                    padding: '0.75rem 1rem',
-                                    borderBottom: '1px solid var(--border-color)',
-                                    background: notification.read ? 'var(--surface-solid)' : 'var(--bg-input)', /* Light blue for unread */
-                                    cursor: 'pointer',
-                                    transition: 'background 0.2s',
-                                    display: 'flex', gap: '0.75rem', alignItems: 'start',
-                                    opacity: 1 /* Ensure no transparency */
-                                }}
-                            >
-                                <div style={{
-                                    width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: '6px',
-                                    background: notification.type === 'success' ? 'var(--success)' : notification.type === 'error' ? 'var(--error)' : notification.type === 'warning' ? 'var(--warning)' : 'var(--primary)',
-                                    display: notification.read ? 'none' : 'block'
-                                }} />
-                                <div>
-                                    <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.4', fontWeight: notification.read ? '400' : '600' }}>
-                                        {notification.message}
-                                    </p>
-                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                        {new Date(notification.createdAt).toLocaleDateString()} • {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                                <Trash2
-                                    size={16}
-                                    color="#ef4444"
-                                    style={{ marginLeft: 'auto', cursor: 'pointer', flexShrink: 0 }}
-                                    onClick={(e) => deleteNotification(e, notification._id)}
-                                />
+                        {notifications.length === 0 ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                                No tienes notificaciones
                             </div>
-                        ))
-                    )}
-                </div>
-            )
+                        ) : (
+                            notifications.map(notification => (
+                                <div
+                                    key={notification._id}
+                                    onClick={() => !notification.read && markAsRead(notification._id)}
+                                    style={{
+                                        padding: '0.75rem 1rem',
+                                        borderBottom: '1px solid var(--border-color)',
+                                        background: notification.read ? 'var(--surface-solid)' : 'var(--bg-input)', /* Light blue for unread */
+                                        cursor: 'pointer',
+                                        transition: 'background 0.2s',
+                                        display: 'flex', gap: '0.75rem', alignItems: 'start',
+                                        opacity: 1 /* Ensure no transparency */
+                                    }}
+                                >
+                                    <div style={{
+                                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: '6px',
+                                        background: notification.type === 'success' ? 'var(--success)' : notification.type === 'error' ? 'var(--error)' : notification.type === 'warning' ? 'var(--warning)' : 'var(--primary)',
+                                        display: notification.read ? 'none' : 'block'
+                                    }} />
+                                    <div>
+                                        <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.4', fontWeight: notification.read ? '400' : '600' }}>
+                                            {notification.message}
+                                        </p>
+                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                            {new Date(notification.createdAt).toLocaleDateString()} • {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    <Trash2
+                                        size={16}
+                                        color="#ef4444"
+                                        style={{ marginLeft: 'auto', cursor: 'pointer', flexShrink: 0 }}
+                                        onClick={(e) => deleteNotification(e, notification._id)}
+                                    />
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )
             }
         </div >
     );

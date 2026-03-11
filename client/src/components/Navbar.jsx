@@ -29,22 +29,22 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className="navbar">
-                <Link to="/dashboard" className="nav-brand">
+            <nav className="navbar modern-navbar">
+                <Link to="/dashboard" className="nav-brand modern-brand">
                     Vialidades
                 </Link>
-                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    <button onClick={toggleTheme} className="secondary" style={{ padding: '0.5rem', width: 'auto', border: 'none', background: 'var(--bg-input)', borderRadius: '50%' }} title="Cambiar Tema">
-                        {theme === 'dark' ? <Sun size={20} color="var(--text-main)" /> : <Moon size={20} color="var(--text-main)" />}
+                <div className="nav-actions">
+                    <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
+                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
-                    <Link to="/dashboard?view=my" title="Mis Reportes" style={{ color: 'var(--text-main)', padding: '0.5rem', borderRadius: '50%', background: 'var(--bg-input)' }}>
+                    <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
                         <ClipboardList size={20} />
-                    </Link>
-                    <Link to="/profile" style={{ color: 'var(--text-main)', padding: '0.5rem', borderRadius: '50%', background: 'var(--bg-input)' }}>
+                    </button>
+                    <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
                         <User size={20} />
-                    </Link>
-                    <NotificationList />
-                    <button onClick={handleLogoutClick} className="secondary" style={{ padding: '0.5rem', width: 'auto', border: 'none' }}>
+                    </button>
+                    <NotificationList className="modern-nav-btn" />
+                    <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
                         <LogOut size={20} />
                     </button>
                 </div>

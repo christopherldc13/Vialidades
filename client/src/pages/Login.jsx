@@ -1,7 +1,8 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, LogIn, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 function Login() {
     const [email, setEmail] = useState('');
@@ -56,58 +57,123 @@ function Login() {
     };
 
     return (
-        <div className="auth-container">
-            <div className="card">
-                <h2 className="text-center">Bienvenido de Nuevo</h2>
-                <p className="text-center text-muted mb-4">Inicia sesión en tu cuenta</p>
+        <div className="landing-container auth-wrapper modern-login-wrapper">
+            <motion.div
+                className="card modern-login-card"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+            >
+                <Link to="/" className="back-link">
+                    <ArrowLeft size={16} /> Volver
+                </Link>
 
-                {error && <div style={{ background: 'var(--error-bg)', color: 'var(--error)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
+                <div className="login-header">
+                    <motion.div
+                        className="login-icon-wrapper"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2, type: 'spring' }}
+                    >
+                        <LogIn size={28} />
+                    </motion.div>
+                    <h2>Bienvenido de Nuevo</h2>
+                    <p className="text-muted">Accede a tu cuenta para continuar evaluando las vialidades.</p>
+                </div>
 
-                {sanctionExpiry && (
-                    <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'center' }}>
-                        <strong style={{ color: '#b91c1c', display: 'block', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Tiempo Restante de Sanción</strong>
-                        <div style={{ color: '#ef4444', fontSize: '1.5rem', fontWeight: '800', fontFamily: 'monospace' }}>
-                            {timeLeft || 'Calculando...'}
-                        </div>
-                    </div>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="login-error-alert"
+                    >
+                        {error}
+                    </motion.div>
                 )}
 
-                <form onSubmit={handleSubmit}>
-                    <div className="input-group">
+                {sanctionExpiry && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="login-sanction-alert"
+                    >
+                        <strong>
+                            <Lock size={16} /> Tiempo Restante de Sanción
+                        </strong>
+                        <div className="sanction-time">
+                            {timeLeft || 'Calculando...'}
+                        </div>
+                    </motion.div>
+                )}
+
+                <form onSubmit={handleSubmit} className="login-form">
+                    <div className="input-group modern-input-group">
                         <label>Correo Electrónico</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        <div className="input-icon-wrapper">
+                            <Mail size={16} className="input-icon" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="tucorreo@ejemplo.com"
+                            />
+                        </div>
                     </div>
-                    <div className="input-group">
-                        <label>Contraseña</label>
-                        <div style={{ position: 'relative' }}>
+                    <div className="input-group modern-input-group">
+                        <div className="password-header">
+                            <label>Contraseña</label>
+                            <Link to="/forgot-password" className="forgot-link">¿Olvidaste tu contraseña?</Link>
+                        </div>
+                        <div className="input-icon-wrapper">
+                            <Lock size={16} className="input-icon" />
                             <input
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                style={{ paddingRight: '3rem' }}
+                                placeholder="••••••••"
                             />
                             <button
                                 type="button"
                                 className="password-toggle"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" disabled={isLoading} style={{ opacity: isLoading ? 0.7 : 1 }}>
-                        {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
-                    </button>
+                    <motion.button
+                        type="submit"
+                        disabled={isLoading}
+                        className="login-submit-btn"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {isLoading ? (
+                            <span className="btn-loading">
+                                <svg className="animate-spin" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Ingresando...
+                            </span>
+                        ) : 'Iniciar Sesión'}
+                    </motion.button>
                 </form>
-                <p style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                    <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
-                </p>
-                <p style={{ marginTop: '1rem', textAlign: 'center' }}>
-                    ¿No tienes una cuenta? <Link to="/register">Regístrate</Link>
-                </p>
-            </div>
+
+                <div className="login-divider">
+                    <div className="divider-line"></div>
+                    <span>¿Nuevo en la plataforma?</span>
+                </div>
+
+                <div className="login-footer">
+                    <Link to="/register" className="register-link">
+                        Crear una cuenta
+                    </Link>
+                </div>
+            </motion.div>
         </div>
     );
 }

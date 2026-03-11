@@ -85,7 +85,7 @@ const LandingPage = () => {
                     transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                 >
                     <motion.div
-                        className="landing-badge"
+                        className="hero-badge"
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.1 }}
@@ -120,12 +120,12 @@ const LandingPage = () => {
 
                 <motion.div
                     className="hero-image"
-                    initial={{ opacity: 0, scale: 0.9, x: 30 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    initial={{ opacity: 0, scale: 0.9, y: 40 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
                 >
-                    <div className="map-showcase-container">
-                        <div className="map-inner-wrapper">
+                    <div className="map-showcase">
+                        <div className="map-showcase-inner">
                             <MapContainer
                                 center={[18.88, -70.4]} // Approximate center of Dominican Republic
                                 zoom={8}

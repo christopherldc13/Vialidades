@@ -61,7 +61,7 @@ const Dashboard = () => {
             <Navbar />
             <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '80px' }}>
                 <div style={{ padding: '0 1.5rem 1.5rem' }}>
-                    <div className="dashboard-header">
+                    <div className="dashboard-header modern-dashboard-header">
                         <div>
                             <h2>{isModerator ? 'Panel de Moderación' : 'Reportes de Incidentes'}</h2>
                             {isModerator && <p className="text-muted">Resumen de actividad.</p>}
@@ -120,7 +120,7 @@ const Dashboard = () => {
                     /* User Grid */
                     <div className="report-grid">
                         {reports.map((report) => (
-                            <div key={report._id} className="report-card">
+                            <div key={report._id} className="report-card modern-report-card">
                                 <div className="report-image-container">
                                     <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
                                 </div>
