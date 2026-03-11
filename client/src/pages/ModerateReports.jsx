@@ -5,6 +5,8 @@ import MediaGallery from '../components/MediaGallery';
 import AuthContext from '../context/AuthContext';
 import { ArrowLeft, Check, X, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const ModerateReports = () => {
     const [reports, setReports] = useState([]);
@@ -45,10 +47,11 @@ const ModerateReports = () => {
                 setReports(reports.map(r => r._id === id ? { ...r, status, wasSanctioned: sanctionUser, rejectionReason } : r));
             }
 
-            if (sanctionUser) alert("Usuario sancionado correctamente.");
+            if (sanctionUser) toast.success("Usuario sancionado correctamente.");
+            else toast.success("Reporte moderado correctamente.");
         } catch (err) {
             console.error(err);
-            alert("Error al procesar la solicitud.");
+            toast.error("Error al procesar la solicitud.");
         }
     };
 
@@ -160,12 +163,12 @@ const ModerateReports = () => {
                                             {report.description}
                                         </p>
 
-                                        {report.status === 'rejected' && report.rejectionReason && (
-                                            <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '1rem', marginBottom: '2rem', borderRadius: '4px' }}>
-                                                <strong style={{ color: '#b91c1c', display: 'block', marginBottom: '0.25rem' }}>
-                                                    {report.wasSanctioned ? 'Motivo de sanción:' : 'Motivo de rechazo:'}
+                                        {report.moderatorComment && (
+                                            <div style={{ background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `4px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, padding: '1rem', marginBottom: '2rem', borderRadius: '4px' }}>
+                                                <strong style={{ color: report.status === 'approved' ? '#166534' : '#b91c1c', display: 'block', marginBottom: '0.25rem' }}>
+                                                    {report.status === 'approved' ? 'Comentario de moderación:' : report.wasSanctioned ? 'Motivo de sanción:' : 'Motivo de rechazo:'}
                                                 </strong>
-                                                <span style={{ color: '#7f1d1d' }}>{report.rejectionReason}</span>
+                                                <span style={{ color: report.status === 'approved' ? '#14532d' : '#7f1d1d' }}>{report.moderatorComment}</span>
                                             </div>
                                         )}
 
@@ -177,7 +180,25 @@ const ModerateReports = () => {
                                             {report.status === 'pending' || filter === 'all' ? (
                                                 <>
                                                     <button
-                                                        onClick={() => handleModerate(report._id, 'approved')}
+                                                        onClick={() => {
+                                                            Swal.fire({
+                                                                title: '✅ APROBAR REPORTE',
+                                                                text: 'Por favor, ingresa un comentario o justificación para aprobar este reporte (Requerido):',
+                                                                input: 'textarea',
+                                                                showCancelButton: true,
+                                                                confirmButtonText: 'Aprobar',
+                                                                cancelButtonText: 'Cancelar',
+                                                                inputValidator: (value) => {
+                                                                    if (!value || value.trim() === '') {
+                                                                        return 'El comentario es obligatorio para aprobar.';
+                                                                    }
+                                                                }
+                                                            }).then((result) => {
+                                                                if (result.isConfirmed) {
+                                                                    handleModerate(report._id, 'approved', false, result.value);
+                                                                }
+                                                            });
+                                                        }}
                                                         disabled={report.status !== 'pending'}
                                                         style={{
                                                             flex: 1, background: report.status === 'approved' ? '#f1f5f9' : '#dcfce7',
@@ -192,7 +213,26 @@ const ModerateReports = () => {
                                                     </button>
 
                                                     <button
-                                                        onClick={() => handleModerate(report._id, 'rejected')}
+                                                        onClick={() => {
+                                                            Swal.fire({
+                                                                title: '❌ RECHAZAR REPORTE',
+                                                                text: 'Por favor, ingresa el motivo para rechazar este reporte (Requerido):',
+                                                                input: 'textarea',
+                                                                showCancelButton: true,
+                                                                confirmButtonText: 'Rechazar',
+                                                                cancelButtonText: 'Cancelar',
+                                                                confirmButtonColor: 'var(--error)',
+                                                                inputValidator: (value) => {
+                                                                    if (!value || value.trim() === '') {
+                                                                        return 'El motivo es obligatorio para rechazar.';
+                                                                    }
+                                                                }
+                                                            }).then((result) => {
+                                                                if (result.isConfirmed) {
+                                                                    handleModerate(report._id, 'rejected', false, result.value);
+                                                                }
+                                                            });
+                                                        }}
                                                         disabled={report.status !== 'pending'}
                                                         style={{
                                                             flex: 1, background: report.status === 'rejected' ? '#f1f5f9' : '#fee2e2',
@@ -208,10 +248,24 @@ const ModerateReports = () => {
 
                                                     <button
                                                         onClick={() => {
-                                                            const reason = prompt("⚠️ PROCESO DE SANCIÓN\n\nPor favor, ingresa la justificación para sancionar a este usuario. Esto reducirá drásticamente su reputación y añadirá una falta acumulativa.");
-                                                            if (reason) {
-                                                                handleModerate(report._id, 'rejected', true, reason);
-                                                            }
+                                                            Swal.fire({
+                                                                title: '⚠️ PROCESO DE SANCIÓN',
+                                                                text: 'Por favor, ingresa la justificación para sancionar a este usuario. Esto reducirá drásticamente su reputación y añadirá una falta acumulativa (Requerido):',
+                                                                input: 'textarea',
+                                                                showCancelButton: true,
+                                                                confirmButtonText: 'Sancionar',
+                                                                cancelButtonText: 'Cancelar',
+                                                                confirmButtonColor: 'var(--warning)',
+                                                                inputValidator: (value) => {
+                                                                    if (!value || value.trim() === '') {
+                                                                        return 'La justificación es obligatoria para sancionar.';
+                                                                    }
+                                                                }
+                                                            }).then((result) => {
+                                                                if (result.isConfirmed) {
+                                                                    handleModerate(report._id, 'rejected', true, result.value);
+                                                                }
+                                                            });
                                                         }}
                                                         disabled={report.status !== 'pending'}
                                                         style={{

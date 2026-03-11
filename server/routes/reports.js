@@ -141,7 +141,8 @@ router.get('/', auth, async (req, res) => {
 
 // Moderate Report
 router.patch('/:id/moderate', async (req, res) => {
-    const { status, rejectionReason, moderatorId } = req.body;
+    const { status, moderatorComment, moderatorId } = req.body; // Changed from rejectionReason
+    const Sanction = require('../models/Sanction'); // Import Sanction model
     console.log("MODERATION REQUEST BODY:", req.body);
 
     // Robust boolean conversion
@@ -158,13 +159,15 @@ router.patch('/:id/moderate', async (req, res) => {
 
         report.status = status;
         if (status === 'rejected') {
-            report.rejectionReason = rejectionReason;
+            report.moderatorComment = moderatorComment || req.body.rejectionReason;
             if (isSanctioning) {
                 report.wasSanctioned = true;
             }
         } else if (status === 'approved') {
+            report.moderatorComment = moderatorComment; // Store positive feedback if needed
             // Apply Automatic Face Blurring for Approved Reports
             let modified = false;
+            // (Blur logic remains the same)
             if (report.media && report.media.length > 0) {
                 report.media.forEach(item => {
                     if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
@@ -196,19 +199,49 @@ router.patch('/:id/moderate', async (req, res) => {
         if (user) {
             console.log(`[DEBUG] User ${user.username} BEFORE: Rep=${user.reputation}, Sanctions=${user.sanctions}`);
 
+            const isFirstReport = user.reputation === 0;
+
             if (status === 'approved') {
-                user.reputation += 5;
-                if (user.reputation > 100) user.reputation = 100;
+                if (isFirstReport) {
+                    user.reputation = 100;
+                } else {
+                    user.reputation = Math.min(100, user.reputation + 10);
+                }
             } else if (status === 'rejected') {
                 if (isSanctioning) {
-                    if (!report.rejectionReason && !req.body.rejectionReason) {
-                        // Ideally we should validate this before, but let's ensure we save it
+                    if (isFirstReport) {
+                        user.reputation = 25; // 50 base - 25 penalty
+                    } else {
+                        user.reputation = Math.max(1, user.reputation - 25);
                     }
-                    user.sanctions = (user.sanctions || 0) + 1;
-                    user.reputation -= 25; // Sanction penalty
+
+                    // Create Sanction Record
+                    let expiresAt = null;
+                    if (user.sanctions === 0) {
+                        expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+                    } else if (user.sanctions === 1) {
+                        expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+                    } else {
+                        expiresAt = null; // Permanent
+                    }
+
+                    const newSanction = new Sanction({
+                        userId: user._id,
+                        reportId: report._id,
+                        status: 'active',
+                        expiresAt: expiresAt
+                    });
+                    await newSanction.save();
+
+                    user.sanctions += 1;
                     console.log(`[DEBUG] Applied Sanction. New Rep=${user.reputation}, New Sanctions=${user.sanctions}`);
                 } else {
-                    user.reputation -= 1; // Normal rejection penalty
+                    // Normal Rejection
+                    if (isFirstReport) {
+                        user.reputation = 40; // 50 base - 10 penalty
+                    } else {
+                        user.reputation = Math.max(1, user.reputation - 10);
+                    }
                     console.log(`[DEBUG] Applied Normal Rejection. New Rep=${user.reputation}`);
                 }
             }
@@ -221,9 +254,9 @@ router.patch('/:id/moderate', async (req, res) => {
 
             if (isSanctioning) {
                 notifType = 'warning';
-                notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado. Razón: ${rejectionReason || 'Violación de normas'}. Se te han restado puntos y tienes una falta (Total: ${user.sanctions}/3).`;
-            } else if (status === 'rejected' && rejectionReason) {
-                notifMsg += ` Razón: ${rejectionReason}`;
+                notifMsg = `⚠️ HAS SIDO SANCIONADO. Tu reporte de ${report.type} fue rechazado. Razón: ${report.moderatorComment || 'Violación de normas'}. Se te han restado puntos y tienes una falta (Total: ${user.sanctions}/3).`;
+            } else if (report.moderatorComment) {
+                notifMsg += ` Comentario del Moderador: ${report.moderatorComment}`;
             }
 
             const notification = new Notification({
@@ -235,7 +268,7 @@ router.patch('/:id/moderate', async (req, res) => {
             await notification.save();
 
             // Send Email Notification
-            sendReportStatusEmail(user.email, user.username, report.type, status, rejectionReason)
+            sendReportStatusEmail(user.email, user.username, report.type, status, report.moderatorComment, isSanctioning)
                 .catch(err => console.error("Could not send report status email:", err));
 
         } else {

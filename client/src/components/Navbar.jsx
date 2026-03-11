@@ -4,21 +4,27 @@ import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
 import { Bell, User, LogOut, ClipboardList, Moon, Sun } from 'lucide-react';
 import NotificationList from './NotificationList';
+import Swal from 'sweetalert2';
 
 const Navbar = () => {
     const { logout } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
-
     const handleLogoutClick = () => {
-        setShowLogoutModal(true);
-    };
-
-    const confirmLogout = () => {
-        setShowLogoutModal(false);
-        logout();
-        navigate('/');
+        Swal.fire({
+            title: '¿Cerrar Sesión?',
+            text: '¿Estás seguro de que quieres salir?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--error)',
+            confirmButtonText: 'Sí, Salir',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                logout();
+                navigate('/');
+            }
+        });
     };
 
     return (
@@ -44,25 +50,6 @@ const Navbar = () => {
                 </div>
             </nav>
 
-            {/* Logout Confirmation Modal */}
-            {showLogoutModal && (
-                <div className="modal-overlay" onClick={() => setShowLogoutModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>¿Cerrar Sesión?</h3>
-                        <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
-                            ¿Estás seguro de que quieres salir?
-                        </p>
-                        <div className="modal-actions">
-                            <button className="secondary" onClick={() => setShowLogoutModal(false)}>
-                                Cancelar
-                            </button>
-                            <button className="danger" onClick={confirmLogout}>
-                                Sí, Salir
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 };

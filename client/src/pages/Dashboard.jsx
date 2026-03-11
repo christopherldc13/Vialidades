@@ -133,6 +133,13 @@ const Dashboard = () => {
                                     </div>
                                     <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1rem', height: '3rem', overflow: 'hidden' }}>{report.description}</p>
 
+                                    {report.moderatorComment && (
+                                        <div style={{ padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `3px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, borderRadius: '4px', fontSize: '0.85rem' }}>
+                                            <strong style={{ color: report.status === 'approved' ? '#166534' : '#991b1b', display: 'block', marginBottom: '0.25rem' }}>{report.status === 'approved' ? 'Comentario del moderador:' : 'Motivo:'}</strong>
+                                            <span style={{ color: '#475569' }}>{report.moderatorComment}</span>
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                             📍 {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}

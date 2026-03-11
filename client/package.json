@@ -20,9 +20,12 @@
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.0",
     "react-webcam": "^7.2.0",
+    "sweetalert2": "^11.26.22",
+    "sweetalert2-react-content": "^5.1.1",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

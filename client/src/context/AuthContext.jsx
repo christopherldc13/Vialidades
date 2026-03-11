@@ -42,7 +42,11 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (err) {
             console.error("Login Error:", err);
-            return { success: false, msg: err.response?.data?.msg || 'Login failed' };
+            return {
+                success: false,
+                msg: err.response?.data?.msg || 'Login failed',
+                sanctionExpiresAt: err.response?.data?.sanctionExpiresAt
+            };
         }
     };
 

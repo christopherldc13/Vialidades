@@ -2,6 +2,8 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Bell, X, Trash2 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
+import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 
 const NotificationList = () => {
     const [notifications, setNotifications] = useState([]);
@@ -39,14 +41,27 @@ const NotificationList = () => {
 
     const deleteNotification = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm('¿Estás seguro de que deseas eliminar esta notificación?')) return;
 
-        try {
-            await axios.delete(`/api/notifications/${id}`);
-            setNotifications(prev => prev.filter(n => n._id !== id));
-        } catch (err) {
-            console.error(err);
-        }
+        Swal.fire({
+            title: 'Eliminar Notificación',
+            text: '¿Estás seguro de que deseas eliminar esta notificación?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: 'var(--error)',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.delete(`/api/notifications/${id}`);
+                    setNotifications(prev => prev.filter(n => n._id !== id));
+                    toast.success("Notificación eliminada");
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Error al eliminar la notificación");
+                }
+            }
+        });
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;

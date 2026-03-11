@@ -11,6 +11,7 @@ import CreateReport from './pages/CreateReport';
 import Profile from './pages/Profile';
 import ModerateReports from './pages/ModerateReports';
 import LandingPage from './pages/LandingPage';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -53,6 +54,7 @@ function App() {
               } />
             </Routes>
           </div>
+          <Toaster position="top-right" />
         </Router>
       </AuthProvider>
     </ThemeProvider>

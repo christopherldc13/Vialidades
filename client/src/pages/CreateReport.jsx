@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { Camera, Video } from 'lucide-react';
 import DraggableMap from '../components/DraggableMap';
+import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const CreateReport = () => {
     const [type, setType] = useState('Traffic');
@@ -82,7 +84,7 @@ const CreateReport = () => {
                 const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB video, 10MB image
 
                 if (file.size > maxSize) {
-                    alert(`El archivo ${file.name} es demasiado grande. Máximo ${isVideo ? '100MB' : '10MB'}.`);
+                    toast.error(`El archivo ${file.name} es demasiado grande. Máximo ${isVideo ? '100MB' : '10MB'}.`);
                     return;
                 }
                 validFiles.push(file);
@@ -104,15 +106,14 @@ const CreateReport = () => {
         setPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     };
 
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!user) return alert('Debes iniciar sesión para reportar.');
-        if (!location) return alert('Por favor selecciona la ubicación.');
+        if (!user) { toast.error('Debes iniciar sesión para reportar.'); return; }
+        if (!location) { toast.error('Por favor selecciona la ubicación.'); return; }
 
         const finalType = type === 'Other' ? customType : type;
-        if (!finalType.trim()) return alert('Por favor especifica el tipo de incidente.');
+        if (!finalType.trim()) { toast.error('Por favor especifica el tipo de incidente.'); return; }
 
         const formData = new FormData();
         // userId is handled by backend from token
@@ -131,11 +132,33 @@ const CreateReport = () => {
             await axios.post('/api/reports', formData);
             setLoading(false);
             localStorage.removeItem('report_draft'); // Clear draft on success
-            setShowSuccessModal(true); // Show modal instead of navigating immediately
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Reporte Enviado!',
+                text: 'Gracias por ayudar a la comunidad. Tu reporte será revisado pronto.',
+                showCancelButton: true,
+                confirmButtonText: 'Ir al Panel Principal',
+                cancelButtonText: 'Crear Otro Reporte',
+                confirmButtonColor: 'var(--primary)'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    navigate('/dashboard');
+                } else {
+                    setType('Traffic');
+                    setCustomType('');
+                    setDescription('');
+                    setLocation(null);
+                    setAddress('');
+                    setFiles([]);
+                    previews.forEach(url => URL.revokeObjectURL(url));
+                    setPreviews([]);
+                }
+            });
         } catch (err) {
             console.error(err);
             setLoading(false);
-            alert('Error al crear reporte: ' + (err.response?.data?.msg || err.message));
+            toast.error('Error al crear reporte: ' + (err.response?.data?.msg || err.message));
         }
     };
 
@@ -405,41 +428,6 @@ const CreateReport = () => {
                             {loading ? 'Enviando Reporte...' : 'Enviar Reporte'}
                         </button>
                     </form>
-
-                    {/* Success Modal Overlay */}
-                    {showSuccessModal && (
-                        <div className="modal-overlay">
-                            <div className="modal-content">
-                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-                                <h3>¡Reporte Enviado!</h3>
-                                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
-                                    Gracias por ayudar a la comunidad. Tu reporte será revisado pronto.
-                                </p>
-                                <div className="modal-actions" style={{ flexDirection: 'column', gap: '0.5rem' }}>
-                                    <button onClick={() => navigate('/dashboard')} className="primary">
-                                        Ir al Panel Principal
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowSuccessModal(false);
-                                            setType('Traffic');
-                                            setCustomType('');
-                                            setDescription('');
-                                            setLocation(null);
-                                            setAddress('');
-                                            setFiles([]);
-                                            previews.forEach(url => URL.revokeObjectURL(url));
-                                            setPreviews([]);
-                                        }}
-                                        className="secondary"
-                                        style={{ width: '100%' }}
-                                    >
-                                        Crear Otro Reporte
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

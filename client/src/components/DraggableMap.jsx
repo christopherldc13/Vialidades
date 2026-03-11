@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import toast from 'react-hot-toast';
 
 // Fix for default marker icon in React Leaflet
 let DefaultIcon = L.icon({
@@ -97,11 +98,11 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                 setZoom(13);
                 fetchAddress(newPos.lat, newPos.lng); // Fetch address for IP location too
                 // Inform the user that this is just an approximation
-                alert("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el pin 📍 a tu ubicación exacta.");
+                toast("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el pin 📍 a tu ubicación exacta.", { icon: '⚠️' });
             }
         } catch (ipError) {
             console.error("IP Geolocation failed:", ipError);
-            alert("No se pudo determinar la ubicación. Por favor selecciónala manualmente en el mapa.");
+            toast.error("No se pudo determinar la ubicación. Por favor selecciónala manualmente en el mapa.");
         }
         setLoadingLocation(false);
     };
@@ -128,7 +129,7 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         } else {
-            alert("Tu navegador no soporta geolocalización.");
+            toast.error("Tu navegador no soporta geolocalización.");
             fetchIpLocation();
         }
     };

@@ -4,6 +4,7 @@ import axios from 'axios';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
 import { MapPin, Shield, Users, ArrowRight, Sun, Moon, Layers } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -55,7 +56,12 @@ const LandingPage = () => {
     return (
         <div className="landing-container">
             {/* Navigation */}
-            <nav className="landing-nav">
+            <motion.nav
+                className="landing-nav"
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+            >
                 <div className="nav-brand">
                     <MapPin size={24} className="brand-icon" />
                     <span>Vialidades</span>
@@ -67,145 +73,214 @@ const LandingPage = () => {
                     <Link to="/login" className="nav-btn login">Iniciar Sesión</Link>
                     <Link to="/register" className="nav-btn register">Registrarme</Link>
                 </div>
-            </nav>
+            </motion.nav>
 
             {/* Hero Section */}
             <header className="hero-section">
-                <div className="hero-content">
-                    <h1>Tu Comunidad, <span>Tu Seguridad Vial</span></h1>
-                    <p>
-                        <strong>Vialidades de Tránsito</strong> es la plataforma líder para reportar y monitorear incidentes viales en tiempo real.
-                        Únete a miles de ciudadanos mejorando nuestras calles.
-                    </p>
-                    <div className="hero-actions">
+                <div className="hero-glow"></div>
+                <motion.div
+                    className="hero-content"
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                >
+                    <motion.div
+                        className="landing-badge"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                    >
+                        <Shield size={16} /> Plataforma Ciudadana 2.0
+                    </motion.div>
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                    >Tu Comunidad, <span>Tu Seguridad Vial</span></motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.8, delay: 0.5 }}
+                    >
+                        <strong>Vialidades de Tránsito</strong> es la plataforma más avanzada para reportar y monitorear incidentes viales en tiempo real.
+                        Únete a miles de ciudadanos mejorando la movilidad de nuestra ciudad.
+                    </motion.p>
+                    <motion.div
+                        className="hero-actions"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.7 }}
+                    >
                         <Link to="/register" className="cta-button">
                             Comenzar Ahora <ArrowRight size={20} />
                         </Link>
-                    </div>
-                </div>
-                <div className="hero-image" style={{ position: 'relative', overflow: 'hidden', borderRadius: '1rem', border: '1px solid var(--border-color)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', display: 'flex', flexDirection: 'column' }}>
-                    {/* Premium Title Overlay - Now Outside the Map Area but inside the container */}
-                    <div style={{
-                        background: theme === 'dark' ? 'rgba(30,30,30,0.8)' : 'rgba(255,255,255,0.9)',
-                        padding: '1rem 1.5rem',
-                        width: '100%',
-                        zIndex: 2,
-                        textAlign: 'center'
-                    }}>
-                        <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold', color: theme === 'dark' ? 'white' : '#1e2025' }}>
-                            Mapa de Incidentes
-                        </h2>
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                            Reportes ciudadanos activos en vivo
-                        </p>
-                    </div>
+                    </motion.div>
+                </motion.div>
 
-                    <MapContainer
-                        center={[18.88, -70.4]} // Approximate center of Dominican Republic
-                        zoom={8}                 // Slightly closer default zoom
-                        minZoom={8}              // Prevent zooming out too far
-                        maxBounds={[[17.0, -72.5], [20.5, -68.0]]} // Lock view to DR bounds
-                        scrollWheelZoom={true}
-                        zoomControl={true}
-                        attributionControl={false}
-                        style={{ flex: 1, width: '100%', minHeight: '400px', zIndex: 1, backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f0f0f0' }}
-                    >
-                        {mapType === 'satellite' ? (
-                            <TileLayer
-                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-                            />
-                        ) : theme === 'dark' ? (
-                            <TileLayer
-                                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                            />
-                        ) : (
-                            <TileLayer
-                                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                            />
-                        )}
+                <motion.div
+                    className="hero-image"
+                    initial={{ opacity: 0, scale: 0.9, x: 30 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+                >
+                    <div className="map-showcase-container">
+                        <div className="map-inner-wrapper">
+                            <MapContainer
+                                center={[18.88, -70.4]} // Approximate center of Dominican Republic
+                                zoom={8}
+                                minZoom={8}
+                                maxBounds={[[17.0, -72.5], [20.5, -68.0]]}
+                                scrollWheelZoom={true}
+                                zoomControl={false} // Disable default controls to look cleaner
+                                attributionControl={false}
+                                style={{ flex: 1, width: '100%', height: '100%', zIndex: 1, backgroundColor: theme === 'dark' ? '#0a0a0a' : '#f8fafc' }}
+                            >
+                                {mapType === 'satellite' ? (
+                                    <TileLayer
+                                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                                    />
+                                ) : theme === 'dark' ? (
+                                    <TileLayer
+                                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                                    />
+                                ) : (
+                                    <TileLayer
+                                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                                    />
+                                )}
 
-                        {heatPoints.length > 0 && <HeatMapLayer points={heatPoints} />}
+                                {heatPoints.length > 0 && <HeatMapLayer points={heatPoints} />}
 
-                        {/* Map Type Toggle - Moved INSIDE the map container */}
-                        <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '10px',
-                            zIndex: 1000,
-                            display: 'flex',
-                            gap: '4px',
-                            padding: '4px'
-                        }}>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setMapType('standard'); }}
-                                style={{
-                                    padding: '6px 14px',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    background: mapType === 'standard' ? 'var(--primary)' : 'transparent',
-                                    color: mapType === 'standard' ? 'white' : (mapType === 'satellite' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025')),
-                                    fontSize: '0.75rem',
-                                    fontWeight: '700',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
+                                {/* Overlay Gradient to fade map into background slowly */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '150px',
+                                    background: theme === 'dark' ? 'linear-gradient(to top, rgba(10,10,10,1), transparent)' : 'linear-gradient(to top, rgba(248,250,252,1), transparent)',
+                                    pointerEvents: 'none',
+                                    zIndex: 5
+                                }}></div>
+
+                                {/* Map Type Toggle */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '16px',
+                                    right: '16px',
+                                    zIndex: 1000,
+                                    display: 'flex',
+                                    gap: '8px',
+                                    padding: '6px',
+                                    background: theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: '12px',
+                                    border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
+                                }}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setMapType('standard'); }}
+                                        style={{
+                                            padding: '8px 16px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            background: mapType === 'standard' ? 'var(--primary)' : 'transparent',
+                                            color: mapType === 'standard' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'),
+                                            fontSize: '0.8rem',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <MapPin size={14} /> Callejero
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setMapType('satellite'); }}
+                                        style={{
+                                            padding: '8px 16px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            background: mapType === 'satellite' ? 'var(--primary)' : 'transparent',
+                                            color: mapType === 'satellite' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'),
+                                            fontSize: '0.8rem',
+                                            fontWeight: '700',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <Layers size={14} /> Satélite
+                                    </button>
+                                </div>
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '24px',
+                                    right: '24px',
+                                    zIndex: 10,
+                                    background: theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+                                    padding: '0.75rem 1.25rem',
+                                    borderRadius: '2rem',
+                                    backdropFilter: 'blur(10px)',
+                                    color: theme === 'dark' ? 'white' : '#1e2025',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '6px',
-                                    boxShadow: mapType === 'standard' ? '0 4px 12px rgba(99, 102, 241, 0.4)' : 'none',
-                                    textShadow: mapType === 'satellite' ? '0 1px 4px rgba(0,0,0,0.8)' : 'none'
-                                }}
-                            >
-                                <MapPin size={14} /> Callejero
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setMapType('satellite'); }}
-                                style={{
-                                    padding: '6px 14px',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    background: mapType === 'satellite' ? 'var(--primary)' : 'transparent',
-                                    color: mapType === 'satellite' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'),
-                                    fontSize: '0.75rem',
-                                    fontWeight: '700',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    boxShadow: mapType === 'satellite' ? '0 4px 12px rgba(99, 102, 241, 0.4)' : 'none'
-                                }}
-                            >
-                                <Layers size={14} /> Satélite
-                            </button>
+                                    gap: '0.5rem',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                                }}>
+                                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 10px #ef4444' }}></span>
+                                    Radio Activos
+                                </div>
+                            </MapContainer>
                         </div>
-                    </MapContainer>
-
-                    {/* Small transparent overlay text to explain what they are seeing */}
-                    <div style={{ position: 'absolute', bottom: '1rem', right: '1rem', zIndex: 10, background: 'rgba(0,0,0,0.6)', padding: '0.5rem 1rem', borderRadius: '2rem', backdropFilter: 'blur(10px)', color: 'white', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'red', display: 'inline-block', boxShadow: '0 0 10px red' }}></span>
-                        En Vivo
                     </div>
-                </div>
+                </motion.div>
             </header>
 
             {/* Features (Optional but adds to the "Web Page" feel) */}
             <section className="features-section">
-                <div className="feature-card">
+                <motion.div
+                    className="feature-card"
+                    whileHover={{ y: -10, scale: 1.02 }}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.6 }}
+                >
                     <div className="icon-bg"><MapPin size={24} /></div>
                     <h3>Reporta Incidentes</h3>
                     <p>Notifica accidentes, tráfico o peligros en la vía al instante.</p>
-                </div>
-                <div className="feature-card">
+                </motion.div>
+                <motion.div
+                    className="feature-card"
+                    whileHover={{ y: -10, scale: 1.02 }}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                >
                     <div className="icon-bg"><Shield size={24} /></div>
                     <h3>Gana Reputación</h3>
                     <p>Contribuye con reportes veraces y sube de nivel en la comunidad.</p>
-                </div>
-                <div className="feature-card">
+                </motion.div>
+                <motion.div
+                    className="feature-card"
+                    whileHover={{ y: -10, scale: 1.02 }}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                >
                     <div className="icon-bg"><Users size={24} /></div>
                     <h3>Evita el Tráfico</h3>
                     <p>Consulta el estado de las vías antes de salir de casa.</p>
-                </div>
+                </motion.div>
             </section>
 
             <footer className="landing-footer">

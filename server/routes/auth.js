@@ -213,6 +213,37 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
+        // --- SANCTIONS CHECK ---
+        const Sanction = require('../models/Sanction');
+        const activeSanctions = await Sanction.find({ userId: user.id, status: 'active' });
+
+        let isBlocked = false;
+        let blockMessage = '';
+        let sanctionExpiresAt = null;
+
+        for (let sanction of activeSanctions) {
+            if (sanction.expiresAt && sanction.expiresAt < new Date()) {
+                // Sanction expired, set to inactive
+                sanction.status = 'inactive';
+                await sanction.save();
+            } else {
+                // Sanction still active
+                isBlocked = true;
+                if (!sanction.expiresAt) {
+                    blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
+                } else {
+                    blockMessage = `Tu cuenta está suspendida temporalmente hasta ${sanction.expiresAt.toLocaleString()}.`;
+                    sanctionExpiresAt = sanction.expiresAt;
+                }
+                break;
+            }
+        }
+
+        if (isBlocked) {
+            return res.status(403).json({ msg: blockMessage, sanctionExpiresAt });
+        }
+        // --- END SANCTIONS CHECK ---
+
         const payload = {
             user: {
                 id: user.id,

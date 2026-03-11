@@ -174,42 +174,50 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
 /**
  * Send Notification when Report Status Changes
  */
-exports.sendReportStatusEmail = async (email, username, reportType, status, rejectionReason = '') => {
+exports.sendReportStatusEmail = async (email, username, reportType, status, moderatorComment = '', isSanctioned = false) => {
     try {
         let title = "Actualización de tu Reporte";
-        let statusText = "";
-        let statusColor = "";
+        let statusText = "Revisado";
+        let statusColor = "#6366f1"; // default
 
         if (status === 'approved') {
             title = "Reporte Aprobado ✅";
             statusText = "Aprobado";
             statusColor = "#10b981"; // success
         } else if (status === 'rejected') {
-            title = "Reporte Rechazado ❌";
-            statusText = "Rechazado";
-            statusColor = "#ef4444"; // error
+            if (isSanctioned) {
+                title = "Has sido Sancionado ⚠️";
+                statusText = "Rechazado y Sancionado";
+                statusColor = "#b91c1c"; // dark red
+            } else {
+                title = "Reporte Rechazado ❌";
+                statusText = "Rechazado";
+                statusColor = "#ef4444"; // error
+            }
         }
 
-        const reasonHtml = rejectionReason && status === 'rejected' ? `
-            <div class="info-box" style="border-left-color: ${statusColor}; background-color: #fef2f2;">
-                <strong>Motivo del moderador:</strong><br>
-                ${rejectionReason}
+        const reasonHtml = moderatorComment ? `
+            <div class="info-box" style="border-left-color: ${statusColor}; background-color: ${status === 'approved' ? '#f0fdf4' : '#fef2f2'}; margin-top: 20px;">
+                <strong style="color: ${statusColor}; display: block; margin-bottom: 5px;">
+                    ${status === 'approved' ? 'Comentario del moderador:' : isSanctioned ? 'Motivo de la sanción:' : 'Motivo del rechazo:'}
+                </strong>
+                <span style="color: #475569;">${moderatorComment}</span>
             </div>
         ` : '';
 
         const content = `
             <p>Hola <span class="highlight">${username}</span>,</p>
             <p>Queremos informarte que tu reciente reporte de <strong>"${reportType}"</strong> ha sido revisado por nuestro equipo de moderación.</p>
-            <div class="info-box" style="border-left-color: ${statusColor};">
-                <strong>Estado Actual:</strong> <span style="color: ${statusColor}; font-weight: 700; text-transform: uppercase;">${statusText}</span>
+            <div class="info-box" style="border-left-color: ${statusColor}; display: inline-block; padding: 10px 20px; margin-bottom: 0;">
+                <strong>Estado Actual:</strong> <span style="color: ${statusColor}; font-weight: 800; text-transform: uppercase;">${statusText}</span>
             </div>
             ${reasonHtml}
-            <p>Agradecemos tu constante colaboración para mantener informada a la comunidad.</p>
+            <p style="margin-top: 24px;">Agradecemos tu constante colaboración para mantener informada a la comunidad.</p>
         `;
 
         const actionButton = `
             <div class="btn-container">
-                <a href="http://localhost:5173/dashboard?view=my" class="btn">Ver mis Reportes</a>
+                <a href="http://localhost:5173/dashboard?view=my" class="btn" style="background-color: ${statusColor}; box-shadow: 0 4px 6px -1px ${statusColor}40;">Ver mis Reportes</a>
             </div>
         `;
 

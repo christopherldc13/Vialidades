@@ -3,6 +3,20 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
 import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import Swal from 'sweetalert2';
+
+const calculateAge = (dobString) => {
+    if (!dobString) return '';
+    const today = new Date();
+    const dob = new Date(dobString);
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+    }
+    return age;
+};
 
 const Profile = () => {
     const { user, loading } = useContext(AuthContext);
@@ -36,7 +50,6 @@ const Profile = () => {
     const repData = getReputationData(user.reputation);
 
     const [uploading, setUploading] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -66,11 +79,11 @@ const Profile = () => {
             // Give user visual feedback
             setIsEditing(false);
             setSaving(false);
-            alert('Perfil actualizado con éxito.');
+            toast.success('Perfil actualizado con éxito.');
         } catch (error) {
             setSaving(false);
             console.error('Error saving profile:', error);
-            alert('Error al guardar el perfil: ' + (error.response?.data?.msg || error.message));
+            toast.error('Error al guardar el perfil: ' + (error.response?.data?.msg || error.message));
         }
     };
 
@@ -100,7 +113,13 @@ const Profile = () => {
             });
 
             setUploading(false);
-            setShowSuccessModal(true);
+            Swal.fire({
+                icon: 'success',
+                title: '¡Foto Actualizada!',
+                text: 'Tu imagen de perfil se ha cambiado con éxito.',
+                confirmButtonText: 'Genial',
+                confirmButtonColor: 'var(--primary)'
+            });
 
             // Reload user data from context or update locally after delay or modal close
             // For now, we wait for user to close modal to reload
@@ -108,7 +127,7 @@ const Profile = () => {
             setUploading(false);
             console.error("Upload error", err);
             const msg = err.response?.data?.msg || err.message || "Error al subir la imagen";
-            alert(`Error: ${msg}`);
+            toast.error(`Error: ${msg}`);
         }
     };
 
@@ -247,7 +266,18 @@ const Profile = () => {
                             {isEditing ? (
                                 <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
                             ) : (
-                                <div className="profile-info-value">{user.birthDate ? new Date(user.birthDate).toLocaleDateString() : 'No especificada'}</div>
+                                <div className="profile-info-value">
+                                    {user.birthDate ? (
+                                        <>
+                                            {new Date(user.birthDate).toLocaleDateString()}{' '}
+                                            <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9em' }}>
+                                                ({calculateAge(user.birthDate)} años)
+                                            </span>
+                                        </>
+                                    ) : (
+                                        'No especificada'
+                                    )}
+                                </div>
                             )}
                         </div>
                         <div className="profile-info-item full-width">
@@ -272,11 +302,19 @@ const Profile = () => {
                     )}
 
                     <div className="stats-grid">
-                        <div className={`rep-badge ${repData.class}`}>
-                            <div style={{ marginBottom: '0.5rem' }}>{repData.icon}</div>
-                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800' }}>{user.reputation || 0}</span>
-                            <span style={{ fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>{repData.label}</span>
-                        </div>
+                        {user.reputation === 0 ? (
+                            <div className="rep-badge rep-average" style={{ padding: '2rem 1rem' }}>
+                                <div style={{ marginBottom: '0.5rem' }}><Minus size={32} /></div>
+                                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold' }}>Reputación no disponible</span>
+                                <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Aún no tienes reportes evaluados</span>
+                            </div>
+                        ) : (
+                            <div className={`rep-badge ${repData.class}`}>
+                                <div style={{ marginBottom: '0.5rem' }}>{repData.icon}</div>
+                                <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800' }}>{user.reputation}</span>
+                                <span style={{ textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>{repData.label}</span>
+                            </div>
+                        )}
                         <div style={{ padding: '1rem', background: 'var(--bg-input)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <span style={{ display: 'block', fontSize: '1.25rem', fontWeight: '700', textTransform: 'capitalize', color: 'var(--text-main)' }}>{user.role}</span>
                             <span className="text-sm text-muted">Tipo Cuenta</span>
@@ -287,28 +325,6 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* Success Modal */}
-                    {showSuccessModal && (
-                        <div className="modal-overlay" style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            background: 'rgba(0,0,0,0.5)', display: 'flex',
-                            justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                        }}>
-                            <div className="modal-content" style={{ maxWidth: '300px' }}>
-                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-                                <h3>¡Foto Actualizada!</h3>
-                                <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Tu imagen de perfil se ha cambiado con éxito.</p>
-                                <button
-                                    onClick={() => setShowSuccessModal(false)}
-                                    className="primary"
-                                >
-                                    Genial
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Edit mode already implemented above */}
                 </div>
             </div>
         </div>
