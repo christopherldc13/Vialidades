@@ -5,6 +5,7 @@ import AuthContext from '../context/AuthContext';
 import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { Skeleton, Box } from '@mui/material';
 
 const calculateAge = (dobString) => {
     if (!dobString) return '';
@@ -23,10 +24,39 @@ const Profile = () => {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-                <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                <p style={{ marginTop: '1rem', color: 'var(--text-light)' }}>Cargando Perfil...</p>
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div>
+                <Navbar />
+                <div className="auth-container profile-container">
+                    <div className="card profile-card">
+                        {/* Avatar Skeleton */}
+                        <Box sx={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}>
+                            <Skeleton variant="circular" width={120} height={120} animation="wave" />
+                        </Box>
+
+                        {/* Name & Email Skeletons */}
+                        <Box sx={{ mb: 4 }}>
+                            <Skeleton variant="text" width="40%" height={40} sx={{ mx: 'auto', mb: 1 }} animation="wave" />
+                            <Skeleton variant="text" width="60%" height={20} sx={{ mx: 'auto' }} animation="wave" />
+                        </Box>
+
+                        {/* Info Grid Skeletons */}
+                        <div className="profile-info-grid">
+                            {Array.from(new Array(5)).map((_, i) => (
+                                <Box key={i} className="profile-info-item">
+                                    <Skeleton variant="text" width="40%" height={15} sx={{ mb: 1 }} animation="wave" />
+                                    <Skeleton variant="text" width="80%" height={25} animation="wave" />
+                                </Box>
+                            ))}
+                        </div>
+
+                        {/* Stats Grid Skeletons */}
+                        <div className="stats-grid" style={{ marginTop: '2rem' }}>
+                            <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 'var(--radius)' }} animation="wave" />
+                            <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 'var(--radius)' }} animation="wave" />
+                            <Skeleton variant="rectangular" height={100} sx={{ borderRadius: 'var(--radius)' }} animation="wave" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

@@ -4,12 +4,14 @@ import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import { Plus } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Skeleton, Box } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 
 
 
 const Dashboard = () => {
     const [reports, setReports] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0 });
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
@@ -19,6 +21,7 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchReports = async () => {
             try {
+                setLoading(true);
                 let res;
                 if (isModerator) {
                     // Moderator: Get stats (using pending and all logic)
@@ -44,6 +47,8 @@ const Dashboard = () => {
                 }
             } catch (err) {
                 console.error("Error fetching reports:", err);
+            } finally {
+                setLoading(false);
             }
         };
         if (user) fetchReports();
@@ -119,35 +124,55 @@ const Dashboard = () => {
                 ) : (
                     /* User Grid */
                     <div className="report-grid">
-                        {reports.map((report) => (
-                            <div key={report._id} className="report-card modern-report-card">
-                                <div className="report-image-container">
-                                    <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
-                                </div>
-                                <div className="report-content">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                                        <h3 style={{ fontSize: '1.25rem' }}>{report.type === 'Traffic' ? 'Tráfico' : report.type === 'Accident' ? 'Accidente' : report.type === 'Violation' ? 'Infracción' : report.type === 'Hazard' ? 'Peligro' : report.type}</h3>
-                                        <span className={`status-badge status-${report.wasSanctioned ? 'sanctioned' : report.status}`}>
-                                            {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
-                                        </span>
+                        {loading ? (
+                            // Skeleton realization
+                            Array.from(new Array(6)).map((_, index) => (
+                                <Box key={index} className="report-card modern-report-card">
+                                    <Skeleton variant="rectangular" height={220} animation="wave" />
+                                    <Box sx={{ p: 'var(--space-md)' }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                            <Skeleton variant="text" width="60%" height={30} animation="wave" />
+                                            <Skeleton variant="rounded" width={80} height={24} animation="wave" />
+                                        </Box>
+                                        <Skeleton variant="text" width="100%" height={20} animation="wave" />
+                                        <Skeleton variant="text" width="80%" height={20} animation="wave" />
+                                        <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #f1f5f9' }}>
+                                            <Skeleton variant="text" width="40%" height={15} animation="wave" />
+                                        </Box>
+                                    </Box>
+                                </Box>
+                            ))
+                        ) : (
+                            reports.map((report) => (
+                                <div key={report._id} className="report-card modern-report-card">
+                                    <div className="report-image-container">
+                                        <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
                                     </div>
-                                    <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1rem', height: '3rem', overflow: 'hidden' }}>{report.description}</p>
-
-                                    {report.moderatorComment && (
-                                        <div style={{ padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `3px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, borderRadius: '4px', fontSize: '0.85rem' }}>
-                                            <strong style={{ color: report.status === 'approved' ? '#166534' : '#991b1b', display: 'block', marginBottom: '0.25rem' }}>{report.status === 'approved' ? 'Comentario del moderador:' : 'Motivo:'}</strong>
-                                            <span style={{ color: '#475569' }}>{report.moderatorComment}</span>
+                                    <div className="report-content">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                                            <h3 style={{ fontSize: '1.25rem' }}>{report.type === 'Traffic' ? 'Tráfico' : report.type === 'Accident' ? 'Accidente' : report.type === 'Violation' ? 'Infracción' : report.type === 'Hazard' ? 'Peligro' : report.type}</h3>
+                                            <span className={`status-badge status-${report.wasSanctioned ? 'sanctioned' : report.status}`}>
+                                                {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
+                                            </span>
                                         </div>
-                                    )}
+                                        <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1rem', height: '3rem', overflow: 'hidden' }}>{report.description}</p>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                            📍 {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
+                                        {report.moderatorComment && (
+                                            <div style={{ padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `3px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, borderRadius: '4px', fontSize: '0.85rem' }}>
+                                                <strong style={{ color: report.status === 'approved' ? '#166534' : '#991b1b', display: 'block', marginBottom: '0.25rem' }}>{report.status === 'approved' ? 'Comentario del moderador:' : 'Motivo:'}</strong>
+                                                <span style={{ color: '#475569' }}>{report.moderatorComment}</span>
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                📍 {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 )}
 
@@ -160,6 +185,7 @@ const Dashboard = () => {
 
             {!isModerator && (
                 <Link to="/create-report" className="fab">
+                    <span className="fab-tooltip">Crea un Reporte</span>
                     <Plus size={32} />
                 </Link>
             )}

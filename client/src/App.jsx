@@ -54,6 +54,13 @@ function App() {
               } />
             </Routes>
           </div>
+          <div className="fixed-footer">
+            <div className="footer-content">
+              <span className="footer-dot"></span>
+              Desarrollado por Vialidades
+              <span className="footer-dot"></span>
+            </div>
+          </div>
           <Toaster position="top-right" />
         </Router>
       </AuthProvider>

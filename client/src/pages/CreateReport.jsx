@@ -7,6 +7,38 @@ import { Camera, Video } from 'lucide-react';
 import DraggableMap from '../components/DraggableMap';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { Box, LinearProgress, Typography } from '@mui/material';
+
+function LinearProgressWithLabel(props) {
+    return (
+        <Box sx={{ width: '100%', mt: 2, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+                    Subiendo archivos...
+                </Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                <Typography variant="body2" sx={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                    {`${Math.round(props.value)}%`}
+                </Typography>
+            </Box>
+            <Box sx={{ width: '100%' }}>
+                <LinearProgress 
+                    variant="determinate" 
+                    {...props} 
+                    sx={{ 
+                        height: 8, 
+                        borderRadius: 4,
+                        backgroundColor: 'var(--bg-input)',
+                        '& .MuiLinearProgress-bar': {
+                            borderRadius: 4,
+                            backgroundColor: 'var(--primary)',
+                        }
+                    }} 
+                />
+            </Box>
+        </Box>
+    );
+}
 
 const CreateReport = () => {
     const [type, setType] = useState('Traffic');
@@ -19,6 +51,7 @@ const CreateReport = () => {
     const [files, setFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const { user, loading: authLoading } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -129,7 +162,15 @@ const CreateReport = () => {
 
         try {
             setLoading(true);
-            await axios.post('/api/reports', formData);
+            setUploadProgress(0);
+            
+            await axios.post('/api/reports', formData, {
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    setUploadProgress(percentCompleted);
+                }
+            });
+            
             setLoading(false);
             localStorage.removeItem('report_draft'); // Clear draft on success
 
@@ -424,8 +465,10 @@ const CreateReport = () => {
                             </div>
                         </div>
 
+                        {loading && <LinearProgressWithLabel value={uploadProgress} />}
+
                         <button type="submit" disabled={loading} style={{ opacity: loading ? 0.7 : 1, marginTop: '1.5rem' }}>
-                            {loading ? 'Enviando Reporte...' : 'Enviar Reporte'}
+                            {loading ? (uploadProgress < 100 ? 'Subiendo...' : 'Procesando...') : 'Enviar Reporte'}
                         </button>
                     </form>
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { Bell, X, Trash2 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
@@ -9,6 +9,7 @@ const NotificationList = ({ className }) => {
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const { user } = useContext(AuthContext);
+    const dropdownRef = useRef(null);
 
     const fetchNotifications = async () => {
         try {
@@ -18,6 +19,24 @@ const NotificationList = ({ className }) => {
             console.error(err);
         }
     };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+
+        if (showDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showDropdown]);
 
     useEffect(() => {
         if (user) {
@@ -67,7 +86,7 @@ const NotificationList = ({ className }) => {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: '100%' }}>
+        <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', height: '100%' }}>
             <button
                 className={className}
                 style={{ position: 'relative', outline: 'none' }}
@@ -94,12 +113,12 @@ const NotificationList = ({ className }) => {
                         width: 'clamp(280px, 90vw, 360px)', maxHeight: '400px', overflowY: 'auto',
                         background: 'var(--surface-solid)', /* Force matched background */
                         boxShadow: 'var(--shadow-xl)',
-                        borderRadius: '12px', border: '1px solid #e2e8f0',
+                        borderRadius: '12px', border: '1px solid var(--border-color)',
                         zIndex: 1000, marginTop: '10px'
                     }}>
                         <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>Notificaciones</h4>
-                            <X size={16} style={{ cursor: 'pointer', color: '#64748b' }} onClick={() => setShowDropdown(false)} />
+                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Notificaciones</h4>
+                            <X size={16} style={{ cursor: 'pointer', color: 'var(--text-light)' }} onClick={() => setShowDropdown(false)} />
                         </div>
                         {notifications.length === 0 ? (
                             <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
@@ -126,10 +145,10 @@ const NotificationList = ({ className }) => {
                                         display: notification.read ? 'none' : 'block'
                                     }} />
                                     <div>
-                                        <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.4', fontWeight: notification.read ? '400' : '600' }}>
+                                        <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.4', fontWeight: notification.read ? '400' : '600' }}>
                                             {notification.message}
                                         </p>
-                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                             {new Date(notification.createdAt).toLocaleDateString()} • {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>

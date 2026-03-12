@@ -40,6 +40,7 @@
   --space-md: clamp(1rem, 2vw, 1.5rem);
   --space-lg: clamp(1.5rem, 3vw, 2.5rem);
   --space-xl: clamp(2rem, 4vw, 4rem);
+  --icon-bg: #eef2ff;
 }
 
 /* Dark Mode Overrides */
@@ -61,6 +62,7 @@ html.dark {
   --btn-primary-bg: #ffffff;
   --btn-primary-text: #0a0a0a;
   --btn-primary-hover: #e5e5e5;
+  --icon-bg: #262626;
 }
 
 * {
@@ -77,6 +79,11 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Centering Wrapper for Auth Pages */
@@ -183,6 +190,41 @@ p.text-muted {
   outline: none !important;
   box-shadow: none !important;
   transform: translateY(-50%) scale(0.95);
+}
+
+/* Password Strength Indicator */
+.strength-bar-container {
+  height: 6px;
+  width: 100%;
+  background: var(--border-color);
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.strength-bar {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 4px;
+  text-align: right;
+  display: block;
+}
+
+.strength-weak {
+  background-color: var(--error);
+}
+
+.strength-medium {
+  background-color: var(--warning);
+}
+
+.strength-strong {
+  background-color: var(--success);
 }
 
 label {
@@ -360,7 +402,7 @@ a:hover {
 /* FAB */
 .fab {
   position: fixed;
-  bottom: 2rem;
+  bottom: 4rem; /* Increased from 2rem to clear the footer */
   right: 2rem;
   width: 3.5rem;
   height: 3.5rem;
@@ -376,7 +418,39 @@ a:hover {
 }
 
 .fab:hover {
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.1);
+  box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+}
+
+.fab:hover svg {
+  transform: rotate(90deg);
+}
+
+.fab-tooltip {
+  position: absolute;
+  right: calc(100% + 1rem);
+  background: var(--surface-solid);
+  color: var(--text-main);
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab:hover .fab-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.fab svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Responsive */
@@ -1069,7 +1143,8 @@ button.danger:hover {
   width: 70px;
   height: 70px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+  background: var(--icon-bg);
+  border: 1px solid var(--border-light);
   color: var(--primary);
   display: flex;
   align-items: center;
@@ -1085,12 +1160,12 @@ button.danger:hover {
 .feature-card h3 {
   font-size: 1.75rem;
   margin-bottom: 1rem;
-  color: #1e293b;
+  color: var(--text-main);
   font-weight: 700;
 }
 
 .feature-card p {
-  color: #64748b;
+  color: var(--text-light);
   line-height: 1.7;
   font-size: 1.1rem;
 }
@@ -1098,7 +1173,7 @@ button.danger:hover {
 .landing-footer {
   text-align: center;
   padding: 1.5rem 5%;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 0.95rem;
   border-top: 1px solid var(--border-color);
   background: transparent;
@@ -1500,6 +1575,7 @@ button.danger:hover {
   .modern-login-wrapper {
     padding: 0;
     align-items: flex-start;
+    overflow-y: auto;
   }
 
   .modern-login-card {
@@ -1507,8 +1583,8 @@ button.danger:hover {
     min-height: 100vh;
     border: none;
     box-shadow: none;
-    justify-content: center;
-    padding: 2rem 1.5rem;
+    justify-content: flex-start;
+    padding: 3rem 1.5rem;
     backdrop-filter: none;
     background: transparent;
   }
@@ -1749,4 +1825,49 @@ html.dark .modern-navbar {
 
 [data-theme='dark'] .modern-report-card:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* Fixed Footer */
+.fixed-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03);
+}
+
+html.dark .fixed-footer {
+  background: rgba(10, 10, 10, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0.8;
+}
+
+.footer-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--primary);
 }

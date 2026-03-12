@@ -1,8 +1,19 @@
-import { useState, useContext, useEffect, useRef, useCallback } from 'react';
+import { useState, useContext, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
+import ThemeContext from '../context/ThemeContext';
+
+// Set dayjs locale to Spanish
+dayjs.locale('es');
 
 function Register() {
     const { register, verifyEmail, checkRegistrationDuplicates } = useContext(AuthContext);
@@ -19,6 +30,7 @@ function Register() {
 
     // Mobile specific state for ID scanning
     const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+    const [showPassword, setShowPassword] = useState(false);
     const [flashlightOn, setFlashlightOn] = useState(false);
     const [trackSupportsTorch, setTrackSupportsTorch] = useState(false);
     const [isIdAligned, setIsIdAligned] = useState(false);
@@ -39,6 +51,109 @@ function Register() {
     const [verificationCode, setVerificationCode] = useState('');
     const [scanningProgress, setScanningProgress] = useState(0);
     const [ocrProgress, setOcrProgress] = useState(0);
+    const { theme } = useContext(ThemeContext);
+
+    const muiTheme = useMemo(() => createTheme({
+        palette: {
+            mode: theme === 'dark' ? 'dark' : 'light',
+            primary: {
+                main: '#6366f1',
+            },
+            background: {
+                default: theme === 'dark' ? '#171717' : '#ffffff',
+                paper: theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            },
+            text: {
+                primary: theme === 'dark' ? '#f5f5f5' : '#1e293b',
+                secondary: theme === 'dark' ? '#a3a3a3' : '#64748b',
+            }
+        },
+        typography: {
+            fontFamily: '"Outfit", sans-serif',
+        },
+        components: {
+            MuiPaper: {
+                styleOverrides: {
+                    root: {
+                        borderRadius: '16px',
+                        border: '1px solid var(--border-color)',
+                        boxShadow: 'var(--shadow-xl)',
+                    }
+                }
+            },
+            MuiIconButton: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: 'transparent !important',
+                        boxShadow: 'none !important',
+                        '&:hover': {
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1) !important' : 'rgba(0,0,0,0.05) !important',
+                        }
+                    }
+                }
+            },
+            MuiButtonBase: {
+                defaultProps: {
+                    disableRipple: false,
+                },
+                styleOverrides: {
+                    root: {
+                        backgroundColor: 'transparent !important',
+                        boxShadow: 'none !important',
+                        '&:hover': {
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08) !important' : 'rgba(0,0,0,0.04) !important',
+                        }
+                    }
+                }
+            },
+            MuiPickersDay: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: 'transparent !important',
+                        '&.Mui-selected': {
+                            backgroundColor: 'var(--primary) !important',
+                            color: 'white !important',
+                        },
+                        '&:hover': {
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1) !important' : 'rgba(0,0,0,0.05) !important',
+                        }
+                    }
+                }
+            },
+            MuiPickersYear: {
+                styleOverrides: {
+                    yearButton: {
+                        backgroundColor: 'transparent !important',
+                        boxShadow: 'none !important',
+                        color: 'inherit',
+                        '&.Mui-selected': {
+                            backgroundColor: 'var(--primary) !important',
+                            color: 'white !important',
+                        },
+                        '&:hover': {
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1) !important' : 'rgba(0,0,0,0.05) !important',
+                        }
+                    }
+                }
+            },
+            MuiPickersMonth: {
+                styleOverrides: {
+                    monthButton: {
+                        backgroundColor: 'transparent !important',
+                        boxShadow: 'none !important',
+                        color: 'inherit',
+                        '&.Mui-selected': {
+                            backgroundColor: 'var(--primary) !important',
+                            color: 'white !important',
+                        },
+                        '&:hover': {
+                            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1) !important' : 'rgba(0,0,0,0.05) !important',
+                        }
+                    }
+                }
+            }
+        }
+    }), [theme]);
 
     useEffect(() => {
         const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
@@ -219,6 +334,36 @@ function Register() {
         return val;
     };
 
+    const calculateStrength = (pass) => {
+        const checks = {
+            length: pass.length >= 6,
+            upper: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            symbol: /[^A-Za-z0-9]/.test(pass)
+        };
+        
+        let score = 0;
+        if (checks.length) score++;
+        if (pass.length >= 10) score++;
+        if (checks.upper) score++;
+        if (checks.number) score++;
+        if (checks.symbol) score++;
+        
+        return { score, checks };
+    };
+
+    const strengthData = calculateStrength(formData.password);
+    const strength = strengthData.score;
+
+    const getStrengthInfo = (score) => {
+        if (!formData.password) return { text: '', color: '', width: '0%' };
+        if (score <= 2) return { text: 'Débil', color: 'strength-weak', width: '33%' };
+        if (score <= 4) return { text: 'Media', color: 'strength-medium', width: '66%' };
+        return { text: 'Fuerte', color: 'strength-strong', width: '100%' };
+    };
+
+    const strengthInfo = getStrengthInfo(strength);
+
     const handleChange = (e) => {
         let { name, value } = e.target;
 
@@ -235,12 +380,26 @@ function Register() {
         });
     };
 
+    const handleDateChange = (date) => {
+        setFormData({
+            ...formData,
+            birthDate: date ? date.format('YYYY-MM-DD') : ''
+        });
+    };
+
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
         const res = await checkRegistrationDuplicates(formData);
+        
+        if (strength <= 2) {
+            setError('La contraseña es muy débil. Por favor intenta combinar letras, números y símbolos.');
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(false);
 
         if (res.success) {
@@ -432,7 +591,156 @@ function Register() {
 
                             <div className="input-group" style={{ marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.85rem' }}>Fecha de Nacimiento</label>
-                                <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} required max={new Date().toISOString().split("T")[0]} style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
+                                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+                                    <MUIThemeProvider theme={muiTheme}>
+                                        <DatePicker
+                                            value={formData.birthDate ? dayjs(formData.birthDate) : null}
+                                            onChange={handleDateChange}
+                                            maxDate={dayjs()}
+                                            slotProps={{
+                                                textField: {
+                                                    fullWidth: true,
+                                                    required: true,
+                                                    placeholder: "DD/MM/YYYY",
+                                                    sx: {
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: '1rem',
+                                                            border: '2px solid var(--border-color)',
+                                                            background: 'var(--bg-input)',
+                                                            color: 'var(--text-main)',
+                                                            fontFamily: 'inherit',
+                                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                            '& fieldset': { border: 'none' },
+                                                            '&:hover': {
+                                                                borderColor: 'var(--primary)',
+                                                                transform: 'translateY(-1px)',
+                                                            },
+                                                            '&.Mui-focused': {
+                                                                borderColor: 'var(--primary)',
+                                                                background: 'var(--bg-input-focus)',
+                                                                boxShadow: '0 0 0 4px rgba(99, 102, 241, 0.15)',
+                                                            },
+                                                            '& .MuiInputBase-input::placeholder': {
+                                                                color: 'var(--text-muted)',
+                                                                opacity: 1,
+                                                            },
+                                                        },
+                                                        '& .MuiInputBase-input': {
+                                                            padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem',
+                                                            fontSize: '0.9rem',
+                                                            color: 'var(--text-main)',
+                                                        },
+                                                        // CRITICAL: Reset global button styles for the adornment icon
+                                                        '& .MuiInputAdornment-root button': {
+                                                            width: 'auto !important',
+                                                            minWidth: 'unset !important',
+                                                            padding: '8px !important',
+                                                            margin: '0 !important',
+                                                            background: 'transparent !important',
+                                                            boxShadow: 'none !important',
+                                                            borderRadius: '50% !important',
+                                                            transform: 'none !important',
+                                                            color: 'var(--primary) !important',
+                                                            '&:hover': {
+                                                                background: theme === 'dark' ? 'rgba(255,255,255,0.05) !important' : 'rgba(0,0,0,0.05) !important',
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                popper: {
+                                                    sx: {
+                                                        // RESET AESTHETICS & FORCE DIMENSIONS to fight global CSS (App.css)
+                                                        '& button': {
+                                                            background: 'transparent !important',
+                                                            boxShadow: 'none !important',
+                                                            textTransform: 'none !important',
+                                                            letterSpacing: 'normal !important',
+                                                            border: 'none !important',
+                                                            width: 'auto !important',
+                                                            minWidth: 'unset !important',
+                                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important',
+                                                            color: 'var(--text-main) !important',
+                                                            '&:hover': {
+                                                                transform: 'scale(1.1) !important',
+                                                                background: 'transparent !important',
+                                                                color: 'var(--primary) !important',
+                                                            },
+                                                            '&.Mui-selected': {
+                                                                backgroundColor: 'var(--primary) !important',
+                                                                color: 'white !important',
+                                                                transform: 'scale(1.05) !important',
+                                                            }
+                                                        },
+                                                        // NAVIGATION ARROWS
+                                                        '& .MuiPickersArrowSwitcher-root': {
+                                                            '& button': {
+                                                                width: '32px !important',
+                                                                height: '32px !important',
+                                                                padding: '4px !important',
+                                                                margin: '0 4px !important',
+                                                                borderRadius: '50% !important',
+                                                                color: 'var(--text-muted) !important',
+                                                                '&:hover': {
+                                                                    color: 'var(--primary) !important',
+                                                                    background: theme === 'dark' ? 'rgba(255,255,255,0.05) !important' : 'rgba(0,0,0,0.05) !important',
+                                                                }
+                                                            }
+                                                        },
+                                                        // CALENDAR DAYS
+                                                        '& .MuiPickersDay-root': {
+                                                            width: '36px !important',
+                                                            height: '36px !important',
+                                                            borderRadius: '50% !important',
+                                                            margin: '2px !important',
+                                                            padding: '0 !important',
+                                                            border: '1px solid transparent !important',
+                                                            '&:hover': {
+                                                                borderColor: 'var(--primary) !important',
+                                                                background: 'transparent !important',
+                                                            }
+                                                        },
+                                                        // YEAR SELECTOR GRID
+                                                        '& .MuiPickersYear-root': {
+                                                            flexBasis: '33.33% !important',
+                                                            display: 'flex !important',
+                                                            justifyContent: 'center !important',
+                                                            padding: '4px 0 !important',
+                                                        },
+                                                        '& .MuiPickersYear-yearButton': {
+                                                            width: '72px !important', 
+                                                            height: '36px !important',
+                                                            borderRadius: '18px !important',
+                                                            margin: '0 !important',
+                                                            padding: '0 !important',
+                                                            fontSize: '0.95rem !important',
+                                                        },
+                                                        // MONTH SELECTOR GRID
+                                                        '& .MuiPickersMonth-monthButton': {
+                                                            width: '80px !important',
+                                                            height: '40px !important',
+                                                            borderRadius: '20px !important',
+                                                            margin: '4px !important',
+                                                        },
+                                                        // POPPER STYLING
+                                                        '& .MuiPaper-root': {
+                                                            backgroundImage: 'none',
+                                                            backdropFilter: 'blur(25px)',
+                                                            backgroundColor: theme === 'dark' ? 'rgba(15, 15, 15, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                                            boxShadow: 'var(--shadow-xl)',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '16px',
+                                                            minWidth: '320px !important',
+                                                        },
+                                                        '& .MuiYearCalendar-root': {
+                                                            width: '100% !important',
+                                                            padding: '8px !important',
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </MUIThemeProvider>
+                                </LocalizationProvider>
                             </div>
                             <div className="input-group" style={{ marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.85rem' }}>Sexo</label>
@@ -458,9 +766,37 @@ function Register() {
                                 <select name="birthProvince" value={formData.birthProvince} onChange={handleChange} required style={{ width: '100%', padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', borderRadius: '1rem', border: '2px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', appearance: 'none', fontSize: '0.9rem' }}>
                                     <option value="">Selecciona una provincia...</option>
                                     <option value="Azua">Azua</option>
-                                    <option value="Santo Domingo">Santo Domingo</option>
+                                    <option value="Baoruco">Baoruco</option>
+                                    <option value="Barahona">Barahona</option>
+                                    <option value="Dajabón">Dajabón</option>
                                     <option value="Distrito Nacional">Distrito Nacional</option>
+                                    <option value="Duarte">Duarte</option>
+                                    <option value="El Seibo">El Seibo</option>
+                                    <option value="Elías Piña">Elías Piña</option>
+                                    <option value="Espaillat">Espaillat</option>
+                                    <option value="Hato Mayor">Hato Mayor</option>
+                                    <option value="Hermanas Mirabal">Hermanas Mirabal</option>
+                                    <option value="Independencia">Independencia</option>
+                                    <option value="La Altagracia">La Altagracia</option>
+                                    <option value="La Romana">La Romana</option>
+                                    <option value="La Vega">La Vega</option>
+                                    <option value="María Trinidad Sánchez">María Trinidad Sánchez</option>
+                                    <option value="Monseñor Nouel">Monseñor Nouel</option>
+                                    <option value="Monte Cristi">Monte Cristi</option>
+                                    <option value="Monte Plata">Monte Plata</option>
+                                    <option value="Pedernales">Pedernales</option>
+                                    <option value="Peravia">Peravia</option>
+                                    <option value="Puerto Plata">Puerto Plata</option>
+                                    <option value="Samaná">Samaná</option>
+                                    <option value="San Cristóbal">San Cristóbal</option>
+                                    <option value="San José de Ocoa">San José de Ocoa</option>
+                                    <option value="San Juan">San Juan</option>
+                                    <option value="San Pedro de Macorís">San Pedro de Macorís</option>
+                                    <option value="Sánchez Ramírez">Sánchez Ramírez</option>
                                     <option value="Santiago">Santiago</option>
+                                    <option value="Santiago Rodríguez">Santiago Rodríguez</option>
+                                    <option value="Santo Domingo">Santo Domingo</option>
+                                    <option value="Valverde">Valverde</option>
                                 </select>
                             </div>
                         </div>
@@ -478,7 +814,80 @@ function Register() {
 
                             <div className="input-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.85rem' }}>Contraseña</label>
-                                <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Mínimo 6 caracteres" style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem' }} />
+                                <div style={{ position: 'relative' }}>
+                                    <input 
+                                        type={showPassword ? "text" : "password"} 
+                                        name="password" 
+                                        value={formData.password} 
+                                        onChange={handleChange} 
+                                        required 
+                                        minLength="6" 
+                                        placeholder="Mínimo 6 caracteres" 
+                                        style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem', paddingRight: '3rem' }} 
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '12px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            padding: '4px',
+                                            margin: 0,
+                                            width: 'auto',
+                                            color: 'var(--text-muted)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            boxShadow: 'none'
+                                        }}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                
+                                {formData.password && (
+                                    <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'var(--bg-input)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+                                        <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: 'bold' }}>La contraseña debe tener lo siguiente:</p>
+                                        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0', fontSize: '0.8rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                            <li style={{ color: strengthData.checks.length ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {strengthData.checks.length ? '✅' : '○'} Mín. 6 caracteres
+                                            </li>
+                                            <li style={{ color: strengthData.checks.upper ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {strengthData.checks.upper ? '✅' : '○'} Una mayúscula
+                                            </li>
+                                            <li style={{ color: strengthData.checks.number ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {strengthData.checks.number ? '✅' : '○'} Un número
+                                            </li>
+                                            <li style={{ color: strengthData.checks.symbol ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {strengthData.checks.symbol ? '✅' : '○'} Un símbolo
+                                            </li>
+                                        </ul>
+
+                                        <div className="strength-bar-container" style={{ marginBottom: '0.5rem' }}>
+                                            <div 
+                                                className={`strength-bar ${strengthInfo.color}`} 
+                                                style={{ width: strengthInfo.width }}
+                                            ></div>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Nivel de Seguridad:</span>
+                                            <span style={{ 
+                                                fontSize: '0.9rem', 
+                                                fontWeight: '800', 
+                                                padding: '0.2rem 0.6rem', 
+                                                borderRadius: '0.5rem',
+                                                background: strengthInfo.color === 'strength-weak' ? 'rgba(239, 68, 68, 0.1)' : strengthInfo.color === 'strength-medium' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                                color: strengthInfo.color === 'strength-weak' ? 'var(--error)' : strengthInfo.color === 'strength-medium' ? 'var(--warning)' : 'var(--success)'
+                                            }}>
+                                                {strengthInfo.text}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <button type="submit" disabled={isLoading} className="login-submit-btn" style={{ marginTop: 'clamp(1.5rem, 3vh, 2rem)' }}>
