@@ -128,7 +128,6 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-<<<<<<< HEAD
                 className="modal-overlay-modern"
                 onClick={onClose}
             >
@@ -143,36 +142,6 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                     <div className="modal-header-modern">
                         <div>
                             <h2 style={{ fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', fontWeight: '800', margin: 0, color: 'var(--text-main)', lineHeight: '1.2' }}>Detalles del Reporte</h2>
-=======
-                style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.8)', zIndex: 9999,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '1rem', backdropFilter: 'blur(8px)'
-                }}
-                onClick={onClose}
-            >
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    style={{
-                        background: 'var(--bg-page)', width: '100%', maxWidth: '1100px',
-                        maxHeight: '90vh', borderRadius: '32px', overflow: 'hidden',
-                        position: 'relative', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
-                        display: 'flex', flexDirection: 'column', border: '1px solid var(--border-color)'
-                    }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    {/* Header */}
-                    <div style={{
-                        padding: '1.5rem 2rem', borderBottom: '1px solid var(--border-color)',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        background: 'var(--surface-solid)'
-                    }}>
-                        <div>
-                            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0, color: 'var(--text-main)' }}>Detalles del Reporte</h2>
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                             <span style={{
                                 display: 'inline-block', marginTop: '0.5rem', padding: '0.25rem 0.75rem',
                                 borderRadius: '999px', fontSize: '0.75rem', fontWeight: '800',
@@ -182,36 +151,18 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                 {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : 'Rechazado'}
                             </span>
                         </div>
-<<<<<<< HEAD
                         <button onClick={onClose} className="modal-close-btn">
-=======
-                        <button onClick={onClose} style={{
-                            background: 'var(--bg-input)', border: 'none', borderRadius: '50%',
-                            width: '40px', height: '40px', cursor: 'pointer', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)',
-                            transition: 'all 0.2s'
-                        }} onMouseOver={e => e.currentTarget.style.background = '#fee2e2'} onMouseOut={e => e.currentTarget.style.background = 'var(--bg-input)'}>
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                             <X size={24} />
                         </button>
                     </div>
 
                     {/* Scrollable Content */}
-<<<<<<< HEAD
                     <div className="modal-body-modern custom-scrollbar">
                         <div className="modal-grid-modern">
                             
                             {/* Left Column: Media and Description */}
                              <div>
                                 <div className="modal-media-wrapper">
-=======
-                    <div style={{ overflowY: 'auto', padding: '2.5rem' }} className="custom-scrollbar">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '3rem' }}>
-                            
-                            {/* Left Column: Media and Description */}
-                             <div>
-                                <div style={{ height: '450px', borderRadius: '24px', overflow: 'hidden', marginBottom: '2rem', border: '1px solid var(--border-color)', background: 'var(--bg-input)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                                     <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} objectFit="contain" />
                                 </div>
                                 
@@ -243,25 +194,15 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                                  {/* Mini Map */}
                                 <div>
-<<<<<<< HEAD
                                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', color: 'var(--text-main)', fontWeight: '700', fontSize: '1.05rem' }}>
                                         <MapPin size={18} color="var(--error)" /> Ubicación del Incidente
                                     </h4>
                                     <div className="modal-map-wrapper">
-=======
-                                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem', color: 'var(--text-main)', fontWeight: '700', fontSize: '1.1rem' }}>
-                                        <MapPin size={20} color="var(--error)" /> Ubicación del Incidente
-                                    </h4>
-                                    <div style={{ height: '280px', borderRadius: '24px', overflow: 'hidden', border: '2px solid var(--border-color)', position: 'relative', zIndex: 1, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                                         <MapContainer 
                                             center={reportLocation} 
                                             zoom={16} 
                                             scrollWheelZoom={false} 
-<<<<<<< HEAD
                                             dragging={false}
-=======
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                                             style={{ height: '100%', width: '100%' }}
                                         >
                                             <TileLayer
@@ -305,18 +246,8 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                         </div>
                     </div>
 
-<<<<<<< HEAD
                     <div className="modal-footer-modern">
                         <button onClick={onClose} className="modal-action-btn">
-=======
-                    {/* Footer / Actions */}
-                    <div style={{ padding: '1.5rem 2rem', background: 'var(--surface-solid)', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button onClick={onClose} style={{
-                            padding: '0.75rem 2rem', borderRadius: '12px', background: 'var(--primary)',
-                            color: 'white', border: 'none', fontWeight: '700', cursor: 'pointer',
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
-                        }}>
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
                             Cerrar
                         </button>
                     </div>

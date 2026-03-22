@@ -227,19 +227,6 @@ const Dashboard = () => {
                                                     {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
                                                 </span>
                                             </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedReport(report);
-                                                    setIsModalOpen(true);
-                                                }}
-                                                style={{
-                                                    background: 'none', border: '1px solid var(--primary)', color: 'var(--primary)',
-                                                    padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem',
-                                                    fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem'
-                                                }}
-                                            >
-                                                <Info size={14} /> Detalles
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -263,19 +250,11 @@ const Dashboard = () => {
             )}
 
             {/* Report Detail Modal */}
-<<<<<<< HEAD
             <ReportDetailModal
                 report={selectedReport}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 isModerator={isModerator}
-=======
-            <ReportDetailModal 
-                report={selectedReport} 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                isModerator={isModerator} 
->>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
             />
         </div>
     );
