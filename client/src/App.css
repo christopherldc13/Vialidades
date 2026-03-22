@@ -1894,6 +1894,7 @@ html.dark .fixed-footer {
   .footer-content {
     gap: 0.5rem;
   }
+<<<<<<< HEAD
 }
 
 /* Bell Ringing Animation - Triggers every 10s */
@@ -2150,4 +2151,6 @@ html.dark .fixed-footer {
 .modal-action-btn:hover {
   transform: translateY(-2px) !important;
   background: var(--primary-dark) !important;
+=======
+>>>>>>> 8b39ed977bffda454760baa0c48a6549dc476786
 }
