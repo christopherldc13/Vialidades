@@ -283,9 +283,7 @@ const LandingPage = () => {
                 </motion.div>
             </section>
 
-            <footer className="landing-footer">
-                <p>&copy; 2026 Vialidades de Tránsito. Todos los derechos reservados.</p>
-            </footer>
+
         </div>
     );
 };

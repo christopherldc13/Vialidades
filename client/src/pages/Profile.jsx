@@ -345,13 +345,13 @@ const Profile = () => {
                                 <span style={{ textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>{repData.label}</span>
                             </div>
                         )}
-                        <div style={{ padding: '1rem', background: 'var(--bg-input)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <span style={{ display: 'block', fontSize: '1.25rem', fontWeight: '700', textTransform: 'capitalize', color: 'var(--text-main)' }}>{user.role}</span>
-                            <span className="text-sm text-muted">Tipo Cuenta</span>
+                        <div style={{ padding: '2rem 1rem', background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                            <span style={{ display: 'block', fontSize: '1.5rem', fontWeight: '800', textTransform: 'capitalize', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{user.role}</span>
+                            <span className="text-sm text-muted" style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', fontWeight: '600' }}>Tipo Cuenta</span>
                         </div>
-                        <div style={{ padding: '1rem', background: user.sanctions >= 3 ? '#fee2e2' : 'var(--bg-input)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: user.sanctions >= 3 ? '1px solid var(--error)' : 'none' }}>
-                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800', color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-main)' }}>{user.sanctions || 0}</span>
-                            <span className="text-sm text-muted" style={{ color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-light)' }}>Sanciones</span>
+                        <div style={{ padding: '2rem 1rem', background: user.sanctions >= 3 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: user.sanctions >= 3 ? '1px solid var(--error)' : '1px solid var(--border-light)' }}>
+                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800', color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-main)', marginBottom: '0.5rem' }}>{user.sanctions || 0}</span>
+                            <span className="text-sm text-muted" style={{ color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', fontWeight: '600' }}>Sanciones</span>
                         </div>
                     </div>
 

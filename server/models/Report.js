@@ -16,7 +16,8 @@ const ReportSchema = new mongoose.Schema({
     media: [{
         url: { type: String, required: true },
         type: { type: String, enum: ['image', 'video'], default: 'image' },
-        public_id: { type: String }
+        public_id: { type: String },
+        metadata: { type: Object } // Added metadata storage
     }],
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     moderatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

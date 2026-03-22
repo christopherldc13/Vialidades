@@ -37,12 +37,12 @@ const VideoPlayer = ({ src }) => {
             muted
             playsInline
             loop
-            style={{ objectFit: 'contain', background: '#000', width: '100%', height: '100%' }}
+            style={{ objectFit: 'cover', background: '#000', width: '100%', height: '100%' }}
         />
     );
 };
 
-const MediaGallery = ({ media }) => {
+const MediaGallery = ({ media, objectFit = 'cover' }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
@@ -118,11 +118,24 @@ const MediaGallery = ({ media }) => {
                             {type === 'video' ? (
                                 <VideoPlayer src={fullUrl} />
                             ) : (
-                                <img
-                                    src={fullUrl}
-                                    alt={`Media ${index}`}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
+                                <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)' }}>
+                                    {objectFit === 'contain' && (
+                                        <img 
+                                            src={fullUrl} 
+                                            alt="" 
+                                            style={{ 
+                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+                                                objectFit: 'cover', filter: 'blur(20px) brightness(0.7)', opacity: 0.5,
+                                                transform: 'scale(1.1)' 
+                                            }} 
+                                        />
+                                    )}
+                                    <img
+                                        src={fullUrl}
+                                        alt={`Media ${index}`}
+                                        style={{ width: '100%', height: '100%', objectFit, position: 'relative', zIndex: 1 }}
+                                    />
+                                </div>
                             )}
                         </div>
                     );

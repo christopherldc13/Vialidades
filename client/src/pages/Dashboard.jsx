@@ -6,6 +6,8 @@ import { Plus } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Skeleton, Box } from '@mui/material';
 import AuthContext from '../context/AuthContext';
+import ReportDetailModal from '../components/ReportDetailModal';
+import { Info } from 'lucide-react';
 
 
 
@@ -16,6 +18,8 @@ const Dashboard = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
     const { user } = useContext(AuthContext);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => {
@@ -53,6 +57,37 @@ const Dashboard = () => {
         };
         if (user) fetchReports();
     }, [user, isModerator, viewMode]);
+
+    useEffect(() => {
+        const reportIdToOpen = searchParams.get('reportId');
+        if (reportIdToOpen) {
+            const existingReport = reports.find(r => r._id === reportIdToOpen);
+            if (existingReport) {
+                setSelectedReport(existingReport);
+                setIsModalOpen(true);
+                setSearchParams(params => {
+                    params.delete('reportId');
+                    return params;
+                }, { replace: true });
+            } else if (!loading) {
+                // Fetch the single report if not found in current list
+                const fetchSingle = async () => {
+                    try {
+                        const res = await axios.get(`/api/reports/${reportIdToOpen}`);
+                        setSelectedReport(res.data);
+                        setIsModalOpen(true);
+                        setSearchParams(params => {
+                            params.delete('reportId');
+                            return params;
+                        }, { replace: true });
+                    } catch (err) {
+                        console.error('Error fetching deep-linked report:', err);
+                    }
+                };
+                fetchSingle();
+            }
+        }
+    }, [searchParams, reports, loading, setSearchParams]);
 
     const getImageUrl = (report) => {
         if (!report.photos || report.photos.length === 0) return null;
@@ -144,29 +179,53 @@ const Dashboard = () => {
                             ))
                         ) : (
                             reports.map((report) => (
-                                <div key={report._id} className="report-card modern-report-card">
+                                <div 
+                                    key={report._id} 
+                                    className="report-card modern-report-card"
+                                    onClick={() => {
+                                        setSelectedReport(report);
+                                        setIsModalOpen(true);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     <div className="report-image-container">
                                         <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
                                     </div>
-                                    <div className="report-content">
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                                            <h3 style={{ fontSize: '1.25rem' }}>{report.type === 'Traffic' ? 'Tráfico' : report.type === 'Accident' ? 'Accidente' : report.type === 'Violation' ? 'Infracción' : report.type === 'Hazard' ? 'Peligro' : report.type}</h3>
-                                            <span className={`status-badge status-${report.wasSanctioned ? 'sanctioned' : report.status}`}>
-                                                {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
-                                            </span>
+                                    <div className="report-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '1.5rem', textAlign: 'left' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                            <h3 style={{ fontSize: '1.25rem', margin: 0 }}>{report.type === 'Traffic' ? 'Tráfico' : report.type === 'Accident' ? 'Accidente' : report.type === 'Violation' ? 'Infracción' : report.type === 'Hazard' ? 'Peligro' : report.type}</h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span className={`status-badge status-${report.wasSanctioned ? 'sanctioned' : report.status}`} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                                                    {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <p className="text-muted" style={{ fontSize: '0.9rem', marginBottom: '1rem', height: '3rem', overflow: 'hidden' }}>{report.description}</p>
+                                        <p className="text-muted" style={{
+                                            fontSize: '0.9rem',
+                                            margin: 0,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 3,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            lineHeight: '1.6',
+                                            textAlign: 'left'
+                                        }}>
+                                            {report.description}
+                                        </p>
 
                                         {report.moderatorComment && (
-                                            <div style={{ padding: '0.75rem', marginTop: '0.5rem', marginBottom: '0.5rem', background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `3px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, borderRadius: '4px', fontSize: '0.85rem' }}>
+                                            <div style={{ padding: '0.75rem', marginTop: '1rem', background: report.status === 'approved' ? '#f0fdf4' : '#fef2f2', borderLeft: `3px solid ${report.status === 'approved' ? '#10b981' : '#ef4444'}`, borderRadius: '4px', fontSize: '0.85rem' }}>
                                                 <strong style={{ color: report.status === 'approved' ? '#166534' : '#991b1b', display: 'block', marginBottom: '0.25rem' }}>{report.status === 'approved' ? 'Comentario del moderador:' : 'Motivo:'}</strong>
                                                 <span style={{ color: '#475569' }}>{report.moderatorComment}</span>
                                             </div>
                                         )}
 
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                                📍 {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
+                                        <div style={{ display: 'flex', alignItems: 'center', marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)' }}>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', flex: 1, minWidth: 0 }}>
+                                                <span style={{ color: 'var(--error)', flexShrink: 0, marginTop: '2px' }}>📍</span>
+                                                <span style={{ lineHeight: '1.4', textAlign: 'left', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                    {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -189,6 +248,14 @@ const Dashboard = () => {
                     <Plus size={32} />
                 </Link>
             )}
+
+            {/* Report Detail Modal */}
+            <ReportDetailModal
+                report={selectedReport}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                isModerator={isModerator}
+            />
         </div>
     );
 };

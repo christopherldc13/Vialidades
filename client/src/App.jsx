@@ -57,7 +57,7 @@ function App() {
           <div className="fixed-footer">
             <div className="footer-content">
               <span className="footer-dot"></span>
-              Desarrollado por Vialidades
+              © 2026 VIALIDADES DE TRÁNSITO. TODOS LOS DERECHOS RESERVADOS.
               <span className="footer-dot"></span>
             </div>
           </div>

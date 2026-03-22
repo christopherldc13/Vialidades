@@ -26,8 +26,9 @@ const storage = new CloudinaryStorage({
         return {
             folder: 'vialidades_reports',
             resource_type: isVideo ? 'video' : 'image',
-            // allowed_formats removed to allow iOS HEIC and native formats
-            transformation: isVideo ? [] : [{ width: 1000, crop: "limit" }] // Optimize images only
+            // Ensure metadata is preserved by NOT transforming the original on upload
+            image_metadata: true,
+            exif: true
         };
     }
 });
@@ -56,12 +57,40 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
 
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
-                // Determine type from file (Cloudinary storage adds this info or we infer from mimetype)
                 const isVideo = file.mimetype.startsWith('video/');
+                let metadata = {};
+
+                try {
+                    // Manually fetch metadata from Cloudinary since multer-storage-cloudinary might not provide it in 'file'
+                    const result = await cloudinary.api.resource(file.filename, {
+                        image_metadata: true,
+                        exif: true,
+                        resource_type: isVideo ? 'video' : 'image'
+                    });
+                    
+                    // Pick relevant fields to keep DB clean but informative
+                    metadata = {
+                        image_metadata: result.image_metadata,
+                        exif: result.exif,
+                        metadata: result.metadata,
+                        gps: result.image_metadata?.GPS || result.exif?.GPS || null,
+                        info: {
+                            format: result.format,
+                            size: result.bytes,
+                            width: result.width,
+                            height: result.height,
+                            created_at: result.created_at
+                        }
+                    };
+                } catch (metaErr) {
+                    console.error("Error fetching Cloudinary metadata:", metaErr);
+                }
+
                 media.push({
-                    url: file.path, // Cloudinary URL
+                    url: file.path,
                     type: isVideo ? 'video' : 'image',
-                    public_id: file.filename
+                    public_id: file.filename,
+                    metadata: metadata
                 });
             }
         }
@@ -134,6 +163,19 @@ router.get('/', auth, async (req, res) => {
         const reports = await Report.find(query).sort({ timestamp: -1 }).populate('userId', 'username avatar');
         res.json(reports);
     } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Get Single Report
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id).populate('userId', 'username avatar');
+        if (!report) return res.status(404).json({ msg: 'Report not found' });
+        res.json(report);
+    } catch (err) {
+        if (err.kind === 'ObjectId') return res.status(404).json({ msg: 'Report not found' });
         console.error(err.message);
         res.status(500).send('Server Error');
     }

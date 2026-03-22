@@ -126,6 +126,17 @@ function Register() {
                         backgroundColor: 'transparent !important',
                         boxShadow: 'none !important',
                         color: 'inherit',
+                        width: '72px !important',
+                        height: '32px !important',
+                        borderRadius: '16px !important',
+                        margin: '0 auto !important',
+                        display: 'flex !important',
+                        alignItems: 'center !important',
+                        justifyContent: 'center !important',
+                        fontSize: '0.9rem',
+                        lineHeight: '1 !important',
+                        // Using padding to force the text up since transforms might be conflicting
+                        padding: '0 0 6px 0 !important', 
                         '&.Mui-selected': {
                             backgroundColor: 'var(--primary) !important',
                             color: 'white !important',
@@ -648,81 +659,18 @@ function Register() {
                                                     }
                                                 },
                                                 popper: {
-                                                    sx: {
-                                                        // RESET AESTHETICS & FORCE DIMENSIONS to fight global CSS (App.css)
-                                                        '& button': {
-                                                            background: 'transparent !important',
-                                                            boxShadow: 'none !important',
-                                                            textTransform: 'none !important',
-                                                            letterSpacing: 'normal !important',
-                                                            border: 'none !important',
-                                                            width: 'auto !important',
-                                                            minWidth: 'unset !important',
-                                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important',
-                                                            color: 'var(--text-main) !important',
-                                                            '&:hover': {
-                                                                transform: 'scale(1.1) !important',
-                                                                background: 'transparent !important',
-                                                                color: 'var(--primary) !important',
+                                                    modifiers: [
+                                                        {
+                                                            name: 'offset',
+                                                            options: {
+                                                                offset: [0, -8],
                                                             },
-                                                            '&.Mui-selected': {
-                                                                backgroundColor: 'var(--primary) !important',
-                                                                color: 'white !important',
-                                                                transform: 'scale(1.05) !important',
-                                                            }
                                                         },
-                                                        // NAVIGATION ARROWS
-                                                        '& .MuiPickersArrowSwitcher-root': {
-                                                            '& button': {
-                                                                width: '32px !important',
-                                                                height: '32px !important',
-                                                                padding: '4px !important',
-                                                                margin: '0 4px !important',
-                                                                borderRadius: '50% !important',
-                                                                color: 'var(--text-muted) !important',
-                                                                '&:hover': {
-                                                                    color: 'var(--primary) !important',
-                                                                    background: theme === 'dark' ? 'rgba(255,255,255,0.05) !important' : 'rgba(0,0,0,0.05) !important',
-                                                                }
-                                                            }
-                                                        },
-                                                        // CALENDAR DAYS
-                                                        '& .MuiPickersDay-root': {
-                                                            width: '36px !important',
-                                                            height: '36px !important',
-                                                            borderRadius: '50% !important',
-                                                            margin: '2px !important',
-                                                            padding: '0 !important',
-                                                            border: '1px solid transparent !important',
-                                                            '&:hover': {
-                                                                borderColor: 'var(--primary) !important',
-                                                                background: 'transparent !important',
-                                                            }
-                                                        },
-                                                        // YEAR SELECTOR GRID
-                                                        '& .MuiPickersYear-root': {
-                                                            flexBasis: '33.33% !important',
-                                                            display: 'flex !important',
-                                                            justifyContent: 'center !important',
-                                                            padding: '4px 0 !important',
-                                                        },
-                                                        '& .MuiPickersYear-yearButton': {
-                                                            width: '72px !important', 
-                                                            height: '36px !important',
-                                                            borderRadius: '18px !important',
-                                                            margin: '0 !important',
-                                                            padding: '0 !important',
-                                                            fontSize: '0.95rem !important',
-                                                        },
-                                                        // MONTH SELECTOR GRID
-                                                        '& .MuiPickersMonth-monthButton': {
-                                                            width: '80px !important',
-                                                            height: '40px !important',
-                                                            borderRadius: '20px !important',
-                                                            margin: '4px !important',
-                                                        },
+                                                    ],
+                                                    sx: {
                                                         // POPPER STYLING
                                                         '& .MuiPaper-root': {
+                                                            marginTop: '0 !important',
                                                             backgroundImage: 'none',
                                                             backdropFilter: 'blur(25px)',
                                                             backgroundColor: theme === 'dark' ? 'rgba(15, 15, 15, 0.95)' : 'rgba(255, 255, 255, 0.95)',
@@ -730,10 +678,26 @@ function Register() {
                                                             border: '1px solid var(--border-color)',
                                                             borderRadius: '16px',
                                                             minWidth: '320px !important',
+                                                            maxHeight: '400px !important', // Limit height to avoid empty space
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            justifyContent: 'center', // Center content block vertically
+                                                            alignItems: 'center',
                                                         },
                                                         '& .MuiYearCalendar-root': {
                                                             width: '100% !important',
+                                                            display: 'flex !important',
+                                                            flexWrap: 'wrap !important',
+                                                            justifyContent: 'center !important',
+                                                            alignContent: 'center !important',
                                                             padding: '8px !important',
+                                                        },
+                                                        '& .MuiPickersYear-root': {
+                                                            flexBasis: '25% !important',
+                                                            maxWidth: '25% !important',
+                                                            display: 'flex !important',
+                                                            justifyContent: 'center !important',
+                                                            padding: '4px 0 !important',
                                                         }
                                                     }
                                                 }

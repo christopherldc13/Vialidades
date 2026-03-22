@@ -49,7 +49,7 @@ const LocationMarker = ({ position, setPosition }) => {
     );
 };
 
-const DraggableMap = ({ location, setLocation, setAddress }) => {
+const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) => {
     // Default to a central location (Dominican Republic)
     const [center, setCenter] = useState({ lat: 18.7357, lng: -70.1627 });
     const [zoom, setZoom] = useState(8);
@@ -134,10 +134,10 @@ const DraggableMap = ({ location, setLocation, setAddress }) => {
         }
     };
 
-    // Initial location fetch
+    // Initial location fetch + External trigger
     useEffect(() => {
         getLocation();
-    }, []); // Run only once on mount
+    }, [refreshLocation]); // Run on mount AND when refreshLocation changes
 
     // Update address when manual pin drop happens
     const handleSetLocation = (newPos) => {

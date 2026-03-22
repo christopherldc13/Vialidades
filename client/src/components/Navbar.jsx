@@ -7,18 +7,27 @@ import NotificationList from './NotificationList';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
-    const { logout } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
     const handleLogoutClick = () => {
         Swal.fire({
             title: '¿Cerrar Sesión?',
             text: '¿Estás seguro de que quieres salir?',
-            icon: 'question',
+            icon: 'warning',
+            iconColor: 'var(--error)',
             showCancelButton: true,
-            confirmButtonColor: 'var(--error)',
             confirmButtonText: 'Sí, Salir',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                confirmButton: 'swal2-lumina-confirm',
+                cancelButton: 'swal2-lumina-cancel',
+                popup: 'swal2-lumina-popup',
+                title: 'swal2-lumina-title',
+                htmlContainer: 'swal2-lumina-html'
+            },
+            buttonsStyling: false,
+            reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
                 logout();
@@ -37,16 +46,21 @@ const Navbar = () => {
                     <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
                         {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
-                    <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
-                        <ClipboardList size={20} />
-                    </button>
-                    <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
-                        <User size={20} />
-                    </button>
-                    <NotificationList className="modern-nav-btn" />
-                    <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
-                        <LogOut size={20} />
-                    </button>
+
+                    {user && (
+                        <>
+                            <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
+                                <ClipboardList size={20} />
+                            </button>
+                            <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
+                                <User size={20} />
+                            </button>
+                            <NotificationList className="modern-nav-btn" />
+                            <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
+                                <LogOut size={20} />
+                            </button>
+                        </>
+                    )}
                 </div>
             </nav>
 

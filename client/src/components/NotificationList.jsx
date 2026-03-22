@@ -4,12 +4,14 @@ import { Bell, X, Trash2 } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationList = ({ className }) => {
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const { user } = useContext(AuthContext);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
 
     const fetchNotifications = async () => {
         try {
@@ -92,7 +94,7 @@ const NotificationList = ({ className }) => {
                 style={{ position: 'relative', outline: 'none' }}
                 onClick={() => setShowDropdown(!showDropdown)}
             >
-                <Bell size={20} />
+                <Bell size={20} className={unreadCount > 0 ? 'bell-ringing' : ''} />
                 {unreadCount > 0 && (
                     <span style={{
                         position: 'absolute', top: -2, right: -2,
@@ -108,14 +110,7 @@ const NotificationList = ({ className }) => {
 
             {
                 showDropdown && (
-                    <div style={{
-                        position: 'absolute', top: '100%', right: -10,
-                        width: 'clamp(280px, 90vw, 360px)', maxHeight: '400px', overflowY: 'auto',
-                        background: 'var(--surface-solid)', /* Force matched background */
-                        boxShadow: 'var(--shadow-xl)',
-                        borderRadius: '12px', border: '1px solid var(--border-color)',
-                        zIndex: 1000, marginTop: '10px'
-                    }}>
+                    <div className="modern-notification-dropdown">
                         <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
                             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Notificaciones</h4>
                             <X size={16} style={{ cursor: 'pointer', color: 'var(--text-light)' }} onClick={() => setShowDropdown(false)} />
@@ -128,7 +123,13 @@ const NotificationList = ({ className }) => {
                             notifications.map(notification => (
                                 <div
                                     key={notification._id}
-                                    onClick={() => !notification.read && markAsRead(notification._id)}
+                                    onClick={() => {
+                                        if (!notification.read) markAsRead(notification._id);
+                                        if (notification.relatedReportId) {
+                                            setShowDropdown(false);
+                                            navigate(`/dashboard?reportId=${notification.relatedReportId}`);
+                                        }
+                                    }}
                                     style={{
                                         padding: '0.75rem 1rem',
                                         borderBottom: '1px solid var(--border-color)',
