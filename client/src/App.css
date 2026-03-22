@@ -235,9 +235,9 @@ label {
   color: var(--text-main);
 }
 
-input,
-select,
-textarea {
+input:not([class*="Mui"]),
+select:not([class*="Mui"]),
+textarea:not([class*="Mui"]) {
   width: 100%;
   padding: clamp(0.75rem, 2vw, 1rem) 1.25rem;
   border: 2px solid var(--border-color);
@@ -249,14 +249,14 @@ textarea {
   color: var(--text-main);
 }
 
-select option {
+select:not([class*="Mui"]) option {
   background: var(--surface-solid);
   color: var(--text-main);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:not([class*="Mui"]):focus,
+select:not([class*="Mui"]):focus,
+textarea:not([class*="Mui"]):focus {
   outline: none;
   border-color: var(--primary);
   background: var(--bg-input-focus);
@@ -264,7 +264,7 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
-button {
+button:not([class*="Mui"]) {
   width: 100%;
   padding: 1rem;
   background: var(--btn-primary-bg);
@@ -282,13 +282,13 @@ button {
   letter-spacing: normal;
 }
 
-button:hover {
+button:not([class*="Mui"]):hover {
   transform: translateY(-2px);
   background: #0f172a;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
 }
 
-button:active {
+button:not([class*="Mui"]):active {
   transform: translateY(0);
 }
 
@@ -1675,20 +1675,20 @@ html.dark .modern-navbar {
 }
 
 .modern-nav-btn {
-  background: var(--bg-input);
+  background: var(--surface-solid) !important;
   border: 1px solid var(--border-color) !important;
-  color: var(--text-main);
+  color: var(--text-main) !important;
   transition: all 0.2s ease;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 40px;
-  height: 40px;
+  width: 40px !important;
+  height: 40px !important;
   padding: 0 !important;
   margin: 0 !important;
-  border-radius: 50%;
+  border-radius: 50% !important;
   cursor: pointer;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
 }
 
 .modern-nav-btn svg {
@@ -1698,8 +1698,6 @@ html.dark .modern-navbar {
 .modern-nav-btn:hover {
   background: var(--primary-light);
   color: var(--primary) !important;
-  transform: translateY(-2px);
-  border-color: var(--primary) !important;
 }
 
 .modern-nav-btn svg {
@@ -1862,6 +1860,7 @@ html.dark .fixed-footer {
   align-items: center;
   gap: 1rem;
   opacity: 0.8;
+  text-align: center;
 }
 
 .footer-dot {
@@ -1870,4 +1869,18 @@ html.dark .fixed-footer {
   background: var(--primary);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--primary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .fixed-footer {
+    height: auto;
+    min-height: 42px;
+    padding: 8px;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+  }
+  .footer-content {
+    gap: 0.5rem;
+  }
 }

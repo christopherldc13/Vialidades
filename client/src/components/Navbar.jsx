@@ -7,7 +7,7 @@ import NotificationList from './NotificationList';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
-    const { logout } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
     const handleLogoutClick = () => {
@@ -37,16 +37,21 @@ const Navbar = () => {
                     <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
                         {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
-                    <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
-                        <ClipboardList size={20} />
-                    </button>
-                    <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
-                        <User size={20} />
-                    </button>
-                    <NotificationList className="modern-nav-btn" />
-                    <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
-                        <LogOut size={20} />
-                    </button>
+
+                    {user && (
+                        <>
+                            <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
+                                <ClipboardList size={20} />
+                            </button>
+                            <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
+                                <User size={20} />
+                            </button>
+                            <NotificationList className="modern-nav-btn" />
+                            <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
+                                <LogOut size={20} />
+                            </button>
+                        </>
+                    )}
                 </div>
             </nav>
 

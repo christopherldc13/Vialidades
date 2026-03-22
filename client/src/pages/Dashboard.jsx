@@ -6,6 +6,8 @@ import { Plus } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Skeleton, Box } from '@mui/material';
 import AuthContext from '../context/AuthContext';
+import ReportDetailModal from '../components/ReportDetailModal';
+import { Info } from 'lucide-react';
 
 
 
@@ -16,6 +18,8 @@ const Dashboard = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
     const { user } = useContext(AuthContext);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => {
@@ -168,6 +172,19 @@ const Dashboard = () => {
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                                 📍 {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
                                             </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedReport(report);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                style={{
+                                                    background: 'none', border: '1px solid var(--primary)', color: 'var(--primary)',
+                                                    padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem',
+                                                    fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem'
+                                                }}
+                                            >
+                                                <Info size={14} /> Detalles
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -189,6 +206,14 @@ const Dashboard = () => {
                     <Plus size={32} />
                 </Link>
             )}
+
+            {/* Report Detail Modal */}
+            <ReportDetailModal 
+                report={selectedReport} 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                isModerator={isModerator} 
+            />
         </div>
     );
 };

@@ -52,6 +52,7 @@ const CreateReport = () => {
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [refreshLocationTrigger, setRefreshLocationTrigger] = useState(0); // Trigger for map refresh
     const { user, loading: authLoading } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -285,11 +286,15 @@ const CreateReport = () => {
                             </div>
                             <div className="form-column">
                                 <div className="input-group">
-                                    <label>Ubicación</label>
                                     <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem' }}>
                                         Arrastra el marcador 📍 a la ubicación exacta del incidente o escriba la ubicación exacta.
                                     </p>
-                                    <DraggableMap location={location} setLocation={setLocation} setAddress={setAddress} />
+                                    <DraggableMap 
+                                        location={location} 
+                                        setLocation={setLocation} 
+                                        setAddress={setAddress} 
+                                        refreshLocation={refreshLocationTrigger}
+                                    />
 
                                     {/* Address Display */}
                                     {address && (
@@ -339,18 +344,22 @@ const CreateReport = () => {
                                             style={{ display: 'none' }}
                                             id="camera-photo-upload"
                                         />
-                                        <label htmlFor="camera-photo-upload" style={{
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: '1rem',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: 'var(--radius)',
-                                            background: 'var(--bg-input)',
-                                            height: '100%'
-                                        }}>
+                                        <label 
+                                            htmlFor="camera-photo-upload" 
+                                            onClick={() => setRefreshLocationTrigger(prev => prev + 1)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '1rem',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: 'var(--radius)',
+                                                background: 'var(--bg-input)',
+                                                height: '100%'
+                                            }}
+                                        >
                                             <Camera size={24} color="var(--primary)" style={{ marginBottom: '0.25rem' }} />
                                             <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Foto</span>
                                         </label>
@@ -364,18 +373,22 @@ const CreateReport = () => {
                                             style={{ display: 'none' }}
                                             id="camera-video-upload"
                                         />
-                                        <label htmlFor="camera-video-upload" style={{
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            padding: '1rem',
-                                            border: '1px solid var(--border-color)',
-                                            borderRadius: 'var(--radius)',
-                                            background: 'var(--bg-input)',
-                                            height: '100%'
-                                        }}>
+                                        <label 
+                                            htmlFor="camera-video-upload" 
+                                            onClick={() => setRefreshLocationTrigger(prev => prev + 1)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '1rem',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: 'var(--radius)',
+                                                background: 'var(--bg-input)',
+                                                height: '100%'
+                                            }}
+                                        >
                                             <Video size={24} color="var(--primary)" style={{ marginBottom: '0.25rem' }} />
                                             <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Video</span>
                                         </label>
