@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }) => {
                         title: 'Sesión Cerrada',
                         text: 'Iniciaste sesión en otro dispositivo. Por seguridad, hemos cerrado tu sesión actual.',
                         icon: 'warning',
-<<<<<<< HEAD
                         iconColor: 'var(--error)',
                         confirmButtonText: 'Entendido',
                         customClass: {
@@ -34,10 +33,6 @@ export const AuthProvider = ({ children }) => {
                             htmlContainer: 'swal2-lumina-html'
                         },
                         buttonsStyling: false,
-=======
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: 'var(--primary)',
->>>>>>> 0187cf914af4ec6391020cdb016accc856087f48
                         allowOutsideClick: false,
                         willClose: () => {
                             window.location.href = '/';
