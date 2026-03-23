@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import ModerateReports from './pages/ModerateReports';
 import LandingPage from './pages/LandingPage';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -21,11 +22,14 @@ const PrivateRoute = ({ children }) => {
 };
 
 function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'AQUI_TU_CLIENT_ID.apps.googleusercontent.com';
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <div className="app-container">
+    <GoogleOAuthProvider clientId={clientId}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <div className="app-container">
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
@@ -65,6 +69,7 @@ function App() {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

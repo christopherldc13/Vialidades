@@ -5,12 +5,13 @@ import { Eye, EyeOff, Mail, Lock, LogIn, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 import { CircularProgress, Box } from '@mui/material';
+import { GoogleLogin } from '@react-oauth/google';
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const { login } = useContext(AuthContext);
+    const { login, loginWithGoogle } = useContext(AuthContext);
     const navigate = useNavigate();
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +74,46 @@ function Login() {
                 setSanctionExpiry(res.sanctionExpiresAt);
             }
         }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
+        setError('');
+        setSanctionExpiry(null);
+        
+        const res = await loginWithGoogle(credentialResponse.credential);
+        setIsLoading(false);
+        
+        if (res.success) {
+            Swal.fire({
+                title: '¡Ingreso Exitoso!',
+                text: 'Redirigiendo al panel principal...',
+                icon: 'success',
+                timer: 1500,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                willClose: () => {
+                    navigate('/dashboard');
+                }
+            });
+        } else {
+            setError(res.msg);
+            Swal.fire({
+                title: 'Error de Acceso',
+                text: res.msg || 'No pudimos validar tu cuenta de Google.',
+                icon: 'error',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: 'var(--primary)'
+            });
+            if (res.sanctionExpiresAt) {
+                setSanctionExpiry(res.sanctionExpiresAt);
+            }
+        }
+    };
+
+    const handleGoogleError = () => {
+        console.error('Login Failed');
+        setError('Autenticación con Google cancelada o fallida.');
     };
 
     return (
@@ -171,7 +212,24 @@ function Login() {
 
                 <div className="login-divider">
                     <div className="divider-line"></div>
+                    <span>o ingresar con</span>
+                    <div className="divider-line"></div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', marginTop: '1rem' }}>
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        useOneTap
+                        theme="outline"
+                        shape="pill"
+                    />
+                </div>
+
+                <div className="login-divider">
+                    <div className="divider-line"></div>
                     <span>¿Nuevo en la plataforma?</span>
+                    <div className="divider-line"></div>
                 </div>
 
                 <div className="login-footer">

@@ -50,6 +50,24 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const loginWithGoogle = async (credential) => {
+        try {
+            const res = await axios.post('/api/auth/google', { credential });
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+            axios.defaults.headers.common['x-auth-token'] = res.data.token;
+            setUser(res.data.user);
+            return { success: true };
+        } catch (err) {
+            console.error("Google Login Error:", err);
+            return {
+                success: false,
+                msg: err.response?.data?.msg || 'Error al autenticar con Google',
+                sanctionExpiresAt: err.response?.data?.sanctionExpiresAt
+            };
+        }
+    };
+
     const register = async (userData) => {
         try {
             await axios.post('/api/auth/register', userData);
@@ -93,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, verifyEmail, logout, loading, checkRegistrationDuplicates }}>
+        <AuthContext.Provider value={{ user, login, loginWithGoogle, register, verifyEmail, logout, loading, checkRegistrationDuplicates }}>
             {children}
         </AuthContext.Provider>
     );

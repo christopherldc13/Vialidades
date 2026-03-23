@@ -30,8 +30,10 @@ const Navbar = () => {
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                logout();
-                navigate('/');
+                // Limpiar la sesión directamente y hacer un hard reload a '/'
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
             }
         });
     };

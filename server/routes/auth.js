@@ -8,6 +8,8 @@ const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailServ
 const Tesseract = require('tesseract.js');
 const crypto = require('crypto'); // For generating reset tokens
 require('dotenv').config(); // Ensure variables are loaded before Cloudinary config
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'AQUI_TU_CLIENT_ID.apps.googleusercontent.com');
 
 // Check for duplicates before KYC
 router.post('/check-duplicates', async (req, res) => {
@@ -281,6 +283,96 @@ router.post('/login', async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// Google Login
+router.post('/google', async (req, res) => {
+    const { credential } = req.body;
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            // audience: process.env.GOOGLE_CLIENT_ID // Optional if we want to strict-check
+        });
+        const payload = ticket.getPayload();
+        const email = payload['email'];
+
+        // Find user by email
+        let user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ msg: 'No se encontró una cuenta registrada con este correo de Google en Vialidades. Por favor, regístrate primero con la misma cuenta.' });
+        }
+
+        if (!user.isVerified) {
+            return res.status(403).json({ msg: 'Cuenta no verificada. Por favor verifica tu correo electrónico.', unverified: true });
+        }
+
+        // --- SANCTIONS CHECK ---
+        const Sanction = require('../models/Sanction');
+        const activeSanctions = await Sanction.find({ userId: user.id, status: 'active' });
+
+        let isBlocked = false;
+        let blockMessage = '';
+        let sanctionExpiresAt = null;
+
+        for (let sanction of activeSanctions) {
+            if (sanction.expiresAt && sanction.expiresAt < new Date()) {
+                sanction.status = 'inactive';
+                await sanction.save();
+            } else {
+                isBlocked = true;
+                if (!sanction.expiresAt) {
+                    blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
+                } else {
+                    blockMessage = `Tu cuenta está suspendida temporalmente hasta ${sanction.expiresAt.toLocaleString()}.`;
+                    sanctionExpiresAt = sanction.expiresAt;
+                }
+                break;
+            }
+        }
+
+        if (isBlocked) {
+            return res.status(403).json({ msg: blockMessage, sanctionExpiresAt });
+        }
+        // --- END SANCTIONS CHECK ---
+
+        const jwtPayload = {
+            user: {
+                id: user.id,
+                role: user.role
+            }
+        };
+
+        jwt.sign(
+            jwtPayload,
+            process.env.JWT_SECRET,
+            { expiresIn: '5h' },
+            (err, token) => {
+                if (err) throw err;
+                res.json({
+                    token,
+                    user: {
+                        id: user.id,
+                        username: user.username,
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        phone: user.phone,
+                        cedula: user.cedula,
+                        birthProvince: user.birthProvince,
+                        birthDate: user.birthDate,
+                        gender: user.gender,
+                        role: user.role,
+                        reputation: user.reputation,
+                        sanctions: user.sanctions,
+                        avatar: user.avatar
+                    }
+                });
+            }
+        );
+    } catch (err) {
+        console.error('Google Auth Verify Error:', err.message);
+        res.status(500).json({ msg: 'Fallo al autenticar el token de Google. Intentelo nuevamente.' });
     }
 });
 
