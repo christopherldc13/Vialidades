@@ -246,10 +246,15 @@ router.post('/login', async (req, res) => {
         }
         // --- END SANCTIONS CHECK ---
 
+        const sessionToken = crypto.randomBytes(20).toString('hex');
+        user.sessionToken = sessionToken;
+        await user.save({ validateBeforeSave: false });
+
         const payload = {
             user: {
                 id: user.id,
-                role: user.role
+                role: user.role,
+                sessionToken
             }
         };
 
@@ -336,10 +341,15 @@ router.post('/google', async (req, res) => {
         }
         // --- END SANCTIONS CHECK ---
 
+        const sessionToken = crypto.randomBytes(20).toString('hex');
+        user.sessionToken = sessionToken;
+        await user.save({ validateBeforeSave: false });
+
         const jwtPayload = {
             user: {
                 id: user.id,
-                role: user.role
+                role: user.role,
+                sessionToken
             }
         };
 

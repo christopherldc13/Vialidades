@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
     avatar: { type: String, default: '' },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    sessionToken: { type: String, default: null },
     createdAt: { type: Date, default: Date.now }
 });
 
