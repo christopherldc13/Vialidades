@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const AuthContext = createContext();
 
@@ -8,6 +9,40 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Interceptor global para detectar si se inició sesión en otro dispositivo
+        const interceptorId = axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 401 && error.response.data?.sessionOverwritten) {
+                    // Forzar cierre de sesión
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    delete axios.defaults.headers.common['x-auth-token'];
+                    setUser(null);
+
+                    Swal.fire({
+                        title: 'Sesión Cerrada',
+                        text: 'Iniciaste sesión en otro dispositivo. Por seguridad, hemos cerrado tu sesión actual.',
+                        icon: 'warning',
+                        iconColor: 'var(--error)',
+                        confirmButtonText: 'Entendido',
+                        customClass: {
+                            confirmButton: 'swal2-lumina-confirm',
+                            popup: 'swal2-lumina-popup',
+                            title: 'swal2-lumina-title',
+                            htmlContainer: 'swal2-lumina-html'
+                        },
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                        willClose: () => {
+                            window.location.href = '/';
+                        }
+                    });
+                }
+                return Promise.reject(error);
+            }
+        );
+
         const loadUser = async () => {
             const token = localStorage.getItem('token');
             if (token) {
@@ -15,7 +50,6 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const res = await axios.get('/api/auth/me');
                     setUser(res.data);
-                    // Update localStorage just in case
                     localStorage.setItem('user', JSON.stringify(res.data));
                 } catch (err) {
                     console.error("Auth Load Error:", err);
@@ -27,6 +61,10 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         };
         loadUser();
+
+        return () => {
+            axios.interceptors.response.eject(interceptorId);
+        };
     }, []);
 
     const login = async (email, password) => {
