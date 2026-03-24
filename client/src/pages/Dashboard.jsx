@@ -4,10 +4,11 @@ import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import { Plus } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Skeleton, Box } from '@mui/material';
+import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
-import { Info } from 'lucide-react';
+import { Info, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import './DashboardExtras.css';
 
 
 
@@ -17,10 +18,15 @@ const Dashboard = () => {
     const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0 });
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
-    const { user } = useContext(AuthContext);
+    const { user, loading: authLoading } = useContext(AuthContext);
     const [selectedReport, setSelectedReport] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isModerator = ['moderator', 'admin'].includes(user?.role);
+
+    // Scroll to Top on entry
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -96,10 +102,18 @@ const Dashboard = () => {
         return import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`;
     };
 
+    if (authLoading) {
+        return (
+            <div style={{ background: 'var(--bg-page)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress size={60} thickness={4} style={{ color: 'var(--primary)' }} />
+            </div>
+        );
+    }
+
     return (
-        <div>
+        <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
             <Navbar />
-            <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '80px' }}>
+            <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', paddingBottom: '80px' }}>
                 <div style={{ padding: '0 1.5rem 1.5rem' }}>
                     <div className="dashboard-header modern-dashboard-header">
                         <div>
@@ -109,42 +123,115 @@ const Dashboard = () => {
 
                         {/* User Tabs */}
                         {!isModerator && (
-                            <div className="toggle-group">
-                                <button
-                                    onClick={() => setSearchParams({ view: 'community' })}
-                                    className={`toggle-btn ${viewMode === 'community' ? 'active' : ''}`}
-                                >
-                                    Comunidad
-                                </button>
-                                <button
-                                    onClick={() => setSearchParams({ view: 'my' })}
-                                    className={`toggle-btn ${viewMode === 'my' ? 'active' : ''}`}
-                                >
-                                    Mis Reportes
-                                </button>
-                            </div>
+                            <ToggleButtonGroup
+                                value={viewMode}
+                                exclusive
+                                onChange={(e, newView) => {
+                                    if (newView !== null) {
+                                        setSearchParams({ view: newView });
+                                    }
+                                }}
+                                aria-label="modo de vista"
+                                sx={{
+                                    backgroundColor: 'var(--surface-solid)',
+                                    borderRadius: '16px',
+                                    p: 0.5,
+                                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                                    border: '1px solid var(--border-light)',
+                                    display: 'flex',
+                                    gap: '4px',
+                                    '& .MuiToggleButton-root': {
+                                        border: 'none',
+                                        borderRadius: '12px !important',
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        fontSize: '0.95rem',
+                                        color: 'var(--text-muted)',
+                                        px: 3,
+                                        py: 1,
+                                        transition: 'all 0.15s ease',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                            color: 'var(--text-primary)',
+                                            transform: 'translateY(-1px)'
+                                        },
+                                        '&.Mui-selected': {
+                                            backgroundColor: 'var(--primary)',
+                                            color: '#ffffff',
+                                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
+                                            '&:hover': {
+                                                backgroundColor: 'var(--primary-hover)',
+                                            }
+                                        }
+                                    }
+                                }}
+                            >
+                                <ToggleButton value="community" aria-label="comunidad">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Users size={18} />
+                                        <span>Comunidad</span>
+                                    </div>
+                                </ToggleButton>
+                                <ToggleButton value="my" aria-label="mis reportes">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <FileText size={18} />
+                                        <span>Mis Reportes</span>
+                                    </div>
+                                </ToggleButton>
+                            </ToggleButtonGroup>
                         )}
                     </div>
 
                     {/* Moderator Stats */}
                     {isModerator && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginTop: '1.5rem', marginBottom: '2rem' }}>
-                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Pendientes</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{stats.pending}</div>
-                            </div>
-                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Aprobados</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)' }}>{stats.approved}</div>
-                            </div>
-                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Rechazados</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--error)' }}>{stats.rejected}</div>
-                            </div>
-                            <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Sancionados</div>
-                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#b91c1c' }}>{stats.sanctioned}</div>
-                            </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginTop: '1.5rem', marginBottom: '2rem' }}>
+                            <Tooltip title={`${stats.pending || 0} reportes esperando revisión`} arrow placement="top">
+                                <Link to="/moderate?filter=pending" className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', textDecoration: 'none', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Pendientes</div>
+                                        <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', padding: '8px', borderRadius: '12px' }}>
+                                            <Clock size={20} />
+                                        </div>
+                                    </div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--warning)', marginTop: '0.5rem' }}>{stats.pending||0}</div>
+                                </Link>
+                            </Tooltip>
+
+                            <Tooltip title={`${stats.approved || 0} reportes publicados con éxito`} arrow placement="top">
+                                <Link to="/moderate?filter=approved" className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', textDecoration: 'none', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Aprobados</div>
+                                        <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', padding: '8px', borderRadius: '12px' }}>
+                                            <CheckCircle size={20} />
+                                        </div>
+                                    </div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--success)', marginTop: '0.5rem' }}>{stats.approved||0}</div>
+                                </Link>
+                            </Tooltip>
+
+                            <Tooltip title={`${stats.rejected || 0} reportes descartados`} arrow placement="top">
+                                <Link to="/moderate?filter=rejected" className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', textDecoration: 'none', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Rechazados</div>
+                                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', padding: '8px', borderRadius: '12px' }}>
+                                            <XCircle size={20} />
+                                        </div>
+                                    </div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--error)', marginTop: '0.5rem' }}>{stats.rejected||0}</div>
+                                </Link>
+                            </Tooltip>
+
+                            <Tooltip title={`${stats.sanctioned || 0} usuarios sancionados por infracciones`} arrow placement="top">
+                                <Link to="/moderate?filter=sanctioned" className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', textDecoration: 'none', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sancionados</div>
+                                        <div style={{ background: 'rgba(185, 28, 28, 0.1)', color: '#b91c1c', padding: '8px', borderRadius: '12px' }}>
+                                            <AlertCircle size={20} />
+                                        </div>
+                                    </div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: '#b91c1c', marginTop: '0.5rem' }}>{stats.sanctioned||0}</div>
+                                </Link>
+                            </Tooltip>
                         </div>
                     )}
                 </div>

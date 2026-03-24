@@ -2,7 +2,7 @@ import { useContext, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
-import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X } from 'lucide-react';
+import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X, Star, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { Skeleton, Box } from '@mui/material';
@@ -20,7 +20,7 @@ const calculateAge = (dobString) => {
 };
 
 const Profile = () => {
-    const { user, loading } = useContext(AuthContext);
+    const { user, setUser, loading } = useContext(AuthContext);
 
     if (loading) {
         return (
@@ -101,11 +101,15 @@ const Profile = () => {
         try {
             setSaving(true);
             const token = localStorage.getItem('token');
-            await axios.patch('/api/auth/profile', editForm, {
+            const res = await axios.patch('/api/auth/profile', editForm, {
                 headers: {
                     'x-auth-token': token
                 }
             });
+            // Sync local state immediately
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+            
             // Give user visual feedback
             setIsEditing(false);
             setSaving(false);
@@ -135,12 +139,16 @@ const Profile = () => {
         try {
             setUploading(true);
             const token = localStorage.getItem('token');
-            await axios.patch('/api/auth/profile', formData, {
+            const res = await axios.patch('/api/auth/profile', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'x-auth-token': token
                 }
             });
+
+            // Sync local state immediately
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
 
             setUploading(false);
             Swal.fire({
@@ -313,7 +321,47 @@ const Profile = () => {
                         <div className="profile-info-item full-width">
                             <span className="profile-info-label">Provincia</span>
                             {isEditing ? (
-                                <input type="text" value={user.birthProvince || 'No especificada'} disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }} />
+                                <select 
+                                    name="birthProvince" 
+                                    value={editForm.birthProvince} 
+                                    onChange={handleEditChange} 
+                                    className="profile-info-value" 
+                                    style={{ padding: '0.5rem', width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.95rem' }}
+                                >
+                                    <option value="">Selecciona una provincia...</option>
+                                    <option value="Azua">Azua</option>
+                                    <option value="Baoruco">Baoruco</option>
+                                    <option value="Barahona">Barahona</option>
+                                    <option value="Dajabón">Dajabón</option>
+                                    <option value="Distrito Nacional">Distrito Nacional</option>
+                                    <option value="Duarte">Duarte</option>
+                                    <option value="El Seibo">El Seibo</option>
+                                    <option value="Elías Piña">Elías Piña</option>
+                                    <option value="Espaillat">Espaillat</option>
+                                    <option value="Hato Mayor">Hato Mayor</option>
+                                    <option value="Hermanas Mirabal">Hermanas Mirabal</option>
+                                    <option value="Independencia">Independencia</option>
+                                    <option value="La Altagracia">La Altagracia</option>
+                                    <option value="La Romana">La Romana</option>
+                                    <option value="La Vega">La Vega</option>
+                                    <option value="María Trinidad Sánchez">María Trinidad Sánchez</option>
+                                    <option value="Monseñor Nouel">Monseñor Nouel</option>
+                                    <option value="Monte Cristi">Monte Cristi</option>
+                                    <option value="Monte Plata">Monte Plata</option>
+                                    <option value="Pedernales">Pedernales</option>
+                                    <option value="Peravia">Peravia</option>
+                                    <option value="Puerto Plata">Puerto Plata</option>
+                                    <option value="Samaná">Samaná</option>
+                                    <option value="San Cristóbal">San Cristóbal</option>
+                                    <option value="San José de Ocoa">San José de Ocoa</option>
+                                    <option value="San Juan">San Juan</option>
+                                    <option value="San Pedro de Macorís">San Pedro de Macorís</option>
+                                    <option value="Sánchez Ramírez">Sánchez Ramírez</option>
+                                    <option value="Santiago">Santiago</option>
+                                    <option value="Santiago Rodríguez">Santiago Rodríguez</option>
+                                    <option value="Santo Domingo">Santo Domingo</option>
+                                    <option value="Valverde">Valverde</option>
+                                </select>
                             ) : (
                                 <div className="profile-info-value">{user.birthProvince || 'No especificada'}</div>
                             )}
@@ -331,27 +379,40 @@ const Profile = () => {
                         </div>
                     )}
 
-                    <div className="stats-grid">
-                        {user.reputation === 0 ? (
-                            <div className="rep-badge rep-average" style={{ padding: '2rem 1rem' }}>
-                                <div style={{ marginBottom: '0.5rem' }}><Minus size={32} /></div>
-                                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold' }}>Reputación no disponible</span>
-                                <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Aún no tienes reportes evaluados</span>
-                            </div>
-                        ) : (
-                            <div className={`rep-badge ${repData.class}`}>
-                                <div style={{ marginBottom: '0.5rem' }}>{repData.icon}</div>
-                                <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800' }}>{user.reputation}</span>
-                                <span style={{ textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>{repData.label}</span>
-                            </div>
-                        )}
-                        <div style={{ padding: '2rem 1rem', background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <span style={{ display: 'block', fontSize: '1.5rem', fontWeight: '800', textTransform: 'capitalize', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{user.role}</span>
-                            <span className="text-sm text-muted" style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', fontWeight: '600' }}>Tipo Cuenta</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+                        <div style={{ 
+                            padding: '2rem 1.5rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px', 
+                            border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column', 
+                            alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}>
+                            <Star size={32} color="var(--success)" />
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reputación</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--success)', lineHeight: '1' }}>{user.reputation || 0}</div>
                         </div>
-                        <div style={{ padding: '2rem 1rem', background: user.sanctions >= 3 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', justifyContent: 'center', border: user.sanctions >= 3 ? '1px solid var(--error)' : '1px solid var(--border-light)' }}>
-                            <span style={{ display: 'block', fontSize: '2rem', fontWeight: '800', color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-main)', marginBottom: '0.5rem' }}>{user.sanctions || 0}</span>
-                            <span className="text-sm text-muted" style={{ color: user.sanctions >= 3 ? 'var(--error)' : 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem', fontWeight: '600' }}>Sanciones</span>
+
+                        <div style={{ 
+                            padding: '2rem 1.5rem', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '20px', 
+                            border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column', 
+                            alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)',
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}>
+                            <AlertTriangle size={32} color="var(--error)" />
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sanciones</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--error)', lineHeight: '1' }}>{user.sanctions || 0}</div>
+                        </div>
+                        
+                        <div style={{ 
+                            padding: '2rem 1.5rem', background: 'var(--bg-input)', borderRadius: '20px', 
+                            border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', 
+                            alignItems: 'center', gap: '0.75rem', boxShadow: 'var(--shadow-sm)',
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}>
+                            <CheckCircle size={32} color={user.isVerified ? "var(--primary)" : "var(--text-light)"} />
+                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verificado</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: user.isVerified ? "var(--primary)" : "var(--text-light)", lineHeight: '1' }}>
+                                {user.isVerified ? 'Sí' : 'No'}
+                            </div>
                         </div>
                     </div>
 

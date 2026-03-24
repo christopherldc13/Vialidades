@@ -2,13 +2,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { Bell, User, LogOut, ClipboardList, Moon, Sun } from 'lucide-react';
+import { Bell, User, LogOut, ClipboardList, Moon, Sun, UserPlus } from 'lucide-react';
 import NotificationList from './NotificationList';
+import CreateModeratorModal from './CreateModeratorModal';
 import Swal from 'sweetalert2';
 
 const Navbar = () => {
     const { logout, user } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
+    const [isCreateModOpen, setIsCreateModOpen] = useState(false);
     const navigate = useNavigate();
     const handleLogoutClick = () => {
         Swal.fire({
@@ -51,6 +53,11 @@ const Navbar = () => {
 
                     {user && (
                         <>
+                            {['admin', 'moderator'].includes(user.role) && (
+                                <button onClick={() => setIsCreateModOpen(true)} className="modern-nav-btn" title="Añadir Moderador">
+                                    <UserPlus size={20} />
+                                </button>
+                            )}
                             <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
                                 <ClipboardList size={20} />
                             </button>
@@ -65,7 +72,7 @@ const Navbar = () => {
                     )}
                 </div>
             </nav>
-
+            <CreateModeratorModal isOpen={isCreateModOpen} onClose={() => setIsCreateModOpen(false)} />
         </>
     );
 };

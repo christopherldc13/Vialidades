@@ -9,6 +9,7 @@ import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import HeatMapLayer from '../components/HeatMapLayer';
+import ModerationTimeline from '../components/ModerationTimeline';
 
 // Create a custom pulsing icon for the map
 const createPulseIcon = () => {
@@ -134,7 +135,7 @@ const LandingPage = () => {
                                 scrollWheelZoom={true}
                                 zoomControl={false} // Disable default controls to look cleaner
                                 attributionControl={false}
-                                style={{ flex: 1, width: '100%', height: '100%', zIndex: 1, backgroundColor: theme === 'dark' ? '#0a0a0a' : '#f8fafc' }}
+                                style={{ flex: 1, width: '100%', height: '100%', zIndex: 1 }}
                             >
                                 {mapType === 'satellite' ? (
                                     <TileLayer
@@ -159,7 +160,7 @@ const LandingPage = () => {
                                     left: 0,
                                     right: 0,
                                     height: '150px',
-                                    background: theme === 'dark' ? 'linear-gradient(to top, rgba(10,10,10,1), transparent)' : 'linear-gradient(to top, rgba(248,250,252,1), transparent)',
+                                    background: theme === 'dark' ? 'linear-gradient(to top, transparent, transparent)' : 'linear-gradient(to top, transparent, transparent)', // Removed solid fade
                                     pointerEvents: 'none',
                                     zIndex: 5
                                 }}></div>
@@ -242,6 +243,23 @@ const LandingPage = () => {
                     </div>
                 </motion.div>
             </header>
+
+            {/* Moderation Flow Timeline with background Glow */}
+            <section style={{ position: 'relative', zIndex: 10, background: 'transparent', padding: '1rem 0', overflow: 'hidden' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '600px',
+                    height: '600px',
+                    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)',
+                    filter: 'blur(60px)',
+                    zIndex: -1,
+                    pointerEvents: 'none'
+                }}></div>
+                <ModerationTimeline />
+            </section>
 
             {/* Features (Optional but adds to the "Web Page" feel) */}
             <section className="features-section">

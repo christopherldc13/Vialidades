@@ -1,0 +1,18 @@
+/* Dark Mode Visibility Enhancements for Header & Cards */
+html.dark .modern-dashboard-header {
+  background: rgba(30, 30, 30, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+html.dark .stat-card {
+  background: rgba(35, 35, 35, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .stat-card:hover {
+  background: rgba(45, 45, 45, 0.7) !important;
+  border-color: var(--primary) !important;
+}
