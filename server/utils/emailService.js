@@ -2,9 +2,6 @@ const nodemailer = require('nodemailer');
 const process = require('process');
 const path = require('path');
 
-// Force-load `.env` with explicit file path relative to this module
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
 // Create reusable transporter getter to prevent premature evaluation before env
 let transporter;
 const getTransporter = () => {
@@ -14,18 +11,24 @@ const getTransporter = () => {
         }
         
         // Use explicit SMTP configuration for better compatibility on Cloud platforms like Render
+        // Gmail App Passwords (16 letters) should be used WITHOUT spaces for maximum compatibility
+        const cleanPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
         transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // Use SSL/TLS
+            port: 587,
+            secure: false, // Use TLS
             auth: {
                 user: (process.env.EMAIL_USER || '').trim(),
-                pass: (process.env.EMAIL_PASS || '').trim()
+                pass: cleanPass
             },
-            // Prevent hanging: 10 second timeouts
+            // Prevent hanging: 10-20 second timeouts
             connectionTimeout: 10000, 
             greetingTimeout: 10000,
-            socketTimeout: 20000
+            socketTimeout: 20000,
+            // Enable logging to help debug 500 errors in your cloud dashboard
+            logger: true,
+            debug: true
         });
     }
     return transporter;
