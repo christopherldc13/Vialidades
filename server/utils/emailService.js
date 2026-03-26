@@ -12,12 +12,20 @@ const getTransporter = () => {
         if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.warn("WARNING: EMAIL_USER or EMAIL_PASS is missing in environment variables.");
         }
+        
+        // Use explicit SMTP configuration for better compatibility on Cloud platforms like Render
         transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true, // Use SSL/TLS
             auth: {
-                user: process.env.EMAIL_USER?.trim(),
-                pass: process.env.EMAIL_PASS?.trim()
-            }
+                user: (process.env.EMAIL_USER || '').trim(),
+                pass: (process.env.EMAIL_PASS || '').trim()
+            },
+            // Prevent hanging: 10 second timeouts
+            connectionTimeout: 10000, 
+            greetingTimeout: 10000,
+            socketTimeout: 20000
         });
     }
     return transporter;
@@ -105,6 +113,7 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
         console.log(`Welcome email sent to ${email}`);
     } catch (error) {
         console.error("Error sending welcome email:", error);
+        throw error; // Rethrow so caller can handle the failure
     }
 };
 
@@ -136,6 +145,7 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
         console.log(`Verification email sent to ${email}`);
     } catch (error) {
         console.error("Error sending verification email:", error);
+        throw error; // Rethrow so caller can handle the failure
     }
 };
 
@@ -168,6 +178,7 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
         console.log(`Password reset email sent to ${email}`);
     } catch (error) {
         console.error("Error sending password reset email:", error);
+        throw error; // Rethrow so caller can handle
     }
 };
 
@@ -232,5 +243,6 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
         console.log(`Report status email sent to ${email}`);
     } catch (error) {
         console.error("Error sending report status email:", error);
+        throw error;
     }
 };
