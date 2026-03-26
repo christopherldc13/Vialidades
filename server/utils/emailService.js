@@ -170,9 +170,10 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
         // Debug response in Render
         console.log("Resend API Response:", JSON.stringify(response));
 
-        if (response.error) {
-            console.error("❌ RESEND ERROR:", response.error);
-            throw new Error(response.error.message || "Error al enviar correo via Resend");
+        if (response.error || (response.statusCode && response.statusCode !== 200 && response.statusCode !== 201)) {
+            const errorMsg = response.error ? (response.error.message || response.error.name) : response.message;
+            console.error("❌ RESEND ERROR:", errorMsg);
+            throw new Error(errorMsg || "Error al enviar correo via Resend");
         }
         
         const emailId = response.data ? response.data.id : 'N/A';
