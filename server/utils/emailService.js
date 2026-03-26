@@ -1,19 +1,74 @@
+require('dotenv').config();
 const nodemailer = require('nodemailer');
-const process = require('process');
+const { OAuth2Client } = require('google-auth-library');
+const https = require('https');
 
-// Initialize Nodemailer transporter with OAuth2 for Gmail
-// This method is required for Render because they block standard SMTP ports.
-// OAuth2 uses HTTP/HTTPS (Port 443) which is not blocked.
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        type: 'OAuth2',
-        user: process.env.EMAIL_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN
-    }
+// Gmail API Configuration (HTTP REST)
+// This is the absolute best way for Render because it uses standard HTTPS (Port 443).
+const oauth2Client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+);
+
+oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN
 });
+
+/**
+ * Custom function to send email via Gmail REST API (HTTPS)
+ * This replaces the standard nodemailer transporter.sendMail for Render compatibility.
+ */
+async function sendEmailViaRest(mailOptions) {
+    try {
+        const { token } = await oauth2Client.getAccessToken();
+        
+        // Build the raw email (MIME)
+        const transporter = nodemailer.createTransport({
+            streamTransport: true,
+            newline: 'unix',
+            buffer: true
+        });
+
+        const info = await transporter.sendMail(mailOptions);
+        const rawEmail = info.message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        const postData = JSON.stringify({ raw: rawEmail });
+
+        const options = {
+            hostname: 'gmail.googleapis.com',
+            port: 443,
+            path: '/gmail/v1/users/me/messages/send',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length
+            }
+        };
+
+        return new Promise((resolve, reject) => {
+            const req = https.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => {
+                    const result = JSON.parse(data);
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(result);
+                    } else {
+                        reject(new Error(`Gmail API Error: ${result.error?.message || data}`));
+                    }
+                });
+            });
+            req.on('error', (e) => reject(e));
+            req.write(postData);
+            req.end();
+        });
+    } catch (error) {
+        console.error("❌ sendEmailViaRest Failed:", error.message);
+        throw error;
+    }
+}
 
 // The gmail address
 const FROM_EMAIL = process.env.EMAIL_USER || 'vialidades.transito@gmail.com';
@@ -83,9 +138,10 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
                 <li>Mantener a tu ciudad más segura y fluida para todos.</li>
             </ul>
         `;
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
         const actionButton = `
             <div class="btn-container">
-                <a href="http://localhost:5173/login" class="btn">Iniciar Sesión Ahora</a>
+                <a href="${FRONTEND_URL}/login" class="btn">Iniciar Sesión Ahora</a>
             </div>
         `;
 
@@ -98,8 +154,8 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
             html: html
         };
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Welcome email sent via Gmail API: ${result.messageId} to ${email}`);
+        const result = await sendEmailViaRest(mailOptions);
+        console.log(`Welcome email sent via Gmail REST API: ${result.id} to ${email}`);
     } catch (error) {
         console.error("Error sending welcome email:", error);
         throw error;
@@ -132,8 +188,8 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
             html: html
         };
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Verification email sent via Gmail API: ${result.messageId} to ${email}`);
+        const result = await sendEmailViaRest(mailOptions);
+        console.log(`Verification email sent via Gmail REST API: ${result.id} to ${email}`);
     } catch (error) {
         console.error("Error sending verification email:", error);
         throw error;
@@ -167,10 +223,10 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
             html: html
         };
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Password reset email sent via Gmail API: ${result.messageId} to ${email}`);
+        const result = await sendEmailViaRest(mailOptions);
+        console.log(`Password reset email sent via Gmail REST API: ${result.id} to ${email}`);
     } catch (error) {
-        console.error("Error sending password reset email:", error);
+        console.error("❌ GMAIL REST API ERROR in sendPasswordResetEmail:", error.message);
         throw error;
     }
 };
@@ -219,9 +275,10 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
             <p style="margin-top: 24px;">Agradecemos tu constante colaboración para mantener informada a la comunidad.</p>
         `;
 
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
         const actionButton = `
             <div class="btn-container">
-                <a href="http://localhost:5173/dashboard?view=my" class="btn" style="background-color: ${statusColor}; box-shadow: 0 4px 6px -1px ${statusColor}40;">Ver mis Reportes</a>
+                <a href="${FRONTEND_URL}/dashboard?view=my" class="btn" style="background-color: ${statusColor}; box-shadow: 0 4px 6px -1px ${statusColor}40;">Ver mis Reportes</a>
             </div>
         `;
 
@@ -234,8 +291,8 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
             html: html
         };
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Report status email sent via Gmail API: ${result.messageId} to ${email}`);
+        const result = await sendEmailViaRest(mailOptions);
+        console.log(`Report status email sent via Gmail REST API: ${result.id} to ${email}`);
     } catch (error) {
         console.error("Error sending report status email:", error);
         throw error;

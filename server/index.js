@@ -9,6 +9,14 @@ const dns = require('dns');
 
 dotenv.config();
 
+// Fix for MongoDB DNS/SRV issues in some networks
+try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+    console.log('DNS override set to Google 8.8.8.8');
+} catch (e) {
+    console.log('DNS override failed, using system default.');
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
