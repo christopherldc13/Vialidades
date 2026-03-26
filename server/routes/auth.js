@@ -574,16 +574,26 @@ router.post('/forgot-password', async (req, res) => {
 
         try {
             await sendPasswordResetEmail(user.email, user.username, resetUrl);
+            console.log(`✅ Reset password email sent successfully to: ${user.email}`);
             res.status(200).json({ success: true, data: 'Email sent' });
         } catch (err) {
+            console.error("❌ ERROR SENDING RESET EMAIL:", err.message);
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
             await user.save({ validateBeforeSave: false });
-            return res.status(500).json({ msg: 'Hubo un error enviando el email' });
+            return res.status(500).json({ 
+                msg: 'Hubo un error enviando el email de recuperación.',
+                error: err.message,
+                type: 'EMAIL_ERROR'
+            });
         }
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error("❌ FORGOT PASSWORD ROUTE ERROR:", err.message);
+        res.status(500).json({ 
+            msg: 'Error interno del servidor al procesar la solicitud.',
+            error: err.message,
+            type: 'SERVER_ERROR'
+        });
     }
 });
 
