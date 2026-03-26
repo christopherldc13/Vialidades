@@ -3,6 +3,10 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
 import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X, Star, CheckCircle } from 'lucide-react';
+import { FaPhoneAlt, FaUserEdit } from "react-icons/fa";
+import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
+import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
+import { RiUserLocationLine } from "react-icons/ri";
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { Skeleton, Box } from '@mui/material';
@@ -278,7 +282,10 @@ const Profile = () => {
                             {isEditing ? (
                                 <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
                             ) : (
-                                <div className="profile-info-value">{user.phone || 'No especificado'}</div>
+                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <FaPhoneAlt size={14} color="var(--primary)" />
+                                    {user.phone || 'No especificado'}
+                                </div>
                             )}
                         </div>
                         <div className="profile-info-item">
@@ -286,7 +293,10 @@ const Profile = () => {
                             {isEditing ? (
                                 <input type="text" value={user.cedula || 'No especificada'} disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }} />
                             ) : (
-                                <div className="profile-info-value">{user.cedula || 'No especificada'}</div>
+                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <LiaIdCard size={18} color="var(--primary)" />
+                                    {user.cedula || 'No especificada'}
+                                </div>
                             )}
                         </div>
                         <div className="profile-info-item">
@@ -296,7 +306,14 @@ const Profile = () => {
                                     <option>{user.gender === 'M' ? 'Masculino' : user.gender === 'F' ? 'Femenino' : user.gender || 'No especificado'}</option>
                                 </select>
                             ) : (
-                                <div className="profile-info-value">{user.gender === 'M' ? 'Masculino' : user.gender === 'F' ? 'Femenino' : user.gender || 'No especificado'}</div>
+                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {user.gender === 'F' || user.gender === 'femenino' ? (
+                                        <BsGenderFemale size={18} color="#ec4899" />
+                                    ) : (
+                                        <BsGenderMale size={18} color="#3b82f6" />
+                                    )}
+                                    {user.gender === 'M' || user.gender === 'masculino' ? 'Masculino' : user.gender === 'F' || user.gender === 'femenino' ? 'Femenino' : user.gender || 'No especificado'}
+                                </div>
                             )}
                         </div>
                         <div className="profile-info-item">
@@ -304,7 +321,8 @@ const Profile = () => {
                             {isEditing ? (
                                 <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
                             ) : (
-                                <div className="profile-info-value">
+                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <LiaBirthdayCakeSolid size={18} color="var(--primary)" />
                                     {user.birthDate ? (
                                         <>
                                             {new Date(user.birthDate).toLocaleDateString()}{' '}
@@ -363,7 +381,10 @@ const Profile = () => {
                                     <option value="Valverde">Valverde</option>
                                 </select>
                             ) : (
-                                <div className="profile-info-value">{user.birthProvince || 'No especificada'}</div>
+                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <RiUserLocationLine size={18} color="var(--primary)" />
+                                    {user.birthProvince || 'No especificada'}
+                                </div>
                             )}
                         </div>
                     </div>

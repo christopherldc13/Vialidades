@@ -21,6 +21,9 @@ const UserSchema = new mongoose.Schema({
     resetPasswordExpire: Date,
     sessionToken: { type: String, default: null },
     createdAt: { type: Date, default: Date.now }
+}, {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 module.exports = mongoose.model('User', UserSchema);

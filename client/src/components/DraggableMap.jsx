@@ -5,6 +5,7 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import toast from 'react-hot-toast';
+import { CiLocationOn } from "react-icons/ci";
 
 // Fix for default marker icon in React Leaflet
 let DefaultIcon = L.icon({
@@ -98,7 +99,7 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
                 setZoom(13);
                 fetchAddress(newPos.lat, newPos.lng); // Fetch address for IP location too
                 // Inform the user that this is just an approximation
-                toast("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el pin 📍 a tu ubicación exacta.", { icon: '⚠️' });
+                toast("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el marcador a tu ubicación exacta.", { icon: '⚠️' });
             }
         } catch (ipError) {
             console.error("IP Geolocation failed:", ipError);
@@ -292,7 +293,8 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
                         gap: '0.5rem'
                     }}
                 >
-                    {loadingLocation ? '📍 Ubicando...' : '📍 Ubícame'}
+                    <CiLocationOn size={20} />
+                    {loadingLocation ? 'Ubicando...' : 'Ubícame'}
                 </button>
             </div>
         </div>

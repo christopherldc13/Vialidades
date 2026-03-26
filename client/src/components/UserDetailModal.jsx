@@ -1,5 +1,9 @@
 import React from 'react';
 import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle } from 'lucide-react';
+import { FaPhoneAlt } from "react-icons/fa";
+import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
+import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
+import { RiUserLocationLine } from "react-icons/ri";
 import { motion, AnimatePresence } from 'framer-motion';
 
 const UserDetailModal = ({ user, isOpen, onClose }) => {
@@ -67,32 +71,47 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
                                 <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontWeight: '700' }}>
                                     Información Personal
                                 </h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) 2fr', gap: '0.75rem', fontSize: '0.95rem' }}>
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Usuario:</strong></div>
-                                    <div style={{ color: 'var(--text-main)', fontWeight: '600' }}>@{user.username}</div>
+                                <div className="user-detail-grid">
+                                    <div className="user-detail-label">Usuario:</div>
+                                    <div className="user-detail-value">@{user.username}</div>
 
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Nombre Completo:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.firstName} {user.lastName}</div>
+                                    <div className="user-detail-label">Nombre Completo:</div>
+                                    <div className="user-detail-value">{user.firstName} {user.lastName}</div>
 
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Cédula:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.cedula || 'N/A'}</div>
+                                    <div className="user-detail-label">Cédula:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <LiaIdCard size={16} /> {user.cedula || 'N/A'}
+                                    </div>
 
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Correo:</strong></div>
-                                    <div style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Mail size={16} color="var(--text-light)" /> {user.email}
+                                    <div className="user-detail-label">Correo:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Mail size={16} /> {user.email}
                                     </div>
                                     
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Género:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.gender === 'M' || user.gender === 'male' ? 'Masculino' : user.gender === 'F' || user.gender === 'female' ? 'Femenino' : 'Otro'}</div>
+                                    <div className="user-detail-label">Género:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {user.gender === 'F' || user.gender === 'female' || user.gender === 'femenino' ? (
+                                            <BsGenderFemale size={16} color="#ec4899" />
+                                        ) : (
+                                            <BsGenderMale size={16} color="#3b82f6" />
+                                        )}
+                                        {user.gender === 'M' || user.gender === 'male' || user.gender === 'masculino' ? 'Masculino' : user.gender === 'F' || user.gender === 'female' || user.gender === 'femenino' ? 'Femenino' : user.gender || 'Otro'}
+                                    </div>
                                     
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Fecha Nac.:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.birthDate ? new Date(user.birthDate).toLocaleDateString() : 'N/A'}</div>
+                                    <div className="user-detail-label">Fecha Nac.:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <LiaBirthdayCakeSolid size={16} /> {user.birthDate ? new Date(user.birthDate).toLocaleDateString() : 'N/A'}
+                                    </div>
 
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Teléfono:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.phone || 'N/A'}</div>
+                                    <div className="user-detail-label">Teléfono:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FaPhoneAlt size={14} /> {user.phone || 'N/A'}
+                                    </div>
 
-                                    <div style={{ color: 'var(--text-muted)' }}><strong>Provincia Nac.:</strong></div>
-                                    <div style={{ color: 'var(--text-main)' }}>{user.birthProvince || 'N/A'}</div>
+                                    <div className="user-detail-label">Provincia Nac.:</div>
+                                    <div className="user-detail-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <RiUserLocationLine size={16} /> {user.birthProvince || 'N/A'}
+                                    </div>
                                 </div>
                             </div>
 

@@ -7,8 +7,37 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
-import { Info, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Info, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { MdWavingHand } from "react-icons/md";
+import { RxDashboard } from "react-icons/rx";
+import { CiLocationOn } from "react-icons/ci";
+import { RiUserCommunityLine } from "react-icons/ri";
+import { TbReportSearch } from "react-icons/tb";
 import './DashboardExtras.css';
+import { FaCar, FaCarCrash } from "react-icons/fa";
+import { BsSignStopFill } from "react-icons/bs";
+import { LuTriangleAlert } from "react-icons/lu";
+import { IoMdHelpCircle } from "react-icons/io";
+
+const getIncidentIcon = (type) => {
+    switch (type) {
+        case 'Traffic': return <FaCar />;
+        case 'Accident': return <FaCarCrash />;
+        case 'Violation': return <BsSignStopFill />;
+        case 'Hazard': return <LuTriangleAlert />;
+        default: return <IoMdHelpCircle />;
+    }
+};
+
+const getIncidentLabel = (type) => {
+    switch (type) {
+        case 'Traffic': return 'Tráfico Pesado';
+        case 'Accident': return 'Accidente';
+        case 'Violation': return 'Infracción';
+        case 'Hazard': return 'Peligro en la vía';
+        default: return type;
+    }
+};
 
 
 
@@ -34,17 +63,13 @@ const Dashboard = () => {
                 setLoading(true);
                 let res;
                 if (isModerator) {
-                    // Moderator: Get stats (using pending and all logic)
-                    const pendingRes = await axios.get('/api/reports?status=pending');
-                    const allRes = await axios.get('/api/reports?status=all'); // Get all for counts
-
-                    const all = allRes.data;
-                    setStats({
-                        pending: all.filter(r => r.status === 'pending').length,
-                        approved: all.filter(r => r.status === 'approved').length,
-                        rejected: all.filter(r => r.status === 'rejected' && !r.wasSanctioned).length,
-                        sanctioned: all.filter(r => r.wasSanctioned).length
-                    });
+                    // Moderator: Get stats specifically
+                    const [pendingRes, statsRes] = await Promise.all([
+                        axios.get('/api/reports?status=pending'),
+                        axios.get('/api/reports/stats')
+                    ]);
+                    
+                    setStats(statsRes.data);
                     setReports(pendingRes.data);
                 } else {
                     // Regular User
@@ -114,11 +139,53 @@ const Dashboard = () => {
         <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
             <Navbar />
             <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', paddingBottom: '80px' }}>
-                <div style={{ padding: '0 1.5rem 1.5rem' }}>
+                <div style={{ padding: '2rem 1.5rem 1.5rem' }}>
+                    {user && (
+                        <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: '1rem', 
+                            marginBottom: '1.5rem', padding: '0 0.5rem'
+                        }}>
+                            <div style={{ 
+                                width: '40px', height: '40px', borderRadius: '12px',
+                                background: 'linear-gradient(135deg, var(--primary), #818cf8)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', fontSize: '1.2rem', fontWeight: 'bold',
+                                boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)',
+                                flexShrink: 0,
+                                overflow: 'hidden'
+                            }}>
+                                {user.avatar ? (
+                                    <img src={user.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    user.firstName.charAt(0)
+                                )}
+                            </div>
+                            <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                Bienvenido de nuevo, <span style={{ color: 'var(--primary)', fontWeight: '800' }}>{user.firstName} {user.lastName}</span>
+                                <MdWavingHand className="waving-hand" style={{ color: '#f59e0b', fontSize: '1.4rem' }} />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="dashboard-header modern-dashboard-header">
-                        <div>
-                            <h2>{isModerator ? 'Panel de Moderación' : 'Reportes de Incidentes'}</h2>
-                            {isModerator && <p className="text-muted">Resumen de actividad.</p>}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                            <h2 style={{ fontSize: '1.85rem', fontWeight: '900', letterSpacing: '-0.02em', margin: 0, color: 'var(--text-main)' }}>
+                                {isModerator ? 'Panel de Moderación' : 'Reportes de Incidentes'}
+                            </h2>
+                            {isModerator ? (
+                                <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
+                                    <span style={{ 
+                                        width: '8px', height: '8px', borderRadius: '50%', 
+                                        background: '#10b981', display: 'inline-block',
+                                        boxShadow: '0 0 10px #10b981'
+                                    }}></span>
+                                    Sesión activa como Moderador
+                                </p>
+                            ) : (
+                                <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', fontWeight: '500' }}>
+                                    Explora y reporta incidencias viales en tu zona.
+                                </p>
+                            )}
                         </div>
 
                         {/* User Tabs */}
@@ -168,13 +235,13 @@ const Dashboard = () => {
                             >
                                 <ToggleButton value="community" aria-label="comunidad">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <Users size={18} />
+                                        <RiUserCommunityLine size={22} />
                                         <span>Comunidad</span>
                                     </div>
                                 </ToggleButton>
                                 <ToggleButton value="my" aria-label="mis reportes">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <FileText size={18} />
+                                        <TbReportSearch size={22} />
                                         <span>Mis Reportes</span>
                                     </div>
                                 </ToggleButton>
@@ -239,8 +306,8 @@ const Dashboard = () => {
                 {/* Moderator Navigation - Hides Grid */}
                 {isModerator ? (
                     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                        <Link to="/moderate" className="primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 2rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', fontWeight: 'bold', fontSize: '1.1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                            🛡️ Ir al Panel de Moderación
+                        <Link to="/moderate" className="primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 2.5rem', borderRadius: '16px', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '1.2rem', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)', transition: 'transform 0.2s, boxShadow 0.2s' }}>
+                            <RxDashboard size={24} /> Ir al Panel de Moderación
                         </Link>
                     </div>
                 ) : (
@@ -280,7 +347,12 @@ const Dashboard = () => {
                                     </div>
                                     <div className="report-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '1.5rem', textAlign: 'left' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                                            <h3 style={{ fontSize: '1.25rem', margin: 0 }}>{report.type === 'Traffic' ? 'Tráfico' : report.type === 'Accident' ? 'Accidente' : report.type === 'Violation' ? 'Infracción' : report.type === 'Hazard' ? 'Peligro' : report.type}</h3>
+                                            <h3 style={{ fontSize: '1.25rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                <span style={{ color: 'var(--primary)', display: 'flex' }}>
+                                                    {getIncidentIcon(report.type)}
+                                                </span>
+                                                {getIncidentLabel(report.type)}
+                                            </h3>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 <span className={`status-badge status-${report.wasSanctioned ? 'sanctioned' : report.status}`} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
                                                     {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
@@ -309,7 +381,7 @@ const Dashboard = () => {
 
                                         <div style={{ display: 'flex', alignItems: 'center', marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)' }}>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', flex: 1, minWidth: 0 }}>
-                                                <span style={{ color: 'var(--error)', flexShrink: 0, marginTop: '2px' }}>📍</span>
+                                                <CiLocationOn size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                                                 <span style={{ lineHeight: '1.4', textAlign: 'left', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                     {report.location && report.location.address ? report.location.address : report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'Desconocido'}
                                                 </span>

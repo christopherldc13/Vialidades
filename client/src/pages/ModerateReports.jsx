@@ -4,6 +4,8 @@ import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import AuthContext from '../context/AuthContext';
 import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle } from 'lucide-react';
+import { TbHourglassEmpty } from "react-icons/tb";
+import { AiOutlineHistory } from "react-icons/ai";
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -59,7 +61,6 @@ const ModerateReports = () => {
         try {
             await axios.patch(`/api/reports/${id}/moderate`, {
                 status,
-                moderatorId: user.id,
                 sanctionUser,
                 rejectionReason
             });
@@ -87,23 +88,20 @@ const ModerateReports = () => {
     return (
         <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
             <Navbar />
-            <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', padding: '2rem 2rem 5rem' }}>
+            <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', padding: '1rem 1.5rem 3rem' }}>
 
-                {/* Header inside Card */}
-                <div style={{ marginBottom: '1rem' }}>
-                    <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'var(--text-light)', fontWeight: '600' }}>
-                        <ArrowLeft size={20} /> Volver al Dashboard
-                    </Link>
-                </div>
 
-                <div className="dashboard-header modern-dashboard-header" style={{ marginBottom: '2rem' }}>
+                <div className="dashboard-header modern-dashboard-header" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
                     <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                            <h1 style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                            <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--primary)', background: 'rgba(99, 102, 241, 0.1)', padding: '0.4rem', borderRadius: '10px' }}>
+                                <ArrowLeft size={18} />
+                            </Link>
+                            <h1 style={{ fontWeight: '800', color: 'var(--text-main)', margin: 0, fontSize: '1.5rem' }}>
                                 Panel de Moderación
                             </h1>
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', margin: 0 }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, opacity: 0.8 }}>
                             Gestiona y revisa los reportes de incidentes o usuarios.
                         </p>
                     </div>
@@ -136,7 +134,7 @@ const ModerateReports = () => {
                                 { id: 'approved', label: 'Aprobados', icon: Check, color: 'var(--success)' },
                                 { id: 'rejected', label: 'Rechazados', icon: X, color: 'var(--error)' },
                                 { id: 'sanctioned', label: 'Sancionados', icon: AlertTriangle, color: '#b91c1c' },
-                                { id: 'all', label: 'Historial', icon: null, color: '#64748b' },
+                                { id: 'all', label: 'Historial', icon: AiOutlineHistory, color: '#64748b' },
                                 { id: 'users', label: 'Usuarios', icon: Users, color: '#3b82f6' }
                             ].map(tab => (
                                 <ToggleButton
@@ -184,7 +182,7 @@ const ModerateReports = () => {
                                     display: 'flex', flexDirection: 'column',
                                     background: 'var(--surface-solid)', borderRadius: '20px',
                                     border: '1px solid var(--border-light)',
-                                    padding: '1.75rem',
+                                    padding: '1.25rem',
                                     boxShadow: 'var(--shadow-sm)',
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     cursor: 'pointer',
@@ -197,13 +195,13 @@ const ModerateReports = () => {
                                 }}
                                 className="moderation-card premium-user-card"
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
                                         {usr.avatar ? (
                                             <img 
                                                 src={getAvatarUrl(usr.avatar)} 
                                                 alt="Avatar" 
                                                 style={{ 
-                                                    width: '56px', height: '56px', borderRadius: '16px', 
+                                                    width: '48px', height: '48px', borderRadius: '14px', 
                                                     objectFit: 'cover',
                                                     boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.4)',
                                                     flexShrink: 0,
@@ -213,7 +211,7 @@ const ModerateReports = () => {
                                             />
                                         ) : (
                                             <div style={{ 
-                                                width: '56px', height: '56px', borderRadius: '16px', 
+                                                width: '48px', height: '48px', borderRadius: '14px', 
                                                 background: 'linear-gradient(135deg, var(--primary), #818cf8)', 
                                                 color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                                                 fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif',
@@ -224,8 +222,8 @@ const ModerateReports = () => {
                                                 {usr.username.charAt(0).toUpperCase()}
                                             </div>
                                         )}
-                                        <div style={{ flex: 1, minWidth: 0, marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <div title={`${usr.firstName} ${usr.lastName}`} style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', lineHeight: '1.2' }}>
+                                        <div style={{ flex: 1, minWidth: 0, marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                            <div title={`${usr.firstName} ${usr.lastName}`} style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem', lineHeight: '1.2' }}>
                                                 <span style={{ wordWrap: 'break-word' }}>{usr.firstName} {usr.lastName}</span>
                                                 {usr.isVerified && <CheckCircle size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: '3px' }} />}
                                             </div>
@@ -238,7 +236,7 @@ const ModerateReports = () => {
                                         </div>
                                     </div>
                                     
-                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                                         <span style={{ 
                                             fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderRadius: '8px', 
                                             background: usr.role === 'admin' ? 'linear-gradient(135deg, #a855f7, #9333ea)' : usr.role === 'moderator' ? 'linear-gradient(135deg, var(--primary), #4f46e5)' : 'var(--bg-input)', 
@@ -279,28 +277,27 @@ const ModerateReports = () => {
                         </div>
                     )
                 ) : reports.length === 0 ? (
-                    <div style={{ padding: '4rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '20px', marginTop: '2rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✨</div>
-                        <h3 style={{ color: 'var(--text-main)' }}>No hay reportes en esta sección</h3>
-                        <p style={{ color: 'var(--text-light)' }}>Selecciona otro filtro o vuelve más tarde.</p>
+                    <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '24px', marginTop: '1.5rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ 
+                            background: 'rgba(99, 102, 241, 0.1)', 
+                            color: 'var(--primary)', 
+                            width: '60px', height: '60px', 
+                            borderRadius: '50%', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 1.25rem',
+                            boxShadow: '0 0 15px rgba(99, 102, 241, 0.15)'
+                        }}>
+                            <TbHourglassEmpty size={32} />
+                        </div>
+                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.25rem' }}>No hay reportes en esta sección</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>Selecciona otro filtro o vuelve más tarde cuando haya nueva actividad.</p>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gap: '1.5rem', marginTop: '2rem' }}>
                         {reports.map((report) => (
-                            <div key={report._id} style={{
-                                display: 'flex', flexDirection: 'column',
-                                background: 'var(--surface-solid)', borderRadius: '20px',
-                                border: '1px solid var(--border-color)',
-                                overflow: 'hidden',
-                                transition: 'transform 0.2s',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                                height: '350px'
-                            }}
-                                className="moderation-card"
-                            >
-                                <div style={{ display: 'flex', flexWrap: 'wrap', height: '350px' }}>
-                                    {/* Media Side */}
-                                    <div style={{ flex: '1 1 400px', maxWidth: '500px', background: 'var(--bg-input)', position: 'relative', height: '350px' }}>
+                            <div key={report._id} className="moderation-card moderation-card-responsive">
+                                {/* Media Side */}
+                                <div className="moderation-card-media">
                                         <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
 
                                         <div style={{
@@ -315,7 +312,7 @@ const ModerateReports = () => {
                                     </div>
 
                                     {/* Info Side */}
-                                    <div style={{ flex: '1 1 300px', padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '350px' }}>
+                                    <div className="moderation-card-info">
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                             <div>
                                                 <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{report.type}</h3>
@@ -523,7 +520,6 @@ const ModerateReports = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         ))}
                     </div>
                 )}

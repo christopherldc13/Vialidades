@@ -4,9 +4,34 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import { X, Calendar, MapPin, User, Info, Smartphone, Clock } from 'lucide-react';
+import { X, Calendar, User, Info, Smartphone, Clock } from 'lucide-react';
+import { CiLocationOn } from "react-icons/ci";
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaGallery from './MediaGallery';
+import { FaCar, FaCarCrash } from "react-icons/fa";
+import { BsSignStopFill } from "react-icons/bs";
+import { LuTriangleAlert } from "react-icons/lu";
+import { IoMdHelpCircle } from "react-icons/io";
+
+const getIncidentIcon = (type) => {
+    switch (type) {
+        case 'Traffic': return <FaCar />;
+        case 'Accident': return <FaCarCrash />;
+        case 'Violation': return <BsSignStopFill />;
+        case 'Hazard': return <LuTriangleAlert />;
+        default: return <IoMdHelpCircle />;
+    }
+};
+
+const getIncidentLabel = (type) => {
+    switch (type) {
+        case 'Traffic': return 'Tráfico Pesado';
+        case 'Accident': return 'Accidente';
+        case 'Violation': return 'Infracción';
+        case 'Hazard': return 'Peligro en la vía';
+        default: return type;
+    }
+};
 
 // Fix for default marker icon in React Leaflet
 let DefaultIcon = L.icon({
@@ -181,8 +206,11 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                 </div>
 
                                 <div style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Info size={20} color="var(--primary)" /> {report.type}
+                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                        <span style={{ color: 'var(--primary)', display: 'flex' }}>
+                                            {getIncidentIcon(report.type)}
+                                        </span>
+                                        {getIncidentLabel(report.type)}
                                     </h3>
                                     <p style={{ color: 'var(--text-main)', lineHeight: '1.7', whiteSpace: 'pre-wrap', margin: 0 }}>
                                         {report.description}
@@ -195,7 +223,7 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                  {/* Mini Map */}
                                 <div>
                                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', color: 'var(--text-main)', fontWeight: '700', fontSize: '1.05rem' }}>
-                                        <MapPin size={18} color="var(--error)" /> Ubicación del Incidente
+                                        <CiLocationOn size={22} style={{ color: 'var(--primary)', flexShrink: 0 }} /> Ubicación del Incidente
                                     </h4>
                                     <div className="modal-map-wrapper">
                                         <MapContainer 
@@ -214,8 +242,8 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                             </Marker>
                                         </MapContainer>
                                     </div>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.75rem', display: 'flex', gap: '0.25rem' }}>
-                                        <strong>📍 Dirección:</strong> {report.location?.address || `Coords: ${reportLocation.lat.toFixed(6)}, ${reportLocation.lng.toFixed(6)}`}
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.75rem', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                        <CiLocationOn size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} /> <strong>Dirección:</strong> {report.location?.address || `Coords: ${reportLocation.lat.toFixed(6)}, ${reportLocation.lng.toFixed(6)}`}
                                     </p>
                                 </div>
 

@@ -2,7 +2,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { Bell, User, LogOut, ClipboardList, Moon, Sun, UserPlus } from 'lucide-react';
+import { Bell, User, LogOut, Moon, Sun, UserPlus } from 'lucide-react';
+import { TbReportSearch } from "react-icons/tb";
+import { CiLocationOn } from "react-icons/ci";
 import NotificationList from './NotificationList';
 import CreateModeratorModal from './CreateModeratorModal';
 import Swal from 'sweetalert2';
@@ -43,8 +45,9 @@ const Navbar = () => {
     return (
         <>
             <nav className="navbar modern-navbar">
-                <Link to="/dashboard" className="nav-brand modern-brand">
-                    Vialidades
+                <Link to="/dashboard" className="nav-brand modern-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <CiLocationOn size={26} color="var(--primary)" />
+                    <span className="navbar-logo-text">Vialidades</span>
                 </Link>
                 <div className="nav-actions">
                     <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
@@ -59,7 +62,7 @@ const Navbar = () => {
                                 </button>
                             )}
                             <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
-                                <ClipboardList size={20} />
+                                <TbReportSearch size={22} />
                             </button>
                             <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
                                 <User size={20} />

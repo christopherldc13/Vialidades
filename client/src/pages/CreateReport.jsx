@@ -8,6 +8,13 @@ import DraggableMap from '../components/DraggableMap';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { Box, LinearProgress, Typography } from '@mui/material';
+import { CiLocationOn } from "react-icons/ci";
+import { GrGallery } from "react-icons/gr";
+import { FaCar, FaCarCrash } from "react-icons/fa";
+import { BsSignStopFill } from "react-icons/bs";
+import { LuTriangleAlert } from "react-icons/lu";
+import { IoIosSend } from "react-icons/io";
+import { IoMdHelpCircle } from "react-icons/io";
 
 function LinearProgressWithLabel(props) {
     return (
@@ -254,13 +261,56 @@ const CreateReport = () => {
 
                                 <div className="input-group">
                                     <label>Tipo de Incidente</label>
-                                    <select value={type} onChange={(e) => setType(e.target.value)}>
-                                        <option value="Traffic">🚗 Tráfico Pesado</option>
-                                        <option value="Accident">💥 Accidente</option>
-                                        <option value="Violation">🚫 Infracción</option>
-                                        <option value="Hazard">⚠️ Peligro en la vía</option>
-                                        <option value="Other">⚪ Otro</option>
-                                    </select>
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                                        gap: '0.75rem',
+                                        marginTop: '0.5rem'
+                                    }}>
+                                        {[
+                                            { id: 'Traffic', label: 'Tráfico Pesado', icon: <FaCar />, color: '#f59e0b' },
+                                            { id: 'Accident', label: 'Accidente', icon: <FaCarCrash />, color: '#ef4444' },
+                                            { id: 'Violation', label: 'Infracción', icon: <BsSignStopFill />, color: '#6366f1' },
+                                            { id: 'Hazard', label: 'Peligro en la vía', icon: <LuTriangleAlert />, color: '#ef4444' },
+                                            { id: 'Other', label: 'Otro', icon: <IoMdHelpCircle />, color: '#64748b' }
+                                        ].map((t) => (
+                                            <div 
+                                                key={t.id}
+                                                onClick={() => setType(t.id)}
+                                                style={{
+                                                    background: type === t.id ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-input)',
+                                                    border: `2px solid ${type === t.id ? 'var(--primary)' : 'var(--border-color)'}`,
+                                                    borderRadius: '16px',
+                                                    padding: '1rem',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    boxShadow: type === t.id ? '0 8px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                                                    transform: type === t.id ? 'translateY(-2px)' : 'none',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                <div style={{ 
+                                                    fontSize: '1.5rem', 
+                                                    color: type === t.id ? 'var(--primary)' : 'var(--text-light)',
+                                                    transition: 'color 0.2s'
+                                                }}>
+                                                    {t.icon}
+                                                </div>
+                                                <span style={{ 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: type === t.id ? '800' : '600',
+                                                    color: type === t.id ? 'var(--primary)' : 'var(--text-main)',
+                                                    transition: 'color 0.2s'
+                                                }}>
+                                                    {t.label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                     {type === 'Other' && (
                                         <input
                                             type="text"
@@ -268,7 +318,7 @@ const CreateReport = () => {
                                             onChange={(e) => setCustomType(e.target.value)}
                                             placeholder="Especifique el tipo de incidente"
                                             required
-                                            style={{ marginTop: '0.5rem' }}
+                                            style={{ marginTop: '1rem' }}
                                         />
                                     )}
                                 </div>
@@ -286,8 +336,8 @@ const CreateReport = () => {
                             </div>
                             <div className="form-column">
                                 <div className="input-group">
-                                    <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem' }}>
-                                        Arrastra el marcador 📍 a la ubicación exacta del incidente o escriba la ubicación exacta.
+                                    <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem', lineHeight: '1.5' }}>
+                                        Arrastra el marcador <CiLocationOn size={18} style={{ color: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'text-bottom' }} /> a la ubicación exacta del incidente o escriba la ubicación exacta.
                                     </p>
                                     <DraggableMap 
                                         location={location} 
@@ -309,7 +359,7 @@ const CreateReport = () => {
                                             alignItems: 'center',
                                             gap: '0.5rem'
                                         }}>
-                                            <span>📍</span>
+                                            <span><CiLocationOn size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} /></span>
                                             <strong>{address}</strong>
                                         </div>
                                     )}
@@ -414,7 +464,7 @@ const CreateReport = () => {
                                             background: 'var(--bg-input)',
                                             height: '100%'
                                         }}>
-                                            <div style={{ marginBottom: '0.25rem', fontSize: '1.2rem' }}>🖼️</div>
+                                            <GrGallery size={24} color="var(--primary)" style={{ marginBottom: '0.25rem' }} />
                                             <span style={{ fontWeight: 600, fontSize: '0.8rem', textAlign: 'center' }}>Galería</span>
                                         </label>
                                     </div>
@@ -480,8 +530,25 @@ const CreateReport = () => {
 
                         {loading && <LinearProgressWithLabel value={uploadProgress} />}
 
-                        <button type="submit" disabled={loading} style={{ opacity: loading ? 0.7 : 1, marginTop: '1.5rem' }}>
-                            {loading ? (uploadProgress < 100 ? 'Subiendo...' : 'Procesando...') : 'Enviar Reporte'}
+                        <button 
+                            type="submit" 
+                            disabled={loading} 
+                            style={{ 
+                                opacity: loading ? 0.7 : 1, 
+                                marginTop: '1.5rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px'
+                            }}
+                        >
+                            {loading ? (
+                                uploadProgress < 100 ? 'Subiendo...' : 'Procesando...'
+                            ) : (
+                                <>
+                                    <IoIosSend size={24} /> Enviar Reporte
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>

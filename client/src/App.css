@@ -1191,6 +1191,24 @@ button.danger:hover {
   /* Fixed the weird thick gradient */
 }
 
+.footer-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  margin-left: 1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.footer-link:hover {
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.1);
+  opacity: 1;
+}
+
 /* Responsive Landing */
 @media (max-width: 900px) {
   .hero-section {
@@ -2271,4 +2289,196 @@ html.dark .fixed-footer {
 
 .stat-card:hover .stat-value {
   transform: scale(1.1);
+}
+
+/* Suggestions Form - Premium Responsive Grid */
+.form-split-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+@media (max-width: 1024px) {
+    .form-split-grid {
+        gap: 3rem;
+    }
+}
+
+@media (max-width: 968px) {
+    .form-split-grid {
+        grid-template-columns: 1fr;
+        gap: 3.5rem;
+        text-align: left;
+    }
+    
+    .form-split-grid .card {
+        padding: 2.5rem 1.5rem !important;
+        border-radius: 30px !important;
+    }
+
+    .form-split-grid h2 {
+        font-size: 2.5rem !important;
+    }
+
+    .form-split-grid p {
+        font-size: 1.15rem !important;
+        max-width: 100% !important;
+        margin-bottom: 2rem !important;
+    }
+    
+    .form-split-grid .form-split-left > div:first-child {
+        margin-bottom: 1.5rem !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .form-split-grid {
+        gap: 2.5rem;
+    }
+    
+    .form-split-grid h2 {
+        font-size: 2.25rem !important;
+    }
+
+    .form-split-grid .card form {
+        gap: 1.5rem !important;
+    }
+
+    .form-split-grid .card {
+        padding: 2rem 1.25rem !important;
+    }
+
+    .form-split-grid button {
+        height: 58px !important;
+        font-size: 1rem !important;
+    }
+} 
+
+/* Navbar Mobile Optimization for Moderator Tools */
+@media (max-width: 500px) {
+  .navbar-logo-text {
+    display: none !important;
+  }
+  .nav-actions {
+    gap: 0.25rem !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+  }
+  .modern-nav-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+} 
+
+/* --- Moderation Panel Mobile Optimization --- */
+.moderation-card-responsive {
+    display: flex;
+    flex-direction: row;
+    background: var(--surface-solid);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    min-height: 300px;
+    height: auto;
+}
+
+.moderation-card-media {
+    flex: 1 1 380px;
+    max-width: 450px;
+    background: var(--bg-input);
+    position: relative;
+    height: 300px;
+}
+
+.moderation-card-info {
+    flex: 1 1 300px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 350px;
+}
+
+@media (max-width: 992px) {
+    .moderation-card-responsive {
+        flex-direction: column;
+        min-height: auto;
+    }
+    .moderation-card-media {
+        max-width: 100%;
+        width: 100%;
+        flex: none;
+        height: 250px;
+    }
+    .moderation-card-info {
+        flex: none;
+        height: auto;
+        min-height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .moderation-card-media {
+        height: 200px;
+    }
+    .moderation-card-info {
+        padding: 1rem;
+    }
+    .moderation-card-info h3 {
+        font-size: 1.15rem !important;
+    }
+}
+
+/* Optimization for filters and header */
+@media (max-width: 768px) {
+    .modern-dashboard-header h1 {
+        font-size: 1.75rem !important;
+    }
+    .toggle-group button {
+        padding: 0.6rem 1rem !important;
+        font-size: 0.85rem !important;
+    }
+} 
+
+/* User Detail Modal Responsive Styles */
+.user-detail-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.user-detail-label {
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.user-detail-value {
+    color: var(--text-main);
+    word-break: break-all;
+}
+
+@media (max-width: 600px) {
+    .user-detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.25rem !important;
+    }
+    
+    .user-detail-label {
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .user-detail-value {
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .user-detail-value:last-child {
+        border-bottom: none;
+    }
 }

@@ -33,6 +33,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/suggestions', require('./routes/suggestions'));
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI, {

@@ -129,6 +129,29 @@ router.get('/public', async (req, res) => {
     }
 });
 
+// --- MODERATOR STATS ENDPOINT ---
+router.get('/stats', auth, async (req, res) => {
+    try {
+        if (!['moderator', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ msg: 'No autorizado' });
+        }
+        
+        const moderatorId = req.user.id;
+        
+        const [pending, approved, rejected, sanctioned] = await Promise.all([
+            Report.countDocuments({ status: 'pending' }),
+            Report.countDocuments({ status: 'approved', moderatorId }),
+            Report.countDocuments({ status: 'rejected', wasSanctioned: { $ne: true }, moderatorId }),
+            Report.countDocuments({ wasSanctioned: true, moderatorId })
+        ]);
+
+        res.json({ pending, approved, rejected, sanctioned });
+    } catch (err) {
+        console.error('Error fetching stats:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Get Reports - Logic:
 // If query 'my=true', return user's reports.
 // If query 'status=pending' & user is admin/mod, return pending.
@@ -141,19 +164,30 @@ router.get('/', auth, async (req, res) => {
         if (my === 'true') {
             query.userId = req.user.id;
         } else if (['moderator', 'admin'].includes(req.user.role)) {
-            // Default to approved if no status provided, but allow overriding
-            if (status === 'all') {
-                // Do not filter by status, return everything
+            // Global vs. Personalized logic
+            if (status === 'pending') {
+                query.status = 'pending';
+                // Global: No moderatorId filter
+            } else if (status === 'all') {
+                // Global history: No specific filter
             } else if (status === 'sanctioned') {
                 query.wasSanctioned = true;
+                query.moderatorId = req.user.id;
             } else if (status === 'rejected') {
-                // EXCLUDE sanctioned reports from the 'rejected' tab to keep them distinct
                 query.status = 'rejected';
                 query.wasSanctioned = { $ne: true };
+                query.moderatorId = req.user.id;
+            } else if (status === 'approved') {
+                query.status = 'approved';
+                query.moderatorId = req.user.id;
             } else if (status) {
                 query.status = status;
+                // For any other specific status, filter by self for security
+                query.moderatorId = req.user.id;
             } else {
+                // Default: Moderated approved reports for this user
                 query.status = 'approved';
+                query.moderatorId = req.user.id;
             }
         } else {
             // Regular users ONLY see approved reports in the feed
@@ -182,8 +216,8 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Moderate Report
-router.patch('/:id/moderate', async (req, res) => {
-    const { status, moderatorComment, moderatorId } = req.body; // Changed from rejectionReason
+router.patch('/:id/moderate', auth, async (req, res) => {
+    const { status, moderatorComment } = req.body; // Ignore moderatorId from body, use req.user.id
     const Sanction = require('../models/Sanction'); // Import Sanction model
     console.log("MODERATION REQUEST BODY:", req.body);
 
@@ -200,6 +234,7 @@ router.patch('/:id/moderate', async (req, res) => {
         if (!report) return res.status(404).json({ msg: 'Report not found' });
 
         report.status = status;
+        report.moderatorId = req.user.id; // Corrected: use req.user.id from token
         if (status === 'rejected') {
             report.moderatorComment = moderatorComment || req.body.rejectionReason;
             if (isSanctioning) {
