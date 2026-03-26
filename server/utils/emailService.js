@@ -106,10 +106,10 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        await getTransporter().sendMail({
-            from: '"Vialidades" <vialidades.transito@gmail.com>',
+        await resend.emails.send({
+            from: `Vialidades <${FROM_EMAIL}>`,
             to: email,
-            subject: "¡Bienvenido a la comunidad de Vialidades! (Credenciales de acceso)",
+            subject: "¡Bienvenido a la comunidad de Vialidades!",
             html: html
         });
         console.log(`Welcome email sent to ${email}`);
@@ -138,8 +138,8 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        await getTransporter().sendMail({
-            from: '"Vialidades" <vialidades.transito@gmail.com>',
+        await resend.emails.send({
+            from: `Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: "Código de Verificación - Vialidades",
             html: html
@@ -171,8 +171,8 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        await getTransporter().sendMail({
-            from: '"Soporte Vialidades" <vialidades.transito@gmail.com>',
+        await resend.emails.send({
+            from: `Soporte Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: "Instrucciones para restablecer tu contraseña",
             html: html
@@ -236,8 +236,8 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        await getTransporter().sendMail({
-            from: '"Moderación Vialidades" <vialidades.transito@gmail.com>',
+        await resend.emails.send({
+            from: `Moderación Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: `Actualización: Tu reporte ha sido ${statusText.toLowerCase()}`,
             html: html
