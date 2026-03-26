@@ -1,37 +1,12 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const process = require('process');
-const path = require('path');
 
-// Create reusable transporter getter to prevent premature evaluation before env
-let transporter;
-const getTransporter = () => {
-    if (!transporter) {
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.warn("WARNING: EMAIL_USER or EMAIL_PASS is missing in environment variables.");
-        }
-        
-        // Use explicit SMTP configuration for better compatibility on Cloud platforms like Render
-        // Gmail App Passwords (16 letters) should be used WITHOUT spaces for maximum compatibility
-        const cleanPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+// Initialize Resend with API Key from environment
+// Using the provided key as fallback for convenience, but env var is preferred
+const resend = new Resend(process.env.RESEND_API_KEY || 're_AcS2nBAR_3qZSi5ugtDy7ysuA226zvyGS');
 
-        transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, 
-            auth: {
-                user: (process.env.EMAIL_USER || '').trim(),
-                pass: cleanPass
-            },
-            // Increased timeouts for Render
-            connectionTimeout: 30000, 
-            greetingTimeout: 30000,
-            socketTimeout: 40000,
-            logger: true,
-            debug: true
-        });
-    }
-    return transporter;
-};
+// The verified sender email in Resend (default is onboarding@resend.dev)
+const FROM_EMAIL = 'onboarding@resend.dev';
 
 /**
  * Base template generator for professional emails
