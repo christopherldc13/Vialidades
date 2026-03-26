@@ -102,7 +102,12 @@ const MediaGallery = ({ media, objectFit = 'cover' }) => {
                     // Handle legacy string URLs vs object {url, type}
                     const url = typeof item === 'string' ? item : item.url;
                     const type = typeof item === 'string' ? 'image' : (item.type || 'image');
-                    const fullUrl = url.startsWith('http') ? url : (import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`);
+                    let fullUrl = url.startsWith('http') ? url : (import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`);
+                    
+                    // HEIC Support: If URL ends in .heic, request it as .jpg from Cloudinary (on-the-fly conversion)
+                    if (fullUrl.toLowerCase().endsWith('.heic')) {
+                        fullUrl = fullUrl.replace(/\.heic$/i, '.jpg');
+                    }
 
                     return (
                         <div

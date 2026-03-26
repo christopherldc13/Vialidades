@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import { X, Calendar, User, Info, Smartphone, Clock } from 'lucide-react';
+import { X, Calendar, User, Info, Smartphone, Clock, MapPin } from 'lucide-react';
 import { CiLocationOn } from "react-icons/ci";
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaGallery from './MediaGallery';

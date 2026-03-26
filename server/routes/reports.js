@@ -26,6 +26,7 @@ const storage = new CloudinaryStorage({
         return {
             folder: 'vialidades_reports',
             resource_type: isVideo ? 'video' : 'image',
+            format: isVideo ? undefined : 'jpg', // Force JPG for images to support HEIC conversion
             // Ensure metadata is preserved by NOT transforming the original on upload
             image_metadata: true,
             exif: true
@@ -247,17 +248,29 @@ router.patch('/:id/moderate', auth, async (req, res) => {
             // (Blur logic remains the same)
             if (report.media && report.media.length > 0) {
                 report.media.forEach(item => {
-                    if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
-                        item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
-                        modified = true;
+                    if (item.type === 'image' && item.url.includes('/upload/')) {
+                        if (!item.url.includes('/e_blur_faces/')) {
+                            item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
+                            modified = true;
+                        }
+                        if (item.url.toLowerCase().endsWith('.heic')) {
+                            item.url = item.url.replace(/\.heic$/i, '.jpg');
+                            modified = true;
+                        }
                     }
                 });
             }
             if (report.photos && report.photos.length > 0) {
                 report.photos.forEach(item => {
-                    if (item.type === 'image' && item.url.includes('/upload/') && !item.url.includes('/e_blur_faces/')) {
-                        item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
-                        modified = true;
+                    if (item.type === 'image' && item.url.includes('/upload/')) {
+                        if (!item.url.includes('/e_blur_faces/')) {
+                            item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
+                            modified = true;
+                        }
+                        if (item.url.toLowerCase().endsWith('.heic')) {
+                            item.url = item.url.replace(/\.heic$/i, '.jpg');
+                            modified = true;
+                        }
                     }
                 });
             }
