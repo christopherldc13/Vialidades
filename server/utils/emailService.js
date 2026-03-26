@@ -16,18 +16,18 @@ const getTransporter = () => {
 
         transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // Use TLS
+            port: 465,
+            secure: true, // Use SSL
             auth: {
                 user: (process.env.EMAIL_USER || '').trim(),
                 pass: cleanPass
             },
-            // Force IPv4 to avoid Render's IPv6 routing issues seen in logs
+            // Force IPv4 to avoid Render's IPv6 routing issues
             family: 4, 
-            // Prevent hanging: 20 second timeouts for slow cloud networks
-            connectionTimeout: 20000, 
-            greetingTimeout: 20000,
-            socketTimeout: 30000,
+            // Prevent hanging: 25 second timeouts for slow cloud networks
+            connectionTimeout: 25000, 
+            greetingTimeout: 25000,
+            socketTimeout: 35000,
             // Enable logging
             logger: true,
             debug: true
