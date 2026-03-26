@@ -81,18 +81,20 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const { data, error } = await resend.emails.send({
+        const response = await resend.emails.send({
             from: `Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: "¡Bienvenido a la comunidad de Vialidades!",
             html: html
         });
 
-        if (error) {
-            console.error("❌ RESEND ERROR:", error);
-            throw error;
+        if (response.error) {
+            console.error("❌ RESEND ERROR:", response.error);
+            throw new Error(response.error.message || "Error en Resend");
         }
-        console.log(`Email ID: ${data.id} - Welcome email sent to ${email}`);
+        
+        const emailId = response.data ? response.data.id : 'N/A';
+        console.log(`Email ID: ${emailId} - Welcome email sent to ${email}`);
     } catch (error) {
         console.error("Error sending welcome email:", error);
         throw error; // Rethrow so caller can handle the failure
@@ -118,18 +120,20 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const { data, error } = await resend.emails.send({
+        const response = await resend.emails.send({
             from: `Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: "Código de Verificación - Vialidades",
             html: html
         });
 
-        if (error) {
-            console.error("❌ RESEND ERROR:", error);
-            throw error;
+        if (response.error) {
+            console.error("❌ RESEND ERROR:", response.error);
+            throw new Error(response.error.message || "Error en Resend");
         }
-        console.log(`Email ID: ${data.id} - Verification email sent to ${email}`);
+        
+        const emailId = response.data ? response.data.id : 'N/A';
+        console.log(`Email ID: ${emailId} - Verification email sent to ${email}`);
     } catch (error) {
         console.error("Error sending verification email:", error);
         throw error; // Rethrow so caller can handle the failure
@@ -156,18 +160,23 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const { data, error } = await resend.emails.send({
+        const response = await resend.emails.send({
             from: `Soporte Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: "Instrucciones para restablecer tu contraseña",
             html: html
         });
 
-        if (error) {
-            console.error("❌ RESEND ERROR:", error);
-            throw error;
+        // Debug response in Render
+        console.log("Resend API Response:", JSON.stringify(response));
+
+        if (response.error) {
+            console.error("❌ RESEND ERROR:", response.error);
+            throw new Error(response.error.message || "Error al enviar correo via Resend");
         }
-        console.log(`Email ID: ${data.id} - Password reset email sent to ${email}`);
+        
+        const emailId = response.data ? response.data.id : 'N/A';
+        console.log(`Email ID: ${emailId} - Password reset email sent to ${email}`);
     } catch (error) {
         console.error("Error sending password reset email:", error);
         throw error; // Rethrow so caller can handle
@@ -226,18 +235,20 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const { data, error } = await resend.emails.send({
+        const response = await resend.emails.send({
             from: `Moderación Vialidades <${FROM_EMAIL}>`,
             to: email,
             subject: `Actualización: Tu reporte ha sido ${statusText.toLowerCase()}`,
             html: html
         });
 
-        if (error) {
-            console.error("❌ RESEND ERROR:", error);
-            throw error;
+        if (response.error) {
+            console.error("❌ RESEND ERROR:", response.error);
+            throw new Error(response.error.message || "Error en Resend");
         }
-        console.log(`Email ID: ${data.id} - Report status email sent to ${email}`);
+        
+        const emailId = response.data ? response.data.id : 'N/A';
+        console.log(`Email ID: ${emailId} - Report status email sent to ${email}`);
     } catch (error) {
         console.error("Error sending report status email:", error);
         throw error;
