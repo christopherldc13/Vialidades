@@ -5,13 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const dns = require('dns');
 
-// Fix for DNS SRV lookup failures (ECONNREFUSED) on some networks
-try {
-    dns.setServers(['8.8.8.8', '8.8.4.4']); // Use Google DNS
-    console.log('DNS Servers set to Google DNS (8.8.8.8)');
-} catch (e) {
-    console.error('Failed to set DNS servers:', e);
-}
+// No manual DNS overrides - let Render handle its own name resolution
 
 dotenv.config();
 
