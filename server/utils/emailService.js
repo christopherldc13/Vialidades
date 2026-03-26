@@ -1,12 +1,17 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const process = require('process');
 
-// Initialize Resend with API Key from environment
-// Using the provided key as fallback for convenience, but env var is preferred
-const resend = new Resend(process.env.RESEND_API_KEY || 're_AcS2nBAR_3qZSi5ugtDy7ysuA226zvyGS');
+// Initialize Nodemailer transporter for Gmail
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
 
-// The verified sender email in Resend (default is onboarding@resend.dev)
-const FROM_EMAIL = 'onboarding@resend.dev';
+// The verified sender email in Gmail
+const FROM_EMAIL = process.env.EMAIL_USER || 'vialidades.transito@gmail.com';
 
 /**
  * Base template generator for professional emails
@@ -81,23 +86,18 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const response = await resend.emails.send({
-            from: `Vialidades <${FROM_EMAIL}>`,
+        const mailOptions = {
+            from: `"Vialidades" <${FROM_EMAIL}>`,
             to: email,
             subject: "¡Bienvenido a la comunidad de Vialidades!",
             html: html
-        });
+        };
 
-        if (response.error) {
-            console.error("❌ RESEND ERROR:", response.error);
-            throw new Error(response.error.message || "Error en Resend");
-        }
-        
-        const emailId = response.data ? response.data.id : 'N/A';
-        console.log(`Email ID: ${emailId} - Welcome email sent to ${email}`);
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Welcome email sent: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending welcome email:", error);
-        throw error; // Rethrow so caller can handle the failure
+        throw error;
     }
 };
 
@@ -120,23 +120,18 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const response = await resend.emails.send({
-            from: `Vialidades <${FROM_EMAIL}>`,
+        const mailOptions = {
+            from: `"Vialidades" <${FROM_EMAIL}>`,
             to: email,
             subject: "Código de Verificación - Vialidades",
             html: html
-        });
+        };
 
-        if (response.error) {
-            console.error("❌ RESEND ERROR:", response.error);
-            throw new Error(response.error.message || "Error en Resend");
-        }
-        
-        const emailId = response.data ? response.data.id : 'N/A';
-        console.log(`Email ID: ${emailId} - Verification email sent to ${email}`);
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Verification email sent: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending verification email:", error);
-        throw error; // Rethrow so caller can handle the failure
+        throw error;
     }
 };
 
@@ -160,27 +155,18 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const response = await resend.emails.send({
-            from: `Soporte Vialidades <${FROM_EMAIL}>`,
+        const mailOptions = {
+            from: `"Soporte Vialidades" <${FROM_EMAIL}>`,
             to: email,
             subject: "Instrucciones para restablecer tu contraseña",
             html: html
-        });
+        };
 
-        // Debug response in Render
-        console.log("Resend API Response:", JSON.stringify(response));
-
-        if (response.error || (response.statusCode && response.statusCode !== 200 && response.statusCode !== 201)) {
-            const errorMsg = response.error ? (response.error.message || response.error.name) : response.message;
-            console.error("❌ RESEND ERROR:", errorMsg);
-            throw new Error(errorMsg || "Error al enviar correo via Resend");
-        }
-        
-        const emailId = response.data ? response.data.id : 'N/A';
-        console.log(`Email ID: ${emailId} - Password reset email sent to ${email}`);
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Password reset email sent: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending password reset email:", error);
-        throw error; // Rethrow so caller can handle
+        throw error;
     }
 };
 
@@ -236,20 +222,15 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
 
         const html = getBaseTemplate(title, content, actionButton);
 
-        const response = await resend.emails.send({
-            from: `Moderación Vialidades <${FROM_EMAIL}>`,
+        const mailOptions = {
+            from: `"Moderación Vialidades" <${FROM_EMAIL}>`,
             to: email,
             subject: `Actualización: Tu reporte ha sido ${statusText.toLowerCase()}`,
             html: html
-        });
+        };
 
-        if (response.error) {
-            console.error("❌ RESEND ERROR:", response.error);
-            throw new Error(response.error.message || "Error en Resend");
-        }
-        
-        const emailId = response.data ? response.data.id : 'N/A';
-        console.log(`Email ID: ${emailId} - Report status email sent to ${email}`);
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Report status email sent: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending report status email:", error);
         throw error;
