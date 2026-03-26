@@ -2,12 +2,20 @@ const nodemailer = require('nodemailer');
 const process = require('process');
 
 // Initialize Nodemailer transporter for Gmail
+// Note: We use explicit host and port 465 with secure: true 
+// because Port 587 is often blocked on cloud providers like Render.
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    // Adding timeout for better resilience in cloud environments
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // The verified sender email in Gmail
