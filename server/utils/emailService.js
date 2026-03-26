@@ -1,23 +1,21 @@
 const nodemailer = require('nodemailer');
 const process = require('process');
 
-// Initialize Nodemailer transporter for Gmail SMTP
-// Note: This uses standard SMTP which may be blocked by some cloud providers like Render.
+// Initialize Nodemailer transporter with OAuth2 for Gmail
+// This method is required for Render because they block standard SMTP ports.
+// OAuth2 uses HTTP/HTTPS (Port 443) which is not blocked.
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Port 465 uses SSL
+    service: 'gmail',
     auth: {
+        type: 'OAuth2',
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    // Timeouts to prevent hanging if the connection is blocked
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN
+    }
 });
 
-// The verified sender email (must match the Gmail account)
+// The gmail address
 const FROM_EMAIL = process.env.EMAIL_USER || 'vialidades.transito@gmail.com';
 
 /**
@@ -101,7 +99,7 @@ exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
         };
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`Welcome email sent via SMTP: ${result.messageId} to ${email}`);
+        console.log(`Welcome email sent via Gmail API: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending welcome email:", error);
         throw error;
@@ -135,7 +133,7 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
         };
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`Verification email sent via SMTP: ${result.messageId} to ${email}`);
+        console.log(`Verification email sent via Gmail API: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending verification email:", error);
         throw error;
@@ -170,7 +168,7 @@ exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
         };
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`Password reset email sent via SMTP: ${result.messageId} to ${email}`);
+        console.log(`Password reset email sent via Gmail API: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending password reset email:", error);
         throw error;
@@ -237,7 +235,7 @@ exports.sendReportStatusEmail = async (email, username, reportType, status, mode
         };
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`Report status email sent via SMTP: ${result.messageId} to ${email}`);
+        console.log(`Report status email sent via Gmail API: ${result.messageId} to ${email}`);
     } catch (error) {
         console.error("Error sending report status email:", error);
         throw error;
