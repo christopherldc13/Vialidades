@@ -22,11 +22,13 @@ const getTransporter = () => {
                 user: (process.env.EMAIL_USER || '').trim(),
                 pass: cleanPass
             },
-            // Prevent hanging: 10-20 second timeouts
-            connectionTimeout: 10000, 
-            greetingTimeout: 10000,
-            socketTimeout: 20000,
-            // Enable logging to help debug 500 errors in your cloud dashboard
+            // Force IPv4 to avoid Render's IPv6 routing issues seen in logs
+            family: 4, 
+            // Prevent hanging: 20 second timeouts for slow cloud networks
+            connectionTimeout: 20000, 
+            greetingTimeout: 20000,
+            socketTimeout: 30000,
+            // Enable logging
             logger: true,
             debug: true
         });
