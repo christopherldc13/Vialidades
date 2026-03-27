@@ -1,39 +1,64 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
-const { OAuth2Client } = require('google-auth-library');
 const https = require('https');
-
-// Gmail API Configuration (HTTP REST)
-// This is the absolute best way for Render because it uses standard HTTPS (Port 443).
-const G_CID = process.env.GOOGLE_CLIENT_ID;
-const G_SEC = process.env.GOOGLE_CLIENT_SECRET;
-const G_RTK = process.env.GOOGLE_REFRESH_TOKEN;
-
-// DIAGNOSTIC LOG (SAFE): Verify lengths and partial keys to find hidden spaces or typos
-console.log('--- GMAIL API DIAGNOSTICS ---');
-console.log(`CLIENT_ID: ${G_CID ? G_CID.substring(0, 10) + '...' + G_CID.substring(G_CID.length - 5) : 'MISSING'} (Len: ${G_CID?.length || 0})`);
-console.log(`CLIENT_SEC: ${G_SEC ? G_SEC.substring(0, 5) + '...' + G_SEC.substring(G_SEC.length - 3) : 'MISSING'} (Len: ${G_SEC?.length || 0})`);
-console.log(`REFRESH_TOKEN: ${G_RTK ? G_RTK.substring(0, 5) + '...' + G_RTK.substring(G_RTK.length - 5) : 'MISSING'} (Len: ${G_RTK?.length || 0})`);
-
-const oauth2Client = new OAuth2Client(
-    G_CID,
-    G_SEC,
-    'https://developers.google.com/oauthplayground'
-);
-
-oauth2Client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN
-});
+const querystring = require('querystring');
 
 /**
- * Custom function to send email via Gmail REST API (HTTPS)
- * This replaces the standard nodemailer transporter.sendMail for Render compatibility.
+ * Fetches a fresh access token using the refresh token.
+ * Uses native https module to avoid any platform-specific behavior in google-auth-library.
+ */
+function getAccessToken() {
+    return new Promise((resolve, reject) => {
+        const postData = querystring.stringify({
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+            grant_type: 'refresh_token'
+        });
+
+        const options = {
+            hostname: 'oauth2.googleapis.com',
+            port: 443,
+            path: '/token',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': postData.length
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(data);
+                    if (result.access_token) {
+                        resolve(result.access_token);
+                    } else {
+                        reject(new Error(result.error_description || result.error || 'Failed to get access token'));
+                    }
+                } catch (e) {
+                    reject(new Error('Invalid response from Google token endpoint'));
+                }
+            });
+        });
+
+        req.on('error', (e) => reject(e));
+        req.write(postData);
+        req.end();
+    });
+}
+
+/**
+ * Sends an email via Gmail REST API (HTTPS).
+ * Does NOT use SMTP, avoiding all port-blocking issues on Render.
  */
 async function sendEmailViaRest(mailOptions) {
     try {
-        const { token } = await oauth2Client.getAccessToken();
-        
-        // Build the raw email (MIME)
+        const accessToken = await getAccessToken();
+
+        // Build the raw MIME email using nodemailer (stream mode, no actual SMTP connection)
         const transporter = nodemailer.createTransport({
             streamTransport: true,
             newline: 'unix',
@@ -41,35 +66,43 @@ async function sendEmailViaRest(mailOptions) {
         });
 
         const info = await transporter.sendMail(mailOptions);
-        const rawEmail = info.message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const rawEmail = info.message.toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
 
         const postData = JSON.stringify({ raw: rawEmail });
 
-        const options = {
-            hostname: 'gmail.googleapis.com',
-            port: 443,
-            path: '/gmail/v1/users/me/messages/send',
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Content-Length': postData.length
-            }
-        };
-
         return new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'gmail.googleapis.com',
+                port: 443,
+                path: '/gmail/v1/users/me/messages/send',
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            };
+
             const req = https.request(options, (res) => {
                 let data = '';
                 res.on('data', (chunk) => data += chunk);
                 res.on('end', () => {
-                    const result = JSON.parse(data);
-                    if (res.statusCode >= 200 && res.statusCode < 300) {
-                        resolve(result);
-                    } else {
-                        reject(new Error(`Gmail API Error: ${result.error?.message || data}`));
+                    try {
+                        const result = JSON.parse(data);
+                        if (res.statusCode >= 200 && res.statusCode < 300) {
+                            resolve(result);
+                        } else {
+                            reject(new Error(`Gmail API Error (${res.statusCode}): ${result.error?.message || data}`));
+                        }
+                    } catch (e) {
+                        reject(new Error(`Invalid Gmail API response: ${data}`));
                     }
                 });
             });
+
             req.on('error', (e) => reject(e));
             req.write(postData);
             req.end();
