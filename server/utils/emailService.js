@@ -5,9 +5,19 @@ const https = require('https');
 
 // Gmail API Configuration (HTTP REST)
 // This is the absolute best way for Render because it uses standard HTTPS (Port 443).
+const G_CID = process.env.GOOGLE_CLIENT_ID;
+const G_SEC = process.env.GOOGLE_CLIENT_SECRET;
+const G_RTK = process.env.GOOGLE_REFRESH_TOKEN;
+
+// DIAGNOSTIC LOG (SAFE): Verify lengths and partial keys to find hidden spaces or typos
+console.log('--- GMAIL API DIAGNOSTICS ---');
+console.log(`CLIENT_ID: ${G_CID ? G_CID.substring(0, 10) + '...' + G_CID.substring(G_CID.length - 5) : 'MISSING'} (Len: ${G_CID?.length || 0})`);
+console.log(`CLIENT_SEC: ${G_SEC ? G_SEC.substring(0, 5) + '...' + G_SEC.substring(G_SEC.length - 3) : 'MISSING'} (Len: ${G_SEC?.length || 0})`);
+console.log(`REFRESH_TOKEN: ${G_RTK ? G_RTK.substring(0, 5) + '...' + G_RTK.substring(G_RTK.length - 5) : 'MISSING'} (Len: ${G_RTK?.length || 0})`);
+
 const oauth2Client = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
+    G_CID,
+    G_SEC,
     'https://developers.google.com/oauthplayground'
 );
 
