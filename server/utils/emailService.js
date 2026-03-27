@@ -1,117 +1,24 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
-const https = require('https');
-const querystring = require('querystring');
 
-/**
- * Fetches a fresh access token using the refresh token.
- * Uses native https module to avoid any platform-specific behavior in google-auth-library.
- */
-function getAccessToken() {
-    return new Promise((resolve, reject) => {
-        const postData = querystring.stringify({
-            client_id: process.env.GOOGLE_CLIENT_ID,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-            grant_type: 'refresh_token'
-        });
-
-        const options = {
-            hostname: 'oauth2.googleapis.com',
-            port: 443,
-            path: '/token',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': postData.length
-            }
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-            res.on('data', (chunk) => data += chunk);
-            res.on('end', () => {
-                try {
-                    const result = JSON.parse(data);
-                    if (result.access_token) {
-                        resolve(result.access_token);
-                    } else {
-                        reject(new Error(result.error_description || result.error || 'Failed to get access token'));
-                    }
-                } catch (e) {
-                    reject(new Error('Invalid response from Google token endpoint'));
-                }
-            });
-        });
-
-        req.on('error', (e) => reject(e));
-        req.write(postData);
-        req.end();
-    });
-}
-
-/**
- * Sends an email via Gmail REST API (HTTPS).
- * Does NOT use SMTP, avoiding all port-blocking issues on Render.
- */
-async function sendEmailViaRest(mailOptions) {
-    try {
-        const accessToken = await getAccessToken();
-
-        // Build the raw MIME email using nodemailer (stream mode, no actual SMTP connection)
-        const transporter = nodemailer.createTransport({
-            streamTransport: true,
-            newline: 'unix',
-            buffer: true
-        });
-
-        const info = await transporter.sendMail(mailOptions);
-        const rawEmail = info.message.toString('base64')
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
-
-        const postData = JSON.stringify({ raw: rawEmail });
-
-        return new Promise((resolve, reject) => {
-            const options = {
-                hostname: 'gmail.googleapis.com',
-                port: 443,
-                path: '/gmail/v1/users/me/messages/send',
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(postData)
-                }
-            };
-
-            const req = https.request(options, (res) => {
-                let data = '';
-                res.on('data', (chunk) => data += chunk);
-                res.on('end', () => {
-                    try {
-                        const result = JSON.parse(data);
-                        if (res.statusCode >= 200 && res.statusCode < 300) {
-                            resolve(result);
-                        } else {
-                            reject(new Error(`Gmail API Error (${res.statusCode}): ${result.error?.message || data}`));
-                        }
-                    } catch (e) {
-                        reject(new Error(`Invalid Gmail API response: ${data}`));
-                    }
-                });
-            });
-
-            req.on('error', (e) => reject(e));
-            req.write(postData);
-            req.end();
-        });
-    } catch (error) {
-        console.error("❌ sendEmailViaRest Failed:", error.message);
-        throw error;
+// SMTP Transporter with Gmail App Password
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // STARTTLS
+    auth: {
+        user: process.env.EMAIL_USER || 'vialidades.transito@gmail.com',
+        pass: process.env.EMAIL_PASS
     }
+});
+
+// Helper: send email
+async function sendEmailViaRest(mailOptions) {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Email sent via SMTP: ${result.messageId}`);
+    return result;
 }
+
 
 // The gmail address
 const FROM_EMAIL = process.env.EMAIL_USER || 'vialidades.transito@gmail.com';
