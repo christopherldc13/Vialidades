@@ -4,6 +4,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
+  envDir: '../',
   plugins: [
     react(),
     // Only use SSL in local development
