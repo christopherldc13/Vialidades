@@ -216,6 +216,41 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                         {report.description}
                                     </p>
                                 </div>
+
+                                {/* Vehicle Information Section */}
+                                {report.carInfo && (report.carInfo.brand || report.carInfo.model || report.carInfo.year || report.carInfo.color) && (
+                                    <div style={{ background: 'var(--bg-input)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border-color)', marginTop: '1rem' }}>
+                                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', color: 'var(--text-main)', fontWeight: '700', fontSize: '1rem' }}>
+                                            <FaCar size={18} style={{ color: 'var(--primary)' }} /> Detalles del Vehículo
+                                        </h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.9rem' }}>
+                                            {report.carInfo.brand && (
+                                                <div>
+                                                    <span style={{ color: 'var(--text-light)', display: 'block', fontSize: '0.75rem' }}>Marca</span>
+                                                    <span style={{ fontWeight: '600' }}>{report.carInfo.brand}</span>
+                                                </div>
+                                            )}
+                                            {report.carInfo.model && (
+                                                <div>
+                                                    <span style={{ color: 'var(--text-light)', display: 'block', fontSize: '0.75rem' }}>Modelo</span>
+                                                    <span style={{ fontWeight: '600' }}>{report.carInfo.model}</span>
+                                                </div>
+                                            )}
+                                            {report.carInfo.year && (
+                                                <div>
+                                                    <span style={{ color: 'var(--text-light)', display: 'block', fontSize: '0.75rem' }}>Año</span>
+                                                    <span style={{ fontWeight: '600' }}>{report.carInfo.year}</span>
+                                                </div>
+                                            )}
+                                            {report.carInfo.color && (
+                                                <div>
+                                                    <span style={{ color: 'var(--text-light)', display: 'block', fontSize: '0.75rem' }}>Color</span>
+                                                    <span style={{ fontWeight: '600' }}>{report.carInfo.color}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Right Column: Mini-Map and Metadata */}

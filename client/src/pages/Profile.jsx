@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
@@ -25,6 +25,11 @@ const calculateAge = (dobString) => {
 
 const Profile = () => {
     const { user, setUser, loading } = useContext(AuthContext);
+
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     if (loading) {
         return (
@@ -113,7 +118,7 @@ const Profile = () => {
             // Sync local state immediately
             setUser(res.data);
             localStorage.setItem('user', JSON.stringify(res.data));
-            
+
             // Give user visual feedback
             setIsEditing(false);
             setSaving(false);
@@ -339,11 +344,11 @@ const Profile = () => {
                         <div className="profile-info-item full-width">
                             <span className="profile-info-label">Provincia</span>
                             {isEditing ? (
-                                <select 
-                                    name="birthProvince" 
-                                    value={editForm.birthProvince} 
-                                    onChange={handleEditChange} 
-                                    className="profile-info-value" 
+                                <select
+                                    name="birthProvince"
+                                    value={editForm.birthProvince}
+                                    onChange={handleEditChange}
+                                    className="profile-info-value"
                                     style={{ padding: '0.5rem', width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.95rem' }}
                                 >
                                     <option value="">Selecciona una provincia...</option>
@@ -401,33 +406,33 @@ const Profile = () => {
                     )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-                        <div style={{ 
-                            padding: '2rem 1.5rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px', 
-                            border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column', 
+                        <div style={{
+                            padding: '2rem 1.5rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px',
+                            border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column',
                             alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}>
                             <Star size={32} color="var(--success)" />
                             <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reputación</div>
                             <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--success)', lineHeight: '1' }}>{user.reputation || 0}</div>
                         </div>
 
-                        <div style={{ 
-                            padding: '2rem 1.5rem', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '20px', 
-                            border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column', 
+                        <div style={{
+                            padding: '2rem 1.5rem', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '20px',
+                            border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column',
                             alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}>
                             <AlertTriangle size={32} color="var(--error)" />
                             <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sanciones</div>
                             <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--error)', lineHeight: '1' }}>{user.sanctions || 0}</div>
                         </div>
-                        
-                        <div style={{ 
-                            padding: '2rem 1.5rem', background: 'var(--bg-input)', borderRadius: '20px', 
-                            border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', 
+
+                        <div style={{
+                            padding: '2rem 1.5rem', background: 'var(--bg-input)', borderRadius: '20px',
+                            border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column',
                             alignItems: 'center', gap: '0.75rem', boxShadow: 'var(--shadow-sm)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}>
                             <CheckCircle size={32} color={user.isVerified ? "var(--primary)" : "var(--text-light)"} />
                             <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verificado</div>

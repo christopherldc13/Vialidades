@@ -20,6 +20,11 @@ function Register() {
     const navigate = useNavigate();
     const webcamRef = useRef(null);
 
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     // Step state
     // 1: Form, 2: ID Capture, 3: Selfie Capture, 4: Verify Code
     const [step, setStep] = useState(1);
@@ -569,8 +574,17 @@ function Register() {
     };
 
     return (
-        <div className="landing-container auth-wrapper modern-login-wrapper" style={{ padding: '0' }}>
-            <div className="card modern-login-card" style={{ maxWidth: '650px', padding: 'clamp(1.5rem, 3vh, 2.5rem) clamp(1rem, 2.5vw, 2rem)' }}>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+            background: 'var(--bg-page)',
+            position: 'relative',
+            zIndex: 1
+        }}>
+            <div className="premium-login-card" style={{ maxWidth: '650px', width: '100%', padding: 'clamp(1.5rem, 3vh, 2.5rem) clamp(1rem, 2.5vw, 2rem)' }}>
                 <div className="login-header">
                     <h2>
                         {step === 1 ? 'Crear Cuenta' :

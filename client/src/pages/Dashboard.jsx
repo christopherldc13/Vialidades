@@ -7,7 +7,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
-import { Info, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Info, Clock, CheckCircle, XCircle, AlertCircle, PieChart as PieChartIcon, Activity, TrendingUp, BarChart2 } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, Label, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { MdWavingHand } from "react-icons/md";
 import { RxDashboard } from "react-icons/rx";
 import { CiLocationOn } from "react-icons/ci";
@@ -68,7 +69,7 @@ const Dashboard = () => {
                         axios.get('/api/reports?status=pending'),
                         axios.get('/api/reports/stats')
                     ]);
-                    
+
                     setStats(statsRes.data);
                     setReports(pendingRes.data);
                 } else {
@@ -141,11 +142,11 @@ const Dashboard = () => {
             <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', paddingBottom: '80px' }}>
                 <div style={{ padding: '2rem 1.5rem 1.5rem' }}>
                     {user && (
-                        <div style={{ 
-                            display: 'flex', alignItems: 'center', gap: '1rem', 
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: '1rem',
                             marginBottom: '1.5rem', padding: '0 0.5rem'
                         }}>
-                            <div style={{ 
+                            <div style={{
                                 width: '40px', height: '40px', borderRadius: '12px',
                                 background: 'linear-gradient(135deg, var(--primary), #818cf8)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -174,8 +175,8 @@ const Dashboard = () => {
                             </h2>
                             {isModerator ? (
                                 <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
-                                    <span style={{ 
-                                        width: '8px', height: '8px', borderRadius: '50%', 
+                                    <span style={{
+                                        width: '8px', height: '8px', borderRadius: '50%',
                                         background: '#10b981', display: 'inline-block',
                                         boxShadow: '0 0 10px #10b981'
                                     }}></span>
@@ -260,7 +261,7 @@ const Dashboard = () => {
                                             <Clock size={20} />
                                         </div>
                                     </div>
-                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--warning)', marginTop: '0.5rem' }}>{stats.pending||0}</div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--warning)', marginTop: '0.5rem' }}>{stats.pending || 0}</div>
                                 </Link>
                             </Tooltip>
 
@@ -272,7 +273,7 @@ const Dashboard = () => {
                                             <CheckCircle size={20} />
                                         </div>
                                     </div>
-                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--success)', marginTop: '0.5rem' }}>{stats.approved||0}</div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--success)', marginTop: '0.5rem' }}>{stats.approved || 0}</div>
                                 </Link>
                             </Tooltip>
 
@@ -284,7 +285,7 @@ const Dashboard = () => {
                                             <XCircle size={20} />
                                         </div>
                                     </div>
-                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--error)', marginTop: '0.5rem' }}>{stats.rejected||0}</div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--error)', marginTop: '0.5rem' }}>{stats.rejected || 0}</div>
                                 </Link>
                             </Tooltip>
 
@@ -296,21 +297,122 @@ const Dashboard = () => {
                                             <AlertCircle size={20} />
                                         </div>
                                     </div>
-                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: '#b91c1c', marginTop: '0.5rem' }}>{stats.sanctioned||0}</div>
+                                    <div className="stat-value" style={{ fontSize: '2.2rem', fontWeight: '800', color: '#b91c1c', marginTop: '0.5rem' }}>{stats.sanctioned || 0}</div>
                                 </Link>
                             </Tooltip>
+
+                        </div>
+                    )}
+
+                    {/* Moderator Navigation - Above Analytics */}
+                    {isModerator && (
+                        <div style={{ textAlign: 'center', marginTop: '1.5rem', marginBottom: '3rem' }}>
+                            <Link to="/moderate" className="primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 2.5rem', borderRadius: '16px', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '1.2rem', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)', transition: 'transform 0.2s, boxShadow 0.2s' }}>
+                                <RxDashboard size={24} /> Ir al Panel de Moderación
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Extended Analytics Section */}
+                    {isModerator && (
+                        <div style={{ marginTop: '0.5rem', marginBottom: '2.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                <div style={{ background: 'linear-gradient(135deg, var(--primary), #818cf8)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 10px rgba(99, 102, 241, 0.2)' }}>
+                                    <Activity size={20} />
+                                </div>
+                                <h3 style={{ fontSize: '1.35rem', margin: 0, fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Métricas Generales</h3>
+                            </div>
+
+                            {(() => {
+                                const chartData = [
+                                    { name: 'Pendientes', value: stats.pending || 0, color: '#f59e0b' },
+                                    { name: 'Aprobados', value: stats.approved || 0, color: '#10b981' },
+                                    { name: 'Rechazados', value: stats.rejected || 0, color: '#ef4444' },
+                                    { name: 'Sancionados', value: stats.sanctioned || 0, color: '#b91c1c' }
+                                ].filter(item => item.value > 0);
+
+                                if (chartData.length === 0) return null;
+
+                                const totalReports = chartData.reduce((acc, curr) => acc + curr.value, 0);
+                                const processedReports = (stats.approved || 0) + (stats.rejected || 0) + (stats.sanctioned || 0);
+                                const resolutionRate = totalReports > 0 ? Math.round((processedReports / totalReports) * 100) : 0;
+
+                                return (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                                        {/* Donut Chart - Distribución */}
+                                        <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', minHeight: '300px', position: 'relative' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', zIndex: 2 }}>
+                                                <div>
+                                                    <div style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: '700' }}>Distribución de Estados</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.2rem' }}>Total general de incidentes</div>
+                                                </div>
+                                                <div style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', padding: '8px', borderRadius: '12px' }}>
+                                                    <PieChartIcon size={20} />
+                                                </div>
+                                            </div>
+                                            <div style={{ flex: 1, minHeight: 0, marginTop: '-0.5rem' }}>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                                                            {chartData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} style={{ filter: `drop-shadow(0 4px 6px ${entry.color}50)` }} />
+                                                            ))}
+                                                            <Label
+                                                                value={totalReports}
+                                                                position="center"
+                                                                style={{ fontSize: '2rem', fontWeight: '800', fill: 'var(--text-main)', transform: 'translateY(2px)' }}
+                                                            />
+                                                        </Pie>
+                                                        <RechartsTooltip
+                                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: 'var(--shadow-lg)', background: 'var(--surface-solid)', color: 'var(--text-main)', padding: '10px 14px', fontSize: '0.9rem', fontWeight: '500' }}
+                                                            itemStyle={{ fontWeight: '800' }}
+                                                            cursor={false}
+                                                        />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+
+                                        {/* Bar Chart - Comparativa */}
+                                        <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: '700' }}>Flujo de Rendimiento</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '0.2rem' }}>Tasa de resolución: <span style={{ color: 'var(--success)', fontWeight: '700' }}>{resolutionRate}%</span></div>
+                                                </div>
+                                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', padding: '8px', borderRadius: '12px' }}>
+                                                    <BarChart2 size={20} />
+                                                </div>
+                                            </div>
+                                            <div style={{ flex: 1, minHeight: 0 }}>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: '0.8rem', fill: 'var(--text-muted)', fontWeight: '600' }} dy={10} />
+                                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: '0.8rem', fill: 'var(--text-muted)', fontWeight: '600' }} />
+                                                        <RechartsTooltip
+                                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: 'var(--shadow-lg)', background: 'var(--surface-solid)', color: 'var(--text-main)', padding: '10px 14px', fontSize: '0.9rem', fontWeight: '500' }}
+                                                            itemStyle={{ fontWeight: '800' }}
+                                                            cursor={{ fill: 'var(--bg-page)', opacity: 0.5 }}
+                                                        />
+                                                        <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                                                            {chartData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Bar>
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
 
-                {/* Moderator Navigation - Hides Grid */}
-                {isModerator ? (
-                    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                        <Link to="/moderate" className="primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 2.5rem', borderRadius: '16px', background: 'var(--primary)', color: 'white', fontWeight: '800', fontSize: '1.2rem', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)', transition: 'transform 0.2s, boxShadow 0.2s' }}>
-                            <RxDashboard size={24} /> Ir al Panel de Moderación
-                        </Link>
-                    </div>
-                ) : (
+                {/* Hide Grid for Moderator */}
+                {isModerator ? null : (
                     /* User Grid */
                     <div className="report-grid">
                         {loading ? (
@@ -333,8 +435,8 @@ const Dashboard = () => {
                             ))
                         ) : (
                             reports.map((report) => (
-                                <div 
-                                    key={report._id} 
+                                <div
+                                    key={report._id}
                                     className="report-card modern-report-card"
                                     onClick={() => {
                                         setSelectedReport(report);

@@ -19,6 +19,12 @@ const ReportSchema = new mongoose.Schema({
         public_id: { type: String },
         metadata: { type: Object } // Added metadata storage
     }],
+    carInfo: {
+        brand: { type: String },
+        model: { type: String },
+        year: { type: Number },
+        color: { type: String }
+    },
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     moderatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     moderatorComment: { type: String },

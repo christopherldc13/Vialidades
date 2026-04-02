@@ -39,7 +39,7 @@ const upload = multer({ storage: storage });
 // Create Report
 router.post('/', auth, upload.array('media', 5), async (req, res) => {
     try {
-        const { type, description, lat, lng, address } = req.body;
+        const { type, description, lat, lng, address, carBrand, carModel, carYear, carColor } = req.body;
         const userId = req.user.id;
 
         if (!type || !description || !lat || !lng) {
@@ -103,6 +103,12 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
             location: { lat, lng, address },
             media, // New field
             photos: media.filter(m => m.type === 'image'), // Backward compatibility
+            carInfo: {
+                brand: carBrand,
+                model: carModel,
+                year: carYear,
+                color: carColor
+            },
             status: 'pending'
         });
 

@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Camera, Video } from 'lucide-react';
+import { Camera, Video, Sparkles } from 'lucide-react';
 import DraggableMap from '../components/DraggableMap';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -48,7 +48,7 @@ function LinearProgressWithLabel(props) {
 }
 
 const CreateReport = () => {
-    const [type, setType] = useState('Traffic');
+    const [type, setType] = useState('');
     const [customType, setCustomType] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState(null);
@@ -60,8 +60,20 @@ const CreateReport = () => {
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [refreshLocationTrigger, setRefreshLocationTrigger] = useState(0); // Trigger for map refresh
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    
+    // New Car Fields
+    const [carBrand, setCarBrand] = useState('');
+    const [carModel, setCarModel] = useState('');
+    const [carYear, setCarYear] = useState('');
+    const [carColor, setCarColor] = useState('');
     const { user, loading: authLoading } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -97,6 +109,10 @@ const CreateReport = () => {
                     setLocation(draft.location);
                 }
                 if (draft.address) setAddress(draft.address);
+                if (draft.carBrand) setCarBrand(draft.carBrand);
+                if (draft.carModel) setCarModel(draft.carModel);
+                if (draft.carYear) setCarYear(draft.carYear);
+                if (draft.carColor) setCarColor(draft.carColor);
             } catch (e) {
                 console.error("Error loading draft", e);
                 // If draft is corrupted, clear it
@@ -108,9 +124,9 @@ const CreateReport = () => {
     // Save Draft to LocalStorage
     useEffect(() => {
         const typeToSave = type === 'Other' ? customType : type;
-        const draft = { type: typeToSave, description, location, address };
+        const draft = { type: typeToSave, description, location, address, carBrand, carModel, carYear, carColor };
         localStorage.setItem('report_draft', JSON.stringify(draft));
-    }, [type, customType, description, location, address]);
+    }, [type, customType, description, location, address, carBrand, carModel, carYear, carColor]);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -147,6 +163,50 @@ const CreateReport = () => {
         setPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     };
 
+    const handleAIIdentify = async () => {
+        const imageFile = files.find(f => f.type.startsWith('image/'));
+        if (!imageFile) {
+            toast.error('Por favor, selecciona una imagen primero.');
+            return;
+        }
+
+        try {
+            setIsAnalyzing(true);
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            const token = localStorage.getItem('token');
+            const startTime = Date.now();
+            
+            const res = await axios.post('/api/ai/identify-vehicle', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'x-auth-token': token
+                }
+            });
+
+            // Añadir un retraso artificial (visual de "búsqueda profunda" de ~20s como pidió el usuario)
+            const elapsedTime = Date.now() - startTime;
+            if (elapsedTime < 20000) {
+                await new Promise(resolve => setTimeout(resolve, 20000 - elapsedTime));
+            }
+
+            if (res.data) {
+                setCarBrand(res.data.brand || '');
+                setCarModel(res.data.model || '');
+                setCarYear(res.data.year || '');
+                setCarColor(res.data.color || '');
+                toast.success('Vehículo identificado con éxito.');
+            }
+        } catch (err) {
+            console.error('AI Identification Error:', err);
+            const errorMsg = err.response?.data?.msg || 'Error al identificar el vehículo.';
+            toast.error(errorMsg);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -163,6 +223,10 @@ const CreateReport = () => {
         formData.append('lat', location.lat);
         formData.append('lng', location.lng);
         formData.append('address', address); // Send the address
+        formData.append('carBrand', carBrand);
+        formData.append('carModel', carModel);
+        formData.append('carYear', carYear);
+        formData.append('carColor', carColor);
 
         files.forEach(file => {
             formData.append('media', file);
@@ -194,11 +258,15 @@ const CreateReport = () => {
                 if (result.isConfirmed) {
                     navigate('/dashboard');
                 } else {
-                    setType('Traffic');
+                    setType('');
                     setCustomType('');
                     setDescription('');
                     setLocation(null);
                     setAddress('');
+                    setCarBrand('');
+                    setCarModel('');
+                    setCarYear('');
+                    setCarColor('');
                     setFiles([]);
                     previews.forEach(url => URL.revokeObjectURL(url));
                     setPreviews([]);
@@ -330,8 +398,153 @@ const CreateReport = () => {
                                         onChange={(e) => setDescription(e.target.value)}
                                         required
                                         placeholder="Describe qué está pasando..."
-                                        style={{ flex: 1, resize: 'none' }}
+                                        style={{ height: '120px', resize: 'none' }}
                                     />
+                                </div>
+
+                                {/* Vehicle Information Section */}
+                                <div className="input-group" style={{ marginTop: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                                                <FaCar size={18} />
+                                            </div>
+                                            <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0 }}>Detalles del Vehículo (Opcional)</h3>
+                                        </div>
+                                        
+                                        <button 
+                                            type="button"
+                                            onClick={handleAIIdentify}
+                                            disabled={isAnalyzing || !files.some(f => f.type.startsWith('image/'))}
+                                            style={{
+                                                background: 'var(--surface)',
+                                                border: '1px solid var(--primary)',
+                                                color: 'var(--primary)',
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '0.75rem',
+                                                fontSize: '0.85rem',
+                                                fontWeight: '600',
+                                                cursor: (isAnalyzing || !files.some(f => f.type.startsWith('image/'))) ? 'not-allowed' : 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                opacity: (isAnalyzing || !files.some(f => f.type.startsWith('image/'))) ? 0.6 : 1,
+                                                width: 'auto',
+                                                margin: 0,
+                                                boxShadow: 'var(--shadow-sm)',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            title={!files.some(f => f.type.startsWith('image/')) ? "Sube una foto para usar la IA" : "Identificar marca, modelo y color automáticamente"}
+                                        >
+                                            {isAnalyzing ? (
+                                                <>Detectando...</>
+                                            ) : (
+                                                <>
+                                                    <Sparkles size={16} /> ¿No conoces el vehículo?
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {isAnalyzing ? (
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '2.5rem 1rem',
+                                            background: 'var(--bg-input)',
+                                            borderRadius: '0.75rem',
+                                            border: '2px dashed var(--primary)',
+                                            color: 'var(--primary)',
+                                            textAlign: 'center',
+                                            opacity: 0.9,
+                                            boxShadow: 'inset 0 0 15px rgba(0,0,0,0.05)',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}>
+                                            <style>
+                                                {`
+                                                @keyframes aiFloat {
+                                                    0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px var(--primary)); }
+                                                    50% { transform: translateY(-8px); filter: drop-shadow(0 0 12px var(--primary)); }
+                                                }
+                                                @keyframes aiPulseText {
+                                                    0%, 100% { opacity: 0.7; }
+                                                    50% { opacity: 1; }
+                                                }
+                                                @keyframes aiScanLine {
+                                                    0% { top: -10%; opacity: 0; }
+                                                    10% { opacity: 1; }
+                                                    90% { opacity: 1; }
+                                                    100% { top: 110%; opacity: 0; }
+                                                }
+                                                `}
+                                            </style>
+                                            
+                                            <div style={{ position: 'relative', marginBottom: '1.2rem', animation: 'aiFloat 2.5s ease-in-out infinite' }}>
+                                                <FaCar size={48} style={{ color: 'var(--primary)' }} />
+                                                <Sparkles size={18} style={{ position: 'absolute', top: -10, right: -15, color: '#FFD700', animation: 'aiPulseText 1s ease-in-out infinite' }} />
+                                                <Sparkles size={14} style={{ position: 'absolute', bottom: -5, left: -10, color: 'inherit', animation: 'aiPulseText 1.5s ease-in-out infinite 0.5s' }} />
+                                                
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '-20%',
+                                                    width: '140%',
+                                                    height: '2px',
+                                                    background: 'var(--primary)',
+                                                    boxShadow: '0 0 10px var(--primary)',
+                                                    animation: 'aiScanLine 2s linear infinite'
+                                                }}></div>
+                                            </div>
+
+                                            <span style={{ fontWeight: '600', fontSize: '1rem', marginBottom: '0.4rem', animation: 'aiPulseText 2s infinite' }}>Escaneando base de datos...</span>
+                                            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Extrayendo fabricante, año, modelo y color del vehículo</span>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <div className="input-group" style={{ marginBottom: 0 }}>
+                                                <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Marca</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={carBrand} 
+                                                    onChange={(e) => setCarBrand(e.target.value)} 
+                                                    placeholder="Ej: Toyota"
+                                                    style={{ padding: '0.6rem' }}
+                                                />
+                                            </div>
+                                            <div className="input-group" style={{ marginBottom: 0 }}>
+                                                <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Modelo</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={carModel} 
+                                                    onChange={(e) => setCarModel(e.target.value)} 
+                                                    placeholder="Ej: Corolla"
+                                                    style={{ padding: '0.6rem' }}
+                                                />
+                                            </div>
+                                            <div className="input-group" style={{ marginBottom: 0 }}>
+                                                <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Año</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={carYear} 
+                                                    onChange={(e) => setCarYear(e.target.value)} 
+                                                    placeholder="Ej: 2022"
+                                                    style={{ padding: '0.6rem' }}
+                                                />
+                                            </div>
+                                            <div className="input-group" style={{ marginBottom: 0 }}>
+                                                <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Color</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={carColor} 
+                                                    onChange={(e) => setCarColor(e.target.value)} 
+                                                    placeholder="Ej: Blanco"
+                                                    style={{ padding: '0.6rem' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="form-column">

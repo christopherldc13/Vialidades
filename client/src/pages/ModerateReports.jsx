@@ -3,8 +3,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import AuthContext from '../context/AuthContext';
-import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle } from 'lucide-react';
-import { TbHourglassEmpty } from "react-icons/tb";
+import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle, Inbox } from 'lucide-react';
 import { AiOutlineHistory } from "react-icons/ai";
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -16,7 +15,7 @@ import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 const ModerateReports = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const initialFilter = searchParams.get('filter') || 'pending';
-    
+
     const [reports, setReports] = useState([]);
     const [usersList, setUsersList] = useState([]);
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
@@ -26,6 +25,11 @@ const ModerateReports = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -111,9 +115,9 @@ const ModerateReports = () => {
                         <ToggleButtonGroup
                             value={filter}
                             exclusive
-                            onChange={(e, newFilter) => { 
+                            onChange={(e, newFilter) => {
                                 if (newFilter) {
-                                    setFilter(newFilter); 
+                                    setFilter(newFilter);
                                     setSearchParams({ filter: newFilter });
                                 }
                             }}
@@ -189,31 +193,31 @@ const ModerateReports = () => {
                                     position: 'relative',
                                     overflow: 'hidden'
                                 }}
-                                onClick={() => {
-                                    setSelectedUser(usr);
-                                    setIsUserModalOpen(true);
-                                }}
-                                className="moderation-card premium-user-card"
+                                    onClick={() => {
+                                        setSelectedUser(usr);
+                                        setIsUserModalOpen(true);
+                                    }}
+                                    className="moderation-card premium-user-card"
                                 >
                                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
                                         {usr.avatar ? (
-                                            <img 
-                                                src={getAvatarUrl(usr.avatar)} 
-                                                alt="Avatar" 
-                                                style={{ 
-                                                    width: '48px', height: '48px', borderRadius: '14px', 
+                                            <img
+                                                src={getAvatarUrl(usr.avatar)}
+                                                alt="Avatar"
+                                                style={{
+                                                    width: '48px', height: '48px', borderRadius: '14px',
                                                     objectFit: 'cover',
                                                     boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.4)',
                                                     flexShrink: 0,
                                                     transform: 'rotate(-3deg)',
                                                     border: '2px solid var(--surface-solid)'
-                                                }} 
+                                                }}
                                             />
                                         ) : (
-                                            <div style={{ 
-                                                width: '48px', height: '48px', borderRadius: '14px', 
-                                                background: 'linear-gradient(135deg, var(--primary), #818cf8)', 
-                                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                            <div style={{
+                                                width: '48px', height: '48px', borderRadius: '14px',
+                                                background: 'linear-gradient(135deg, var(--primary), #818cf8)',
+                                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Outfit, sans-serif',
                                                 boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.4)',
                                                 flexShrink: 0,
@@ -235,12 +239,12 @@ const ModerateReports = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                        <span style={{ 
-                                            fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderRadius: '8px', 
-                                            background: usr.role === 'admin' ? 'linear-gradient(135deg, #a855f7, #9333ea)' : usr.role === 'moderator' ? 'linear-gradient(135deg, var(--primary), #4f46e5)' : 'var(--bg-input)', 
-                                            color: usr.role === 'user' ? 'var(--text-light)' : 'white', 
+                                        <span style={{
+                                            fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderRadius: '8px',
+                                            background: usr.role === 'admin' ? 'linear-gradient(135deg, #a855f7, #9333ea)' : usr.role === 'moderator' ? 'linear-gradient(135deg, var(--primary), #4f46e5)' : 'var(--bg-input)',
+                                            color: usr.role === 'user' ? 'var(--text-light)' : 'white',
                                             fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
                                             border: usr.role === 'user' ? '1px solid var(--border-color)' : 'none',
                                             boxShadow: usr.role !== 'user' ? `0 4px 10px rgba(${usr.role === 'admin' ? '168, 85, 247' : '99, 102, 241'}, 0.2)` : 'none'
@@ -248,9 +252,9 @@ const ModerateReports = () => {
                                             {usr.role}
                                         </span>
                                         {usr.sanctions > 0 && (
-                                            <span style={{ 
-                                                fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderRadius: '8px', 
-                                                background: 'linear-gradient(135deg, #f87171, #ef4444)', color: 'white', 
+                                            <span style={{
+                                                fontSize: '0.75rem', padding: '0.35rem 0.8rem', borderRadius: '8px',
+                                                background: 'linear-gradient(135deg, #f87171, #ef4444)', color: 'white',
                                                 fontWeight: '800', letterSpacing: '0.05em', textTransform: 'uppercase',
                                                 boxShadow: '0 4px 10px rgba(239, 68, 68, 0.3)'
                                             }}>
@@ -258,10 +262,10 @@ const ModerateReports = () => {
                                             </span>
                                         )}
                                     </div>
-                                    
+
                                     <div
                                         style={{
-                                            marginTop: 'auto', background: 'rgba(99, 102, 241, 0.05)', color: 'var(--primary)', 
+                                            marginTop: 'auto', background: 'rgba(99, 102, 241, 0.05)', color: 'var(--primary)',
                                             border: '1px solid rgba(99, 102, 241, 0.1)',
                                             padding: '0.75rem 1rem', borderRadius: '12px',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -278,16 +282,17 @@ const ModerateReports = () => {
                     )
                 ) : reports.length === 0 ? (
                     <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '24px', marginTop: '1.5rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-lg)' }}>
-                        <div style={{ 
-                            background: 'rgba(99, 102, 241, 0.1)', 
-                            color: 'var(--primary)', 
-                            width: '60px', height: '60px', 
-                            borderRadius: '50%', 
+                        <div style={{
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            color: 'var(--primary)',
+                            width: '60px', height: '60px',
+                            borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             margin: '0 auto 1.25rem',
-                            boxShadow: '0 0 15px rgba(99, 102, 241, 0.15)'
+                            boxShadow: '0 0 15px rgba(99, 102, 241, 0.15)',
+                            animation: 'gentle-float 3s ease-in-out infinite'
                         }}>
-                            <TbHourglassEmpty size={32} />
+                            <Inbox size={32} />
                         </div>
                         <h3 style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.25rem' }}>No hay reportes en esta sección</h3>
                         <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>Selecciona otro filtro o vuelve más tarde cuando haya nueva actividad.</p>
@@ -298,228 +303,228 @@ const ModerateReports = () => {
                             <div key={report._id} className="moderation-card moderation-card-responsive">
                                 {/* Media Side */}
                                 <div className="moderation-card-media">
-                                        <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
+                                    <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
 
-                                        <div style={{
-                                            position: 'absolute', top: '1rem', left: '1rem',
-                                            background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.wasSanctioned ? '#991b1b' : 'var(--error)',
-                                            color: 'white', padding: '0.25rem 0.75rem', borderRadius: '999px',
-                                            fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
-                                            zIndex: 20
-                                        }}>
-                                            {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
-                                        </div>
-                                    </div>
-
-                                    {/* Info Side */}
-                                    <div className="moderation-card-info">
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                            <div>
-                                                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{report.type}</h3>
-                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
-                                                    Por <strong>{report.userId?.username || 'Usuario Desconocido'}</strong> • {new Date(report.timestamp).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <p style={{
-                                            color: 'var(--text-main)',
-                                            lineHeight: '1.6',
-                                            marginBottom: '1rem',
-                                            flex: 1,
-                                            overflowY: 'auto',
-                                            paddingRight: '0.5rem'
-                                        }}>
-                                            {report.description}
-                                        </p>
-
-                                        {report.moderatorComment && (
-                                            <div style={{
-                                                background: report.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                borderLeft: `4px solid ${report.status === 'approved' ? 'var(--success)' : 'var(--error)'}`,
-                                                padding: '1rem', marginBottom: '2rem', borderRadius: '8px'
-                                            }}>
-                                                <strong style={{ color: report.status === 'approved' ? 'var(--success)' : 'var(--error)', display: 'block', marginBottom: '0.25rem' }}>
-                                                    {report.status === 'approved' ? 'Comentario de moderación:' : report.wasSanctioned ? 'Motivo de sanción:' : 'Motivo de rechazo:'}
-                                                </strong>
-                                                <span style={{ color: 'var(--text-main)', opacity: 0.9 }}>{report.moderatorComment}</span>
-                                            </div>
-                                        )}
-
-                                        {/* Actions Toolbar */}
-                                        <div style={{
-                                            display: 'flex', gap: '1rem', flexWrap: 'wrap',
-                                            paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)',
-                                            marginTop: 'auto'
-                                        }}>
-                                            {report.status === 'pending' || filter === 'all' ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Aprobar Reporte</h2>',
-                                                                html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa un comentario o justificación para aprobar este reporte:</div>',
-                                                                input: 'textarea',
-                                                                inputPlaceholder: 'Ej. Reporte muy útil y ubicación precisa.',
-                                                                showCancelButton: true,
-                                                                confirmButtonText: 'Confirmar Aprobación',
-                                                                cancelButtonText: 'Cancelar',
-                                                                customClass: {
-                                                                    confirmButton: 'swal2-lumina-confirm swal2-confirm-success',
-                                                                    cancelButton: 'swal2-lumina-cancel'
-                                                                },
-                                                                buttonsStyling: false,
-                                                                background: 'var(--surface-solid)',
-                                                                color: 'var(--text-main)',
-                                                                inputValidator: (value) => {
-                                                                    if (!value || value.trim() === '') {
-                                                                        return 'El comentario es obligatorio para aprobar.';
-                                                                    }
-                                                                }
-                                                            }).then((result) => {
-                                                                if (result.isConfirmed) {
-                                                                    handleModerate(report._id, 'approved', false, result.value);
-                                                                }
-                                                            });
-                                                        }}
-                                                        disabled={report.status !== 'pending'}
-                                                        style={{
-                                                            flex: 1, background: report.status === 'approved' ? 'var(--bg-input)' : 'rgba(16, 185, 129, 0.15)',
-                                                            color: report.status === 'approved' ? 'var(--text-muted)' : 'var(--success)',
-                                                            opacity: report.status === 'approved' ? 0.7 : 1,
-                                                            border: `1px solid ${report.status === 'approved' ? 'transparent' : 'var(--success)'}`,
-                                                            padding: '0.75rem 1.5rem', borderRadius: '12px',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                            fontWeight: '700', cursor: report.status === 'approved' ? 'default' : 'pointer',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <Check size={18} /> Aprobar
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(239, 68, 68, 0.15); color: var(--error); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div> Rechazar Reporte</h2>',
-                                                                html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa el motivo del rechazo para notificar al usuario:</div>',
-                                                                input: 'textarea',
-                                                                inputPlaceholder: 'Ej. La foto no es clara o la ubicación no coincide.',
-                                                                showCancelButton: true,
-                                                                confirmButtonText: 'Confirmar Rechazo',
-                                                                cancelButtonText: 'Cancelar',
-                                                                customClass: {
-                                                                    confirmButton: 'swal2-lumina-confirm swal2-confirm-error',
-                                                                    cancelButton: 'swal2-lumina-cancel'
-                                                                },
-                                                                buttonsStyling: false,
-                                                                background: 'var(--surface-solid)',
-                                                                color: 'var(--text-main)',
-                                                                inputValidator: (value) => {
-                                                                    if (!value || value.trim() === '') {
-                                                                        return 'El motivo es obligatorio para rechazar.';
-                                                                    }
-                                                                }
-                                                            }).then((result) => {
-                                                                if (result.isConfirmed) {
-                                                                    handleModerate(report._id, 'rejected', false, result.value);
-                                                                }
-                                                            });
-                                                        }}
-                                                        disabled={report.status !== 'pending'}
-                                                        style={{
-                                                            flex: 1, background: report.status === 'rejected' ? 'var(--bg-input)' : 'rgba(239, 68, 68, 0.15)',
-                                                            color: report.status === 'rejected' ? 'var(--text-muted)' : 'var(--error)',
-                                                            opacity: report.status === 'rejected' ? 0.7 : 1,
-                                                            border: `1px solid ${report.status === 'rejected' ? 'transparent' : 'var(--error)'}`,
-                                                            padding: '0.75rem 1.5rem', borderRadius: '12px',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                            fontWeight: '700', cursor: report.status === 'rejected' ? 'default' : 'pointer',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <X size={18} /> Rechazar
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div> Sancionar Usuario</h2>',
-                                                                html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Este reporte es falso o malintencionado. Se le añadirá una falta al usuario. Justifícalo:</div>',
-                                                                input: 'textarea',
-                                                                inputPlaceholder: 'Ej. Tercera vez subiendo imágenes de internet. Se le suspenderá.',
-                                                                showCancelButton: true,
-                                                                confirmButtonText: 'Aplicar Sanción',
-                                                                cancelButtonText: 'Cancelar',
-                                                                customClass: {
-                                                                    confirmButton: 'swal2-lumina-confirm swal2-confirm-warning',
-                                                                    cancelButton: 'swal2-lumina-cancel'
-                                                                },
-                                                                buttonsStyling: false,
-                                                                background: 'var(--surface-solid)',
-                                                                color: 'var(--text-main)',
-                                                                inputValidator: (value) => {
-                                                                    if (!value || value.trim() === '') {
-                                                                        return 'La justificación es obligatoria para sancionar.';
-                                                                    }
-                                                                }
-                                                            }).then((result) => {
-                                                                if (result.isConfirmed) {
-                                                                    handleModerate(report._id, 'rejected', true, result.value);
-                                                                }
-                                                            });
-                                                        }}
-                                                        disabled={report.status !== 'pending'}
-                                                        style={{
-                                                            background: 'var(--bg-input)', color: 'var(--text-light)', border: '1px solid var(--border-color)',
-                                                            padding: '0.75rem', borderRadius: '12px', cursor: report.status === 'pending' ? 'pointer' : 'default',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            width: 'auto', opacity: report.status === 'pending' ? 1 : 0.5,
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        title="Sancionar Usuario"
-                                                    >
-                                                        <AlertTriangle size={20} />
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedReport(report);
-                                                            setIsModalOpen(true);
-                                                        }}
-                                                        style={{
-                                                            background: 'var(--primary)', color: 'white', border: 'none',
-                                                            padding: '0.75rem 1rem', borderRadius: '12px', cursor: 'pointer',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            fontWeight: '700', gap: '0.5rem'
-                                                        }}
-                                                    >
-                                                        <Info size={18} /> Ver Detalles
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                                                        Este reporte ya fue moderado.
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            setSelectedReport(report);
-                                                            setIsModalOpen(true);
-                                                        }}
-                                                        style={{
-                                                            background: 'var(--bg-input)', color: 'var(--primary)', border: '1px solid var(--primary)',
-                                                            padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            fontWeight: '700', gap: '0.5rem', fontSize: '0.85rem'
-                                                        }}
-                                                    >
-                                                        <Info size={16} /> Ver Detalles
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                    <div style={{
+                                        position: 'absolute', top: '1rem', left: '1rem',
+                                        background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.wasSanctioned ? '#991b1b' : 'var(--error)',
+                                        color: 'white', padding: '0.25rem 0.75rem', borderRadius: '999px',
+                                        fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                        zIndex: 20
+                                    }}>
+                                        {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
                                     </div>
                                 </div>
+
+                                {/* Info Side */}
+                                <div className="moderation-card-info">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{report.type}</h3>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                                                Por <strong>{report.userId?.username || 'Usuario Desconocido'}</strong> • {new Date(report.timestamp).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p style={{
+                                        color: 'var(--text-main)',
+                                        lineHeight: '1.6',
+                                        marginBottom: '1rem',
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        paddingRight: '0.5rem'
+                                    }}>
+                                        {report.description}
+                                    </p>
+
+                                    {report.moderatorComment && (
+                                        <div style={{
+                                            background: report.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            borderLeft: `4px solid ${report.status === 'approved' ? 'var(--success)' : 'var(--error)'}`,
+                                            padding: '1rem', marginBottom: '2rem', borderRadius: '8px'
+                                        }}>
+                                            <strong style={{ color: report.status === 'approved' ? 'var(--success)' : 'var(--error)', display: 'block', marginBottom: '0.25rem' }}>
+                                                {report.status === 'approved' ? 'Comentario de moderación:' : report.wasSanctioned ? 'Motivo de sanción:' : 'Motivo de rechazo:'}
+                                            </strong>
+                                            <span style={{ color: 'var(--text-main)', opacity: 0.9 }}>{report.moderatorComment}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Actions Toolbar */}
+                                    <div style={{
+                                        display: 'flex', gap: '1rem', flexWrap: 'wrap',
+                                        paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)',
+                                        marginTop: 'auto'
+                                    }}>
+                                        {report.status === 'pending' || filter === 'all' ? (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        Swal.fire({
+                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Aprobar Reporte</h2>',
+                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa un comentario o justificación para aprobar este reporte:</div>',
+                                                            input: 'textarea',
+                                                            inputPlaceholder: 'Ej. Reporte muy útil y ubicación precisa.',
+                                                            showCancelButton: true,
+                                                            confirmButtonText: 'Confirmar Aprobación',
+                                                            cancelButtonText: 'Cancelar',
+                                                            customClass: {
+                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-success',
+                                                                cancelButton: 'swal2-lumina-cancel'
+                                                            },
+                                                            buttonsStyling: false,
+                                                            background: 'var(--surface-solid)',
+                                                            color: 'var(--text-main)',
+                                                            inputValidator: (value) => {
+                                                                if (!value || value.trim() === '') {
+                                                                    return 'El comentario es obligatorio para aprobar.';
+                                                                }
+                                                            }
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) {
+                                                                handleModerate(report._id, 'approved', false, result.value);
+                                                            }
+                                                        });
+                                                    }}
+                                                    disabled={report.status !== 'pending'}
+                                                    style={{
+                                                        flex: 1, background: report.status === 'approved' ? 'var(--bg-input)' : 'rgba(16, 185, 129, 0.15)',
+                                                        color: report.status === 'approved' ? 'var(--text-muted)' : 'var(--success)',
+                                                        opacity: report.status === 'approved' ? 0.7 : 1,
+                                                        border: `1px solid ${report.status === 'approved' ? 'transparent' : 'var(--success)'}`,
+                                                        padding: '0.75rem 1.5rem', borderRadius: '12px',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                        fontWeight: '700', cursor: report.status === 'approved' ? 'default' : 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Check size={18} /> Aprobar
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        Swal.fire({
+                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(239, 68, 68, 0.15); color: var(--error); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div> Rechazar Reporte</h2>',
+                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa el motivo del rechazo para notificar al usuario:</div>',
+                                                            input: 'textarea',
+                                                            inputPlaceholder: 'Ej. La foto no es clara o la ubicación no coincide.',
+                                                            showCancelButton: true,
+                                                            confirmButtonText: 'Confirmar Rechazo',
+                                                            cancelButtonText: 'Cancelar',
+                                                            customClass: {
+                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-error',
+                                                                cancelButton: 'swal2-lumina-cancel'
+                                                            },
+                                                            buttonsStyling: false,
+                                                            background: 'var(--surface-solid)',
+                                                            color: 'var(--text-main)',
+                                                            inputValidator: (value) => {
+                                                                if (!value || value.trim() === '') {
+                                                                    return 'El motivo es obligatorio para rechazar.';
+                                                                }
+                                                            }
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) {
+                                                                handleModerate(report._id, 'rejected', false, result.value);
+                                                            }
+                                                        });
+                                                    }}
+                                                    disabled={report.status !== 'pending'}
+                                                    style={{
+                                                        flex: 1, background: report.status === 'rejected' ? 'var(--bg-input)' : 'rgba(239, 68, 68, 0.15)',
+                                                        color: report.status === 'rejected' ? 'var(--text-muted)' : 'var(--error)',
+                                                        opacity: report.status === 'rejected' ? 0.7 : 1,
+                                                        border: `1px solid ${report.status === 'rejected' ? 'transparent' : 'var(--error)'}`,
+                                                        padding: '0.75rem 1.5rem', borderRadius: '12px',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                        fontWeight: '700', cursor: report.status === 'rejected' ? 'default' : 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <X size={18} /> Rechazar
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        Swal.fire({
+                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div> Sancionar Usuario</h2>',
+                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Este reporte es falso o malintencionado. Se le añadirá una falta al usuario. Justifícalo:</div>',
+                                                            input: 'textarea',
+                                                            inputPlaceholder: 'Ej. Tercera vez subiendo imágenes de internet. Se le suspenderá.',
+                                                            showCancelButton: true,
+                                                            confirmButtonText: 'Aplicar Sanción',
+                                                            cancelButtonText: 'Cancelar',
+                                                            customClass: {
+                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-warning',
+                                                                cancelButton: 'swal2-lumina-cancel'
+                                                            },
+                                                            buttonsStyling: false,
+                                                            background: 'var(--surface-solid)',
+                                                            color: 'var(--text-main)',
+                                                            inputValidator: (value) => {
+                                                                if (!value || value.trim() === '') {
+                                                                    return 'La justificación es obligatoria para sancionar.';
+                                                                }
+                                                            }
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) {
+                                                                handleModerate(report._id, 'rejected', true, result.value);
+                                                            }
+                                                        });
+                                                    }}
+                                                    disabled={report.status !== 'pending'}
+                                                    style={{
+                                                        background: 'var(--bg-input)', color: 'var(--text-light)', border: '1px solid var(--border-color)',
+                                                        padding: '0.75rem', borderRadius: '12px', cursor: report.status === 'pending' ? 'pointer' : 'default',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        width: 'auto', opacity: report.status === 'pending' ? 1 : 0.5,
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    title="Sancionar Usuario"
+                                                >
+                                                    <AlertTriangle size={20} />
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedReport(report);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    style={{
+                                                        background: 'var(--primary)', color: 'white', border: 'none',
+                                                        padding: '0.75rem 1rem', borderRadius: '12px', cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontWeight: '700', gap: '0.5rem'
+                                                    }}
+                                                >
+                                                    <Info size={18} /> Ver Detalles
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                                                    Este reporte ya fue moderado.
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedReport(report);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    style={{
+                                                        background: 'var(--bg-input)', color: 'var(--primary)', border: '1px solid var(--primary)',
+                                                        padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontWeight: '700', gap: '0.5rem', fontSize: '0.85rem'
+                                                    }}
+                                                >
+                                                    <Info size={16} /> Ver Detalles
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}
