@@ -7,7 +7,7 @@ const dns = require('dns');
 
 // No manual DNS overrides - let Render handle its own name resolution
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Fix for MongoDB DNS/SRV issues in some networks
 try {
