@@ -25,7 +25,7 @@ function Login() {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTop = 0;
         }
-        
+
         const observer = new MutationObserver(() => {
             setIsDarkMode(document.documentElement.classList.contains('dark'));
         });
@@ -63,7 +63,7 @@ function Login() {
 
         const res = await login(email, password);
         setIsLoading(false);
-        
+
         if (res.success) {
             Swal.fire({
                 title: '¡Ingreso Exitoso!',
@@ -95,10 +95,10 @@ function Login() {
         setIsLoading(true);
         setError('');
         setSanctionExpiry(null);
-        
+
         const res = await loginWithGoogle(credentialResponse.credential);
         setIsLoading(false);
-        
+
         if (res.success) {
             Swal.fire({
                 title: '¡Ingreso Exitoso!',
@@ -268,7 +268,7 @@ function Login() {
                             theme={isDarkMode ? 'filled_black' : 'outline'}
                             shape="pill"
                             size="large"
-                            width="100%"
+                            width="350"
                         />
                     </div>
 
