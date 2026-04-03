@@ -581,7 +581,7 @@ router.post('/forgot-password', async (req, res) => {
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
             await user.save({ validateBeforeSave: false });
-            return res.status(500).json({ 
+            return res.status(500).json({
                 msg: 'Hubo un error enviando el email de recuperación.',
                 error: err.message,
                 type: 'EMAIL_ERROR'
@@ -589,7 +589,7 @@ router.post('/forgot-password', async (req, res) => {
         }
     } catch (err) {
         console.error("❌ FORGOT PASSWORD ROUTE ERROR:", err.message);
-        res.status(500).json({ 
+        res.status(500).json({
             msg: 'Error interno del servidor al procesar la solicitud.',
             error: err.message,
             type: 'SERVER_ERROR'
