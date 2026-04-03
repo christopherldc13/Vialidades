@@ -560,8 +560,8 @@ router.post('/forgot-password', async (req, res) => {
         // Hash token and set to resetPasswordToken field
         user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-        // Set expire: 10 mins
-        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+        // Set expire: 60 mins (increased from 10m for better UX)
+        user.resetPasswordExpire = Date.now() + 60 * 60 * 1000;
 
         await user.save();
 
@@ -618,11 +618,12 @@ router.post('/reset-password/:token', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(req.body.password, salt);
 
-        // Clear token fields
+        // Clear token fields explicitly and save
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
-
         await user.save();
+
+        console.log(`✅ Contraseña restablecida con éxito para el usuario: ${user.email}. Token invalidado.`);
 
         res.status(200).json({ success: true, data: 'Contraseña actualizada' });
     } catch (err) {

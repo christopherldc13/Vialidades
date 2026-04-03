@@ -46,9 +46,14 @@ function ForgotPassword() {
                 </div>
 
                 {message && (
-                    <div style={{ background: '#dcfce7', borderLeft: '4px solid #10b981', color: '#15803d', padding: 'clamp(0.75rem, 2vh, 1rem)', borderRadius: '0.5rem', marginBottom: 'clamp(1rem, 2vh, 1.5rem)', fontSize: '0.85rem', fontWeight: 500 }}>
-                        {message}
-                    </div>
+                    <>
+                        <div style={{ background: '#dcfce7', borderLeft: '4px solid #10b981', color: '#15803d', padding: 'clamp(0.75rem, 2vh, 1rem)', borderRadius: '0.5rem', marginBottom: 'clamp(1rem, 2vh, 1.5rem)', fontSize: '0.85rem', fontWeight: 500 }}>
+                            {message}
+                        </div>
+                        <Link to="/login" className="login-submit-btn premium-btn" style={{ textDecoration: 'none', display: 'block', textAlign: 'center', marginTop: '1.5rem' }}>
+                            Volver al Inicio de Sesión
+                        </Link>
+                    </>
                 )}
 
                 {error && (

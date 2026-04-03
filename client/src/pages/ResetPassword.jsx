@@ -54,7 +54,7 @@ function ResetPassword() {
                     <p className="text-muted" style={{ margin: '0.5rem 0 2rem' }}>
                         {message} Serás redirigido al inicio de sesión en unos segundos.
                     </p>
-                    <Link to="/login" className="login-submit-btn" style={{ textDecoration: 'none' }}>
+                    <Link to="/login" className="login-submit-btn premium-btn" style={{ textDecoration: 'none', marginTop: '1.5rem' }}>
                         Ir al Login ahora
                     </Link>
                 </div>
