@@ -1,22 +1,55 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
-// SMTP Transporter with Gmail App Password
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // STARTTLS
-    auth: {
-        user: process.env.EMAIL_USER || 'vialidades.transito@gmail.com',
-        pass: process.env.EMAIL_PASS
-    }
-});
+const { OAuth2Client } = require('google-auth-library');
 
-// Helper: send email
+const oAuth2Client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+);
+
+oAuth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+
+// Helper: send email using Gmail REST API (avoids Render SMTP block)
 async function sendEmailViaRest(mailOptions) {
-    const result = await transporter.sendMail(mailOptions);
-    console.log(`Email sent via SMTP: ${result.messageId}`);
-    return result;
+    try {
+        // Construct standard MIME representation
+        const utf8Subject = `=?utf-8?B?${Buffer.from(mailOptions.subject).toString('base64')}?=`;
+        const rawMessage = [
+            `From: ${mailOptions.from}`,
+            `To: ${mailOptions.to}`,
+            `Subject: ${utf8Subject}`,
+            'Content-Type: text/html; charset="UTF-8"',
+            'MIME-Version: 1.0',
+            '',
+            mailOptions.html,
+        ].join('\\r\\n');
+
+        // URL-safe Base64 encoding as required by Gmail API
+        const encodedMessage = Buffer.from(rawMessage)
+            .toString('base64')
+            .replace(/\\+/g, '-')
+            .replace(/\\/ / g, '_')
+            .replace(/=+$/, '');
+
+        // Use oAuth2Client.request which automatically handles access token fetching/refreshing
+        const response = await oAuth2Client.request({
+            url: 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+            method: 'POST',
+            data: {
+                raw: encodedMessage
+            }
+        });
+
+        console.log(`Email sent via Gmail REST API: ${response.data.id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error sending via Gmail REST API:', error.message);
+        if (error.response && error.response.data) {
+            console.error('Gmail API Error response:', JSON.stringify(error.response.data));
+        }
+        throw error;
+    }
 }
 
 

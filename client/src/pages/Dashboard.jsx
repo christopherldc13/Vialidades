@@ -219,8 +219,8 @@ const Dashboard = () => {
                                         py: 1,
                                         transition: 'all 0.15s ease',
                                         '&:hover': {
-                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                            color: 'var(--text-primary)',
+                                            backgroundColor: 'rgba(128, 128, 128, 0.1)',
+                                            color: 'var(--text-main)',
                                             transform: 'translateY(-1px)'
                                         },
                                         '&.Mui-selected': {
@@ -228,7 +228,7 @@ const Dashboard = () => {
                                             color: '#ffffff',
                                             boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)',
                                             '&:hover': {
-                                                backgroundColor: 'var(--primary-hover)',
+                                                backgroundColor: 'var(--primary-dark)',
                                             }
                                         }
                                     }
