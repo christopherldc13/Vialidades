@@ -573,7 +573,7 @@ router.post('/forgot-password', async (req, res) => {
         const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
         try {
-            await sendPasswordResetEmail(user.email, user.username, resetUrl);
+            await sendPasswordResetEmail(user.email, user.firstName, resetUrl);
             console.log(`✅ Reset password email sent successfully to: ${user.email}`);
             res.status(200).json({ success: true, data: 'Email sent' });
         } catch (err) {

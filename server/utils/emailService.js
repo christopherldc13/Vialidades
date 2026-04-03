@@ -1,198 +1,148 @@
 require('dotenv').config();
 const { OAuth2Client } = require('google-auth-library');
 
-// Configuración del cliente OAuth2 de Google
-const oAuth2Client = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-);
-
-// Establecer el Refresh Token desade las variables de entorno
+const oAuth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 oAuth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
 
-/**
- * Función auxiliar: Envía correo usando la API REST de Gmail.
- * Esto evita el bloqueo de puertos SMTP (465/587) en plataformas como Render.
- */
 async function enviarEmailViaAPI(opciones) {
     try {
-        // Construir el asunto en formato UTF-8 Base64
         const asuntoUtf8 = `=?utf-8?B?${Buffer.from(opciones.subject).toString('base64')}?=`;
-
-        // Construir el mensaje MIME estándar
-        const mensajeRaw = [
-            `From: ${opciones.from}`,
-            `To: ${opciones.to}`,
-            `Subject: ${asuntoUtf8}`,
-            'Content-Type: text/html; charset="UTF-8"',
-            'MIME-Version: 1.0',
-            '',
-            opciones.html,
-        ].join('\r\n');
-
-        // Codificar en Base64 URL-safe (requerido por la API de Gmail)
-        const mensajeCodificado = Buffer.from(mensajeRaw)
-            .toString('base64')
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
-
-        // Usar oAuth2Client.request que maneja automáticamente la renovación de access tokens
-        const respuesta = await oAuth2Client.request({
-            url: 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
-            method: 'POST',
-            data: {
-                raw: mensajeCodificado
-            }
-        });
-
-        console.log(`Correo enviado vía API REST de Gmail ID: ${respuesta.data.id}`);
+        const mensajeRaw = [`From: ${opciones.from}`, `To: ${opciones.to}`, `Subject: ${asuntoUtf8}`, 'Content-Type: text/html; charset="UTF-8"', 'MIME-Version: 1.0', '', opciones.html].join('\r\n');
+        const mensajeCodificado = Buffer.from(mensajeRaw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const respuesta = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send', method: 'POST', data: { raw: mensajeCodificado } });
         return respuesta.data;
     } catch (error) {
-        console.error('❌ Error enviando email vía API REST de Gmail:', error.message);
-        if (error.response && error.response.data) {
-            console.error('Detalle del error de Google:', JSON.stringify(error.response.data));
-        }
+        console.error('❌ Error enviando email:', error.message);
         throw error;
     }
 }
 
-// El correo remitente (Gmail)
 const CORREO_REMITENTE = process.env.EMAIL_USER || 'vialidades.transito@gmail.com';
 
 /**
- * Generador de plantilla base profesional en español
+ * Plantilla Estilo Corporativo Minimalista (v5)
+ * Incluye divisor sutil entre idiomas.
  */
-const obtenerPlantillaBase = (titulo, contenido, botonAccion = '') => `
+const obtenerPlantillaBase = (tituloEs, tituloEn, contenidoEs, contenidoEn, botonAccion = '') => `
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
     <style>
-        body { font-family: 'Inter', 'Segoe UI', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-top: 40px; margin-bottom: 40px; }
-        .header { text-align: center; padding-bottom: 30px; border-bottom: 1px solid #f1f5f9; margin-bottom: 30px; }
-        .logo { font-size: 28px; font-weight: 800; color: #6366f1; text-decoration: none; }
-        h1 { color: #0f172a; font-size: 24px; font-weight: 700; margin-bottom: 20px; }
-        p { font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
-        .btn-container { text-align: center; margin: 30px 0; }
-        .btn { display: inline-block; padding: 14px 28px; background-color: #6366f1; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; }
-        .footer { text-align: center; padding-top: 30px; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 14px; margin-top: 30px; }
-        .highlight { font-weight: 600; color: #1e293b; }
-        .info-box { background-color: #f8fafc; border-left: 4px solid #6366f1; padding: 16px; border-radius: 4px; margin-bottom: 24px; }
+        :root { color-scheme: light dark; supported-color-schemes: light dark; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background-color: #ffffff; color: #111827; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        .main-wrapper { width: 100%; table-layout: fixed; background-color: #ffffff; padding-bottom: 40px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { padding: 40px 0 20px 0; text-align: left; }
+        .logo-text { font-size: 20px; font-weight: 700; color: #000000; letter-spacing: -0.5px; text-decoration: none; text-transform: uppercase; }
+        .content { padding: 20px 0; border-top: 1px solid #f3f4f6; }
+        h1 { font-size: 24px; font-weight: 700; color: #111827; margin: 0 0 16px 0; line-height: 1.2; }
+        p { font-size: 16px; line-height: 1.6; color: #374151; margin: 0 0 24px 0; }
+        
+        .btn-wrapper { margin: 32px 0; }
+        .btn { background-color: #000000; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 600; display: inline-block; }
+        
+        .divider { height: 1px; background-color: #f3f4f6; margin: 48px 0; border: none; }
+        .eng-text { color: #6b7280; font-size: 15px; }
+
+        .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #f3f4f6; color: #9ca3af; font-size: 12px; line-height: 1.5; }
+
+        /* Dark Mode support */
+        @media (prefers-color-scheme: dark) {
+            body, .main-wrapper, .container { background-color: #000000 !important; color: #f9fafb !important; }
+            h1, .logo-text { color: #ffffff !important; }
+            p, .eng-text { color: #d1d5db !important; }
+            .btn { background-color: #ffffff !important; color: #000000 !important; }
+            .content, .divider, .footer { border-color: #1f2937 !important; background-color: #1f2937 !important; }
+        }
     </style>
 </head>
 <body>
-    <div style="background-color: #f8fafc; padding: 20px 0;">
-        <div class="container">
-            <div class="header">
-                <a href="#" class="logo">Vialidades</a>
+    <div class="main-wrapper">
+        <center>
+            <div class="container">
+                <div class="header">
+                    <a href="#" class="logo-text">Vialidades</a>
+                </div>
+                
+                <div class="content">
+                    <h1>${tituloEs}</h1>
+                    <div class="spanish-body">
+                        ${contenidoEs}
+                    </div>
+
+                    ${botonAccion ? `<div class="btn-wrapper">${botonAccion}</div>` : ''}
+
+                    <hr class="divider">
+
+                    <div class="eng-text">
+                        <h2 style="font-size: 18px; color: inherit; margin: 0 0 12px 0;">${tituloEn}</h2>
+                        ${contenidoEn}
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <p>Vialidades. Infraestructura y Seguridad Vial.<br>
+                    Este es un mensaje automático encargado por el sistema de seguridad.<br>
+                    This is an automated message requested by the security system.</p>
+                    <p>© ${new Date().getFullYear()} Vialidades Dominicana. All rights reserved.</p>
+                </div>
             </div>
-            <h1>${titulo}</h1>
-            ${contenido}
-            ${botonAccion}
-            <div class="footer">
-                <p style="margin: 0;">© ${new Date().getFullYear()} Vialidades. Todos los derechos reservados.</p>
-            </div>
-        </div>
+        </center>
     </div>
 </body>
 </html>
 `;
 
-/**
- * Enviar Correo de Bienvenida
- */
-exports.sendWelcomeEmail = async (email, username, generatedPassword) => {
+exports.sendPasswordResetEmail = async (email, firstName, resetUrl) => {
     try {
-        const titulo = "¡Bienvenido a Vialidades!";
-        const contenido = `
-            <p>Hola <span class="highlight">${username}</span>,</p>
-            <p>Gracias por unirte a la red de monitoreo ciudadano de vialidades.</p>
-            <div class="info-box">
-                <strong>Tus credenciales:</strong><br>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Contraseña:</strong> <span style="font-family: monospace;">${generatedPassword}</span></p>
-            </div>
-        `;
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const botonAccion = `
-            <div class="btn-container">
-                <a href="${FRONTEND_URL}/login" class="btn">Entrar al Portal</a>
-            </div>
-        `;
-
-        const html = obtenerPlantillaBase(titulo, contenido, botonAccion);
-        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "¡Bienvenido a la comunidad!", html });
-    } catch (error) {
-        console.error("Error enviando email de bienvenida:", error);
-        throw error;
-    }
+        const tituloEs = "Restablece tu contraseña";
+        const tituloEn = "Reset your password";
+        const contenidoEs = `<p>Hola ${firstName},</p><p>Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el siguiente botón para crear una nueva clave segura.</p>`;
+        const contenidoEn = `<p>Hello ${firstName},</p><p>We received a request to reset the password for your account. Click the button below to create a new secure password.</p>`;
+        const botonAccion = `<a href="${resetUrl}" class="btn">Restablecer Contraseña / Reset Password</a>`;
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, botonAccion);
+        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Restablecer contraseña | Reset password", html });
+    } catch (error) { console.error("Error envío reset email:", error); throw error; }
 };
 
-/**
- * Enviar Código de Verificación
- */
 exports.sendVerificationEmail = async (email, firstName, code) => {
     try {
-        const titulo = "Verifica tu cuenta";
-        const contenido = `
-            <p>Hola <span class="highlight">${firstName}</span>,</p>
-            <div class="info-box" style="text-align: center;">
-                <strong>Código de Verificación:</strong><br>
-                <div style="font-size: 32px; font-weight: bold; color: #6366f1; margin: 15px 0;">${code}</div>
-            </div>
-        `;
-        const html = obtenerPlantillaBase(titulo, contenido, '');
-        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Código de Verificación - Vialidades", html });
-    } catch (error) {
-        console.error("Error enviando email de verificación:", error);
-        throw error;
-    }
+        const tituloEs = "Verifica tu cuenta";
+        const tituloEn = "Verify your account";
+        const contenidoEs = `<p>Hola ${firstName},</p><p>Tu código de seguridad para activar tu perfil en Vialidades es:</p><div style="font-size: 32px; font-weight: 700; color: #2563eb; letter-spacing: 4px; margin: 24px 0;">${code}</div>`;
+        const contenidoEn = `<p>Hello ${firstName},</p><p>Your security code to activate your Vialidades profile is:</p>`;
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Código de Verificación | Verification Code", html });
+    } catch (error) { console.error("Error envío verificación:", error); throw error; }
 };
 
-/**
- * Enviar Enlace de Recuperación de Contraseña
- */
-exports.sendPasswordResetEmail = async (email, username, resetUrl) => {
+exports.sendWelcomeEmail = async (email, firstName, generatedPassword) => {
     try {
-        const titulo = "Recuperación de Contraseña";
-        const contenido = `
-            <p>Hola <span class="highlight">${username}</span>,</p>
-            <p>Has solicitado restablecer tu contraseña. El enlace caduca en 1 hora por seguridad.</p>
-        `;
-        const botonAccion = `
-            <div class="btn-container">
-                <a href="${resetUrl}" class="btn">Restablecer Contraseña</a>
-            </div>
-        `;
-        const html = obtenerPlantillaBase(titulo, contenido, botonAccion);
-        await enviarEmailViaAPI({ from: `"Soporte Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Instrucciones de recuperación", html });
-    } catch (error) {
-        console.error("❌ ERROR API GMAIL en sendPasswordResetEmail:", error.message);
-        throw error;
-    }
+        const tituloEs = "¡Bienvenido a Vialidades!";
+        const tituloEn = "Welcome to Vialidades!";
+        const contenidoEs = `<p>Hola ${firstName},</p><p>Tu cuenta ha sido creada exitosamente. Aquí tienes tus credenciales temporales:</p><p><strong>Email:</strong> ${email}<br><strong>Clave:</strong> ${generatedPassword}</p>`;
+        const contenidoEn = `<p>Hello ${firstName},</p><p>Your account has been created successfully. You can now login using the credentials above.</p>`;
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+        const botonAccion = `<a href="${FRONTEND_URL}/login" class="btn">Iniciar Sesión / Login</a>`;
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, botonAccion);
+        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "¡Bienvenido! | Welcome!", html });
+    } catch (error) { console.error("Error envío bienvenida:", error); throw error; }
 };
 
-/**
- * Enviar Notificación de Cambio de Estado de Reporte
- */
-exports.sendReportStatusEmail = async (email, username, reportType, status, moderatorComment = '', isSanctioned = false) => {
+exports.sendReportStatusEmail = async (email, firstName, reportType, status, moderatorComment = '') => {
     try {
-        let titulo = "Actualización de Reporte";
-        let estadoTxt = status === 'approved' ? 'Aprobado' : 'Rechazado';
-        let colorEstado = status === 'approved' ? '#10b981' : '#ef4444';
-
-        const contenido = `
-            <p>Hola <span class="highlight">${username}</span>,</p>
-            <p>Tu reporte de <strong>"${reportType}"</strong> ha sido ${estadoTxt}.</p>
-            <p><strong>Comentario:</strong> ${moderatorComment}</p>
-        `;
-        const html = obtenerPlantillaBase(titulo, contenido, '');
-        await enviarEmailViaAPI({ from: `"Moderación" <${CORREO_REMITENTE}>`, to: email, subject: `Vialidades: Reporte ${estadoTxt}`, html });
-    } catch (error) {
-        console.error("Error enviando email de estado de reporte:", error);
-        throw error;
-    }
+        const approved = status === 'approved';
+        const tituloEs = approved ? "Reporte Aprobado" : "Actualización de Reporte";
+        const tituloEn = approved ? "Report Approved" : "Report Update";
+        const contenidoEs = `<p>Hola ${firstName},</p><p>Tu reporte sobre <strong>"${reportType}"</strong> ha sido ${approved ? 'aprobado' : 'revisado'}.</p>${moderatorComment ? `<p><em>Nota del moderador: ${moderatorComment}</em></p>` : ''}`;
+        const contenidoEn = `<p>Hello ${firstName},</p><p>Your report regarding <strong>"${reportType}"</strong> has been ${approved ? 'approved' : 'reviewed'}.</p>`;
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Estado de tu reporte | Report status", html });
+    } catch (error) { console.error("Error envío estado reporte:", error); }
 };

@@ -68,7 +68,7 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                         exif: true,
                         resource_type: isVideo ? 'video' : 'image'
                     });
-                    
+
                     // Pick relevant fields to keep DB clean but informative
                     metadata = {
                         image_metadata: result.image_metadata,
@@ -142,9 +142,9 @@ router.get('/stats', auth, async (req, res) => {
         if (!['moderator', 'admin'].includes(req.user.role)) {
             return res.status(403).json({ msg: 'No autorizado' });
         }
-        
+
         const moderatorId = req.user.id;
-        
+
         const [pending, approved, rejected, sanctioned] = await Promise.all([
             Report.countDocuments({ status: 'pending' }),
             Report.countDocuments({ status: 'approved', moderatorId }),
@@ -364,7 +364,7 @@ router.patch('/:id/moderate', auth, async (req, res) => {
             await notification.save();
 
             // Send Email Notification
-            sendReportStatusEmail(user.email, user.username, report.type, status, report.moderatorComment, isSanctioning)
+            sendReportStatusEmail(user.email, user.firstName, report.type, status, report.moderatorComment, isSanctioning)
                 .catch(err => console.error("Could not send report status email:", err));
 
         } else {
