@@ -1,6 +1,4 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
-
 const { OAuth2Client } = require('google-auth-library');
 
 const oAuth2Client = new OAuth2Client(
@@ -23,13 +21,13 @@ async function sendEmailViaRest(mailOptions) {
             'MIME-Version: 1.0',
             '',
             mailOptions.html,
-        ].join('\\r\\n');
+        ].join('\r\n');
 
         // URL-safe Base64 encoding as required by Gmail API
         const encodedMessage = Buffer.from(rawMessage)
             .toString('base64')
-            .replace(/\\+/g, '-')
-            .replace(/\\/ / g, '_')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
             .replace(/=+$/, '');
 
         // Use oAuth2Client.request which automatically handles access token fetching/refreshing
