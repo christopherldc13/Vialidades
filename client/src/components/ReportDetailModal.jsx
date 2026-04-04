@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -12,6 +12,11 @@ import { FaCar, FaCarCrash } from "react-icons/fa";
 import { BsSignStopFill } from "react-icons/bs";
 import { LuTriangleAlert } from "react-icons/lu";
 import { IoMdHelpCircle } from "react-icons/io";
+import { AlertTriangle, Check } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import Swal from 'sweetalert2';
+
 
 const getIncidentIcon = (type) => {
     switch (type) {
@@ -20,6 +25,17 @@ const getIncidentIcon = (type) => {
         case 'Violation': return <BsSignStopFill />;
         case 'Hazard': return <LuTriangleAlert />;
         default: return <IoMdHelpCircle />;
+    }
+};
+
+const getStatusLabel = (status, wasSanctioned) => {
+    if (wasSanctioned) return 'SANCIONADO';
+    switch (status) {
+        case 'pending': return 'PENDIENTE';
+        case 'approved': return 'APROBADO';
+        case 'rejected': return 'RECHAZADO';
+        case 'In Process': return 'EN PROCESO';
+        default: return status?.toUpperCase();
     }
 };
 
@@ -42,18 +58,25 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
+const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
     const [showRawMetadata, setShowRawMetadata] = useState({});
+    const isModerator = user?.role === 'moderator' || user?.role === 'admin';
 
-    if (!isOpen || !report) return null;
+    const isModerated = useRef(false);
+
+    useEffect(() => {
+        // Modal instance active
+    }, []);
+
+    if (!report) return null;
 
     const reportLocation = report.location || { lat: 18.7357, lng: -70.1627 };
-    
+
     // Metadata helper to extract useful info
     const renderMetadata = () => {
-        if (!isModerator || !report.media) return null;
+        if (!isModerator || !report?.media) return null;
 
-        const allMetadata = report.media.map(m => m.metadata).filter(m => m && Object.keys(m).length > 0);
+        const allMetadata = (report.media || []).map(m => m.metadata).filter(m => m && Object.keys(m).length > 0);
         if (allMetadata.length === 0) return (
             <div style={{ padding: '1rem', background: 'var(--bg-input)', borderRadius: '12px', color: 'var(--text-light)', fontStyle: 'italic' }}>
                 Sin metadatos técnicos disponibles.
@@ -65,14 +88,14 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                 {report.media.map((item, idx) => {
                     const meta = item.metadata || {};
                     if (Object.keys(meta).length === 0) return null;
-                    
+
                     const toggleRaw = () => {
                         setShowRawMetadata(prev => ({ ...prev, [idx]: !prev[idx] }));
                     };
 
                     // Robust Device Info
                     const deviceModel = meta.image_metadata?.Model || meta.exif?.Model || meta.image_metadata?.Make || meta.exif?.Make || 'Desconocido';
-                    
+
                     // GPS Info
                     const hasGPS = meta.gps || meta.exif?.GPSLatitude || meta.image_metadata?.GPSLatitude;
 
@@ -82,14 +105,14 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', color: 'var(--primary)' }}>
                                     <Info size={18} /> Multimedia #{idx + 1} ({item.type})
                                 </div>
-                                <button 
+                                <button
                                     onClick={toggleRaw}
                                     style={{ fontSize: '0.7rem', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'none', cursor: 'pointer', color: 'var(--text-light)' }}
                                 >
                                     {showRawMetadata[idx] ? 'Ocultar Datos Crudos' : 'Ver Datos Crudos'}
                                 </button>
                             </div>
-                            
+
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.9rem' }}>
                                 {/* Technical Info */}
                                 {meta.info && (
@@ -128,13 +151,13 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                     <Clock size={16} color="var(--text-light)" />
                                     <span><strong>Subida:</strong> {new Date(report.timestamp).toLocaleString()}</span>
                                 </div>
-                                
+
                                 {showRawMetadata[idx] && (
-                                    <div style={{ 
-                                        gridColumn: '1 / -1', marginTop: '1rem', padding: '1rem', 
-                                        background: 'var(--bg-input)', color: 'var(--text-light)', 
-                                        borderRadius: '12px', fontSize: '0.75rem', overflow: 'auto', 
-                                        maxHeight: '200px', border: '1px solid var(--border-color)' 
+                                    <div style={{
+                                        gridColumn: '1 / -1', marginTop: '1rem', padding: '1rem',
+                                        background: 'var(--bg-input)', color: 'var(--text-light)',
+                                        borderRadius: '12px', fontSize: '0.75rem', overflow: 'auto',
+                                        maxHeight: '200px', border: '1px solid var(--border-color)'
                                     }}>
                                         <pre style={{ margin: 0 }}>{JSON.stringify(meta, null, 2)}</pre>
                                     </div>
@@ -170,10 +193,10 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                             <span style={{
                                 display: 'inline-block', marginTop: '0.5rem', padding: '0.25rem 0.75rem',
                                 borderRadius: '999px', fontSize: '0.75rem', fontWeight: '800',
-                                background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : 'var(--error)',
+                                background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.status === 'In Process' ? 'var(--primary)' : 'var(--error)',
                                 color: 'white', textTransform: 'uppercase'
                             }}>
-                                {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : 'Rechazado'}
+                                {getStatusLabel(report.status, report.wasSanctioned)}
                             </span>
                         </div>
                         <button onClick={onClose} className="modal-close-btn">
@@ -184,13 +207,13 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                     {/* Scrollable Content */}
                     <div className="modal-body-modern custom-scrollbar">
                         <div className="modal-grid-modern">
-                            
+
                             {/* Left Column: Media and Description */}
-                             <div>
+                            <div>
                                 <div className="modal-media-wrapper">
                                     <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} objectFit="contain" />
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                                         <User size={20} />
@@ -255,16 +278,16 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
 
                             {/* Right Column: Mini-Map and Metadata */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                 {/* Mini Map */}
+                                {/* Mini Map */}
                                 <div>
                                     <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', color: 'var(--text-main)', fontWeight: '700', fontSize: '1.05rem' }}>
                                         <CiLocationOn size={22} style={{ color: 'var(--primary)', flexShrink: 0 }} /> Ubicación del Incidente
                                     </h4>
                                     <div className="modal-map-wrapper">
-                                        <MapContainer 
-                                            center={reportLocation} 
-                                            zoom={16} 
-                                            scrollWheelZoom={false} 
+                                        <MapContainer
+                                            center={reportLocation}
+                                            zoom={16}
+                                            scrollWheelZoom={false}
                                             dragging={false}
                                             style={{ height: '100%', width: '100%' }}
                                         >
@@ -291,13 +314,13 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                                         {renderMetadata()}
                                     </div>
                                 )}
-                                
+
                                 {/* Moderator Comment if exists */}
                                 {report.moderatorComment && (
-                                    <div style={{ 
-                                        background: report.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-                                        borderLeft: `5px solid ${report.status === 'approved' ? 'var(--success)' : 'var(--error)'}`, 
-                                        padding: '1.25rem', borderRadius: '12px' 
+                                    <div style={{
+                                        background: report.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        borderLeft: `5px solid ${report.status === 'approved' ? 'var(--success)' : 'var(--error)'}`,
+                                        padding: '1.25rem', borderRadius: '12px'
                                     }}>
                                         <strong style={{ color: report.status === 'approved' ? 'var(--success)' : 'var(--error)', display: 'block', marginBottom: '0.5rem' }}>
                                             Comentario del Moderador:
@@ -310,9 +333,135 @@ const ReportDetailModal = ({ report, isOpen, onClose, isModerator }) => {
                     </div>
 
                     <div className="modal-footer-modern">
-                        <button onClick={onClose} className="modal-action-btn">
-                            Cerrar
-                        </button>
+                        {user?.role === 'moderator' && (report.status === 'pending' || report.status === 'In Process') && (
+                            <div className="modal-footer-actions">
+                                <button
+                                    onClick={() => {
+                                        Swal.fire({
+                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Aprobar Reporte</h2>',
+                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa un comentario o justificación para aprobar este reporte:</div>',
+                                            input: 'textarea',
+                                            inputPlaceholder: 'Ej. Reporte muy útil y ubicación precisa.',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Confirmar Aprobación',
+                                            cancelButtonText: 'Cancelar',
+                                            customClass: {
+                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-success',
+                                                cancelButton: 'swal2-lumina-cancel'
+                                            },
+                                            buttonsStyling: false,
+                                            background: 'var(--surface-solid)',
+                                            color: 'var(--text-main)',
+                                            inputValidator: (value) => {
+                                                if (!value || value.trim() === '') {
+                                                    return 'El comentario es obligatorio para aprobar.';
+                                                }
+                                            }
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                isModerated.current = true;
+                                                onModerate(report._id, 'approved', false, result.value);
+                                                onClose();
+                                            }
+                                        });
+                                    }}
+                                    style={{
+                                        flex: 1, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)',
+                                        border: '1px solid var(--success)', padding: '0.75rem 1rem', borderRadius: '12px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Check size={18} /> Aprobar
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        Swal.fire({
+                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(239, 68, 68, 0.15); color: var(--error); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div> Rechazar Reporte</h2>',
+                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa el motivo del rechazo para notificar al usuario:</div>',
+                                            input: 'textarea',
+                                            inputPlaceholder: 'Ej. La foto no es clara o la ubicación no coincide.',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Confirmar Rechazo',
+                                            cancelButtonText: 'Cancelar',
+                                            customClass: {
+                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-error',
+                                                cancelButton: 'swal2-lumina-cancel'
+                                            },
+                                            buttonsStyling: false,
+                                            background: 'var(--surface-solid)',
+                                            color: 'var(--text-main)',
+                                            inputValidator: (value) => {
+                                                if (!value || value.trim() === '') {
+                                                    return 'El motivo es obligatorio para rechazar.';
+                                                }
+                                            }
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                isModerated.current = true;
+                                                onModerate(report._id, 'rejected', false, result.value);
+                                                onClose();
+                                            }
+                                        });
+                                    }}
+                                    style={{
+                                        flex: 1, background: 'rgba(239, 68, 68, 0.15)', color: 'var(--error)',
+                                        border: '1px solid var(--error)', padding: '0.75rem 1rem', borderRadius: '12px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <X size={18} /> Rechazar
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        Swal.fire({
+                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div> Sancionar Usuario</h2>',
+                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Este reporte es falso o malintencionado. Se le añadirá una falta al usuario. Justifícalo:</div>',
+                                            input: 'textarea',
+                                            inputPlaceholder: 'Ej. Tercera vez subiendo imágenes de internet. Se le suspenderá.',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Aplicar Sanción',
+                                            cancelButtonText: 'Cancelar',
+                                            customClass: {
+                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-warning',
+                                                cancelButton: 'swal2-lumina-cancel'
+                                            },
+                                            buttonsStyling: false,
+                                            background: 'var(--surface-solid)',
+                                            color: 'var(--text-main)',
+                                            inputValidator: (value) => {
+                                                if (!value || value.trim() === '') {
+                                                    return 'La justificación es obligatoria para sancionar.';
+                                                }
+                                            }
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                isModerated.current = true;
+                                                onModerate(report._id, 'rejected', true, result.value);
+                                                onClose();
+                                            }
+                                        });
+                                    }}
+                                    style={{
+                                        flex: 1, background: 'rgba(245, 158, 11, 0.15)', color: 'var(--warning)',
+                                        border: '1px solid var(--warning)', padding: '0.75rem 1rem', borderRadius: '12px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}
+                                    title="Sancionar Usuario"
+                                >
+                                    <AlertTriangle size={18} /> Sancionar
+                                </button>
+                            </div>
+                        )}
+                        <div className="modal-close-wrapper">
+                            <button onClick={onClose} className="modal-action-btn modal-action-btn-full">
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>

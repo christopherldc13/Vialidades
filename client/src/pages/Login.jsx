@@ -159,10 +159,6 @@ function Login() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, ease: "easeOut" }}
                 >
-                    <Link to="/" className="back-link">
-                        <ArrowLeft size={16} /> Volver
-                    </Link>
-
                     <div className="login-header">
                         <motion.div
                             className="login-icon-wrapper"

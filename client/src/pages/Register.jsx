@@ -141,7 +141,7 @@ function Register() {
                         fontSize: '0.9rem',
                         lineHeight: '1 !important',
                         // Using padding to force the text up since transforms might be conflicting
-                        padding: '0 0 6px 0 !important', 
+                        padding: '0 0 6px 0 !important',
                         '&.Mui-selected': {
                             backgroundColor: 'var(--primary) !important',
                             color: 'white !important',
@@ -357,14 +357,14 @@ function Register() {
             number: /[0-9]/.test(pass),
             symbol: /[^A-Za-z0-9]/.test(pass)
         };
-        
+
         let score = 0;
         if (checks.length) score++;
         if (pass.length >= 10) score++;
         if (checks.upper) score++;
         if (checks.number) score++;
         if (checks.symbol) score++;
-        
+
         return { score, checks };
     };
 
@@ -409,7 +409,7 @@ function Register() {
         setIsLoading(true);
 
         const res = await checkRegistrationDuplicates(formData);
-        
+
         if (strength <= 2) {
             setError('La contraseña es muy débil. Por favor intenta combinar letras, números y símbolos.');
             setIsLoading(false);
@@ -579,11 +579,12 @@ function Register() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '2rem',
+            padding: '100px 2rem 2rem 2rem',
             background: 'var(--bg-page)',
             position: 'relative',
             zIndex: 1
         }}>
+            <Navbar />
             <div className="premium-login-card" style={{ maxWidth: '650px', width: '100%', padding: 'clamp(1.5rem, 3vh, 2.5rem) clamp(1rem, 2.5vw, 2rem)' }}>
                 <div className="login-header">
                     <h2>
@@ -793,15 +794,15 @@ function Register() {
                             <div className="input-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.85rem' }}>Contraseña</label>
                                 <div style={{ position: 'relative' }}>
-                                    <input 
-                                        type={showPassword ? "text" : "password"} 
-                                        name="password" 
-                                        value={formData.password} 
-                                        onChange={handleChange} 
-                                        required 
-                                        minLength="6" 
-                                        placeholder="Mínimo 6 caracteres" 
-                                        style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem', paddingRight: '3rem' }} 
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        minLength="6"
+                                        placeholder="Mínimo 6 caracteres"
+                                        style={{ padding: 'clamp(0.5rem, 1.5vh, 0.75rem) 1.25rem', fontSize: '0.9rem', paddingRight: '3rem' }}
                                     />
                                     <button
                                         type="button"
@@ -826,7 +827,7 @@ function Register() {
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
-                                
+
                                 {formData.password && (
                                     <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'var(--bg-input)', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
                                         <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', fontWeight: 'bold' }}>La contraseña debe tener lo siguiente:</p>
@@ -846,17 +847,17 @@ function Register() {
                                         </ul>
 
                                         <div className="strength-bar-container" style={{ marginBottom: '0.5rem' }}>
-                                            <div 
-                                                className={`strength-bar ${strengthInfo.color}`} 
+                                            <div
+                                                className={`strength-bar ${strengthInfo.color}`}
                                                 style={{ width: strengthInfo.width }}
                                             ></div>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Nivel de Seguridad:</span>
-                                            <span style={{ 
-                                                fontSize: '0.9rem', 
-                                                fontWeight: '800', 
-                                                padding: '0.2rem 0.6rem', 
+                                            <span style={{
+                                                fontSize: '0.9rem',
+                                                fontWeight: '800',
+                                                padding: '0.2rem 0.6rem',
                                                 borderRadius: '0.5rem',
                                                 background: strengthInfo.color === 'strength-weak' ? 'rgba(239, 68, 68, 0.1)' : strengthInfo.color === 'strength-medium' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                                                 color: strengthInfo.color === 'strength-weak' ? 'var(--error)' : strengthInfo.color === 'strength-medium' ? 'var(--warning)' : 'var(--success)'

@@ -898,13 +898,44 @@ button.danger:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 5%;
+  padding: 1rem 5%;
+  /* Unified padding to avoid jump */
   background: transparent;
+  backdrop-filter: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease, padding 0.4s ease;
+}
+
+.landing-nav.scrolled {
+  background: var(--surface);
+  backdrop-filter: blur(15px);
+  padding: 1rem 5%;
+  /* Matches original */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.nav-gradient-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  height: 151px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, transparent 100%);
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+html.dark .nav-gradient-overlay {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+}
+
+.landing-nav.scrolled .nav-gradient-overlay {
+  opacity: 0;
 }
 
 .nav-brand {
@@ -1223,25 +1254,58 @@ button.danger:hover {
 
 @media (max-width: 640px) {
   .landing-nav {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    position: relative;
-    /* Prevent sticky overlay on mobile to save space */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0.5rem;
+    position: fixed;
+    background: transparent;
+    transition: all 0.3s ease;
   }
 
-  /* Stack buttons vertically for perfect centering */
+  .landing-nav.scrolled {
+    background: var(--surface);
+    padding: 0.75rem 0.5rem;
+    /* Matches mobile padding */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+  }
+
+  .nav-brand {
+    font-size: 1.15rem;
+    /* Slightly smaller logo */
+    gap: 0.35rem;
+    flex-shrink: 0;
+    /* Don't let logo shrink too much */
+  }
+
+  .brand-icon {
+    width: 18px;
+    height: 18px;
+  }
+
   .nav-links {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.75rem;
+    width: auto;
+    flex-direction: row;
+    gap: 0.35rem;
+    /* Tighter gap */
+    align-items: center;
   }
 
   .nav-btn {
-    width: 100%;
+    width: auto;
     text-align: center;
-    padding: 0.75rem;
-    display: block;
+    padding: 0.4rem 0.6rem;
+    display: inline-block;
+    font-size: 0.75rem;
+    border-radius: 8px;
+    white-space: nowrap;
+    /* PREVENTS "Iniciar Sesion" from breaking */
+  }
+
+  .nav-btn.register {
+    padding: 0.4rem 0.8rem;
+    /* A bit more for the primary action */
   }
 
   .features-section {
@@ -2037,6 +2101,18 @@ html.dark .modern-navbar {
   overflow: hidden;
 }
 
+.premium-login-form-container {
+  flex: 1;
+  background: var(--bg-page);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  padding: 100px 2rem 2rem 2rem;
+  /* Added top padding for Navbar */
+  position: relative;
+}
+
 .modern-dashboard-header::before {
   content: '';
   position: absolute;
@@ -2087,7 +2163,7 @@ html.dark .modern-navbar {
   color: var(--text-main);
   letter-spacing: 3px;
   text-transform: uppercase;
-  z-index: 9999;
+  z-index: 1020;
   pointer-events: none;
   box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03);
 }
@@ -2271,7 +2347,7 @@ html.dark .fixed-footer {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  z-index: 99999;
+  z-index: 2000;
   /* Above fixed footer */
   display: flex;
   align-items: center;
@@ -2379,8 +2455,52 @@ html.dark .fixed-footer {
   padding: 1.25rem 1.5rem;
   background: var(--surface-solid);
   border-top: 1px solid var(--border-light);
-  display: flex;
-  justify-content: flex-end;
+  display: flex !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  align-items: stretch !important;
+}
+
+.modal-footer-actions {
+  display: contents !important;
+}
+
+.modal-close-wrapper {
+  display: flex !important;
+  flex: 1 !important;
+}
+
+.modal-footer-modern button {
+  flex: 1 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 600px) {
+  .modal-footer-modern {
+    padding: 0.6rem 0.4rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .modal-footer-modern button {
+    padding: 0.4rem 0.1rem !important;
+    font-size: 0.58rem !important;
+    gap: 0.1rem !important;
+    border-radius: 6px !important;
+  }
+
+  .modal-footer-modern button svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .modal-footer-actions,
+  .modal-close-wrapper {
+    display: contents !important;
+  }
 }
 
 .modal-close-btn {
@@ -2423,6 +2543,10 @@ html.dark .fixed-footer {
 }
 
 /* SweetAlert2 Theme Overrides */
+.swal2-container {
+  z-index: 10000 !important;
+}
+
 .swal2-popup {
   padding: 2rem !important;
   box-sizing: border-box !important;

@@ -13,6 +13,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import HeatMapLayer from '../components/HeatMapLayer';
 import ModerationTimeline from '../components/ModerationTimeline';
+import Navbar from '../components/Navbar';
 
 // Create a custom pulsing icon for the map
 const createPulseIcon = () => {
@@ -26,7 +27,7 @@ const createPulseIcon = () => {
 
 const LandingPage = () => {
     const { user, loading } = useContext(AuthContext);
-    const { theme, toggleTheme } = useContext(ThemeContext);
+    const { theme } = useContext(ThemeContext);
     const [heatPoints, setHeatPoints] = useState([]);
     const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
 
@@ -48,10 +49,10 @@ const LandingPage = () => {
 
         try {
             await axios.post('/api/suggestions', suggestionForm);
-            
+
             setSendingSuggestion(false);
             setSuggestionForm({ name: '', email: '', message: '' });
-            
+
             Swal.fire({
                 title: '¡Sugerencia Enviada!',
                 text: 'Gracias por ayudarnos a mejorar Vialidades.',
@@ -64,7 +65,7 @@ const LandingPage = () => {
                     title: 'swal2-lumina-title'
                 }
             });
-            
+
         } catch (err) {
             console.error("Error submitting suggestion:", err);
             setSendingSuggestion(false);
@@ -106,25 +107,9 @@ const LandingPage = () => {
 
     return (
         <div className="landing-container">
-            {/* Navigation */}
-            <motion.nav
-                className="landing-nav"
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-            >
-                <div className="nav-brand">
-                    <CiLocationOn size={28} className="brand-icon" style={{ color: 'var(--primary)' }} />
-                    <span>Vialidades</span>
-                </div>
-                <div className="nav-links">
-                    <button onClick={toggleTheme} className="secondary" style={{ padding: '0.5rem', width: 'auto', border: 'none', background: 'transparent' }} title="Cambiar Tema">
-                        {theme === 'dark' ? <Sun size={24} color="var(--text-main)" /> : <Moon size={24} color="var(--text-main)" />}
-                    </button>
-                    <Link to="/login" className="nav-btn login">Iniciar Sesión</Link>
-                    <Link to="/register" className="nav-btn register">Registrarme</Link>
-                </div>
-            </motion.nav>
+            <Navbar />
+
+            {/* Hero Section */}
 
             {/* Hero Section */}
             <header className="hero-section">
@@ -379,7 +364,7 @@ const LandingPage = () => {
 
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                     <div className="form-split-grid">
-                        
+
                         {/* Left Side: Branding & Copy */}
                         <motion.div
                             className="form-split-left"
@@ -388,12 +373,12 @@ const LandingPage = () => {
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
                         >
-                            <div style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.6rem 1.2rem', 
-                                background: 'rgba(99, 102, 241, 0.1)', 
+                            <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                padding: '0.6rem 1.2rem',
+                                background: 'rgba(99, 102, 241, 0.1)',
                                 border: '1px solid rgba(99, 102, 241, 0.2)',
                                 borderRadius: '99px',
                                 color: 'var(--primary)',
@@ -403,22 +388,22 @@ const LandingPage = () => {
                             }}>
                                 <MessageSquare size={18} /> Feedback Comunitario
                             </div>
-                            
-                            <h2 style={{ 
-                                fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', 
-                                fontWeight: '900', 
-                                lineHeight: '1.1', 
-                                marginBottom: '1.5rem', 
+
+                            <h2 style={{
+                                fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
+                                fontWeight: '900',
+                                lineHeight: '1.1',
+                                marginBottom: '1.5rem',
                                 color: 'var(--text-main)',
                                 letterSpacing: '-0.02em'
                             }}>
                                 Construyamos un mejor <span style={{ color: 'var(--primary)' }}>tránsito</span> juntos.
                             </h2>
-                            
-                            <p style={{ 
-                                fontSize: '1.25rem', 
-                                color: 'var(--text-light)', 
-                                lineHeight: '1.6', 
+
+                            <p style={{
+                                fontSize: '1.25rem',
+                                color: 'var(--text-light)',
+                                lineHeight: '1.6',
                                 marginBottom: '3rem',
                                 maxWidth: '480px'
                             }}>
@@ -432,13 +417,13 @@ const LandingPage = () => {
                                     { label: 'Sintoniza la Comunidad', icon: <Users /> }
                                 ].map((item, i) => (
                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-main)', fontWeight: '600' }}>
-                                        <div style={{ 
-                                            width: '40px', 
-                                            height: '40px', 
-                                            borderRadius: '12px', 
-                                            background: 'var(--surface)', 
-                                            display: 'flex', 
-                                            alignItems: 'center', 
+                                        <div style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '12px',
+                                            background: 'var(--surface)',
+                                            display: 'flex',
+                                            alignItems: 'center',
                                             justifyContent: 'center',
                                             color: 'var(--primary)',
                                             border: '1px solid var(--border-color)'
@@ -458,7 +443,7 @@ const LandingPage = () => {
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: 0.2 }}
                         >
-                            <div className="card" style={{ 
+                            <div className="card" style={{
                                 padding: 'clamp(2rem, 5vw, 4rem)',
                                 borderRadius: '40px',
                                 background: 'var(--surface)',
@@ -484,16 +469,16 @@ const LandingPage = () => {
                                             <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Nombre Completo</label>
                                             <div className="input-icon-wrapper" style={{ position: 'relative' }}>
                                                 <UserIcon size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     name="name"
                                                     value={suggestionForm.name}
                                                     onChange={handleSuggestionChange}
                                                     required
                                                     placeholder="Ej: Juan Pérez"
-                                                    style={{ 
-                                                        height: '58px', 
-                                                        paddingLeft: '3.5rem', 
+                                                    style={{
+                                                        height: '58px',
+                                                        paddingLeft: '3.5rem',
                                                         background: 'var(--bg-input)',
                                                         border: '1px solid var(--border-color)',
                                                         borderRadius: '16px',
@@ -508,16 +493,16 @@ const LandingPage = () => {
                                             <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Correo Electrónico</label>
                                             <div className="input-icon-wrapper" style={{ position: 'relative' }}>
                                                 <Mail size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                                <input 
-                                                    type="email" 
+                                                <input
+                                                    type="email"
                                                     name="email"
                                                     value={suggestionForm.email}
                                                     onChange={handleSuggestionChange}
                                                     required
                                                     placeholder="ejemplo@correo.com"
-                                                    style={{ 
-                                                        height: '58px', 
-                                                        paddingLeft: '3.5rem', 
+                                                    style={{
+                                                        height: '58px',
+                                                        paddingLeft: '3.5rem',
                                                         background: 'var(--bg-input)',
                                                         border: '1px solid var(--border-color)',
                                                         borderRadius: '16px',
@@ -532,17 +517,17 @@ const LandingPage = () => {
 
                                     <div className="input-group" style={{ marginBottom: 0 }}>
                                         <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Tu Sugerencia</label>
-                                        <textarea 
+                                        <textarea
                                             name="message"
                                             value={suggestionForm.message}
                                             onChange={handleSuggestionChange}
                                             required
-                                            placeholder="Descríbenos tu idea para mejorar Vialidades..." 
-                                            style={{ 
-                                                minHeight: '180px', 
-                                                padding: '1.5rem', 
-                                                borderRadius: '20px', 
-                                                background: 'var(--bg-input)', 
+                                            placeholder="Descríbenos tu idea para mejorar Vialidades..."
+                                            style={{
+                                                minHeight: '180px',
+                                                padding: '1.5rem',
+                                                borderRadius: '20px',
+                                                background: 'var(--bg-input)',
                                                 border: '1px solid var(--border-color)',
                                                 color: 'var(--text-main)',
                                                 fontFamily: 'inherit',
@@ -555,12 +540,12 @@ const LandingPage = () => {
                                         />
                                     </div>
 
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
                                         disabled={sendingSuggestion}
-                                        style={{ 
+                                        style={{
                                             height: '64px',
-                                            borderRadius: '20px', 
+                                            borderRadius: '20px',
                                             background: 'linear-gradient(135deg, var(--primary) 0%, #4338ca 100%)',
                                             color: 'white',
                                             fontWeight: '800',

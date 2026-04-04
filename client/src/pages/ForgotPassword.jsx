@@ -29,12 +29,9 @@ function ForgotPassword() {
     };
 
     return (
-        <div className="landing-container auth-wrapper modern-login-wrapper">
+        <div className="landing-container auth-wrapper modern-login-wrapper" style={{ paddingTop: '100px' }}>
+            <Navbar />
             <div className="card modern-login-card">
-                <Link to="/login" className="back-link" title="Volver al inicio de sesión">
-                    <ArrowLeft size={16} /> Volver
-                </Link>
-
                 <div className="login-header">
                     <div className="login-icon-wrapper">
                         <Mail size={28} />

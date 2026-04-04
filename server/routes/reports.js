@@ -113,6 +113,11 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
         });
 
         const report = await newReport.save();
+
+        // Notify in Real-Time
+        const io = require('../socket').getIo();
+        io.emit('new_report', report);
+
         res.json(report);
     } catch (err) {
         console.error(err.message);
@@ -159,6 +164,65 @@ router.get('/stats', auth, async (req, res) => {
     }
 });
 
+// --- LOCK REPORT (In Process) ---
+router.put('/:id/lock', auth, async (req, res) => {
+    try {
+        if (!['moderator', 'admin'].includes(req.user.role)) {
+            return res.status(403).json({ msg: 'No autorizado' });
+        }
+
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
+
+        // If already locked by someone else
+        if (report.status === 'In Process' && report.moderatorInCharge?.toString() !== req.user.id) {
+            return res.status(409).json({ msg: 'Este reporte ya está siendo revisado por otro moderador' });
+        }
+
+        report.status = 'In Process';
+        report.moderatorInCharge = req.user.id;
+        await report.save();
+
+        // Emit to all
+        const io = require('../socket').getIo();
+        io.emit('report_status_updated', {
+            reportId: report._id,
+            status: 'In Process',
+            moderatorName: req.user.username
+        });
+
+        res.json(report);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// --- UNLOCK REPORT (Back to Pending) ---
+router.put('/:id/unlock', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
+
+        if (report.status === 'In Process' && report.moderatorInCharge?.toString() === req.user.id) {
+            report.status = 'pending';
+            report.moderatorInCharge = null;
+            await report.save();
+
+            const io = require('../socket').getIo();
+            io.emit('report_status_updated', {
+                reportId: report._id,
+                status: 'pending'
+            });
+        }
+
+        res.json(report);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // Get Reports - Logic:
 // If query 'my=true', return user's reports.
 // If query 'status=pending' & user is admin/mod, return pending.
@@ -173,7 +237,7 @@ router.get('/', auth, async (req, res) => {
         } else if (['moderator', 'admin'].includes(req.user.role)) {
             // Global vs. Personalized logic
             if (status === 'pending') {
-                query.status = 'pending';
+                query.status = { $in: ['pending', 'In Process'] };
                 // Global: No moderatorId filter
             } else if (status === 'all') {
                 // Global history: No specific filter
@@ -367,13 +431,67 @@ router.patch('/:id/moderate', auth, async (req, res) => {
             sendReportStatusEmail(user.email, user.firstName, report.type, status, report.moderatorComment, isSanctioning)
                 .catch(err => console.error("Could not send report status email:", err));
 
-        } else {
-            console.log("[DEBUG] User not found for report:", report.userId);
         }
+
+        // Emit final status update to everyone
+        const io = require('../socket').getIo();
+        io.emit('report_status_updated', {
+            reportId: report._id,
+            status: report.status,
+            wasSanctioned: report.wasSanctioned
+        });
 
         res.json(report);
     } catch (err) {
         console.error("Error in moderation:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Lock report for moderation
+router.put('/:id/lock', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Report not found' });
+
+        // If it's already in process and someone else has it
+        if (report.status === 'In Process' && report.moderatorInCharge && report.moderatorInCharge.toString() !== req.user.id) {
+            return res.status(409).json({
+                msg: 'Report is already being reviewed by another moderator',
+                moderatorInChargeName: report.moderatorInChargeName
+            });
+        }
+
+        // Lock it
+        report.status = 'In Process';
+        report.moderatorInCharge = req.user.id;
+        // Use username from req.user if available, otherwise just use 'Moderador'
+        report.moderatorInChargeName = req.user.username || 'Moderador';
+        await report.save();
+
+        res.json(report);
+    } catch (err) {
+        console.error("Error locking report:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Unlock report
+router.put('/:id/unlock', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Report not found' });
+
+        if (report.status === 'In Process' && report.moderatorInCharge && report.moderatorInCharge.toString() === req.user.id) {
+            report.status = 'pending';
+            report.moderatorInCharge = null;
+            report.moderatorInChargeName = null;
+            await report.save();
+        }
+
+        res.json(report);
+    } catch (err) {
+        console.error("Error unlocking report:", err);
         res.status(500).send('Server Error');
     }
 });

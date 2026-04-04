@@ -80,7 +80,13 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+const http = require('http');
+const socketModule = require('./socket');
+
+const server = http.createServer(app);
+socketModule.init(server);
+
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
 

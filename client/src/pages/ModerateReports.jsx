@@ -11,6 +11,28 @@ import Swal from 'sweetalert2';
 import ReportDetailModal from '../components/ReportDetailModal';
 import UserDetailModal from '../components/UserDetailModal';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { io } from 'socket.io-client';
+
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+
+const getIncidentLabel = (type) => {
+    switch (type) {
+        case 'Traffic': return 'Tráfico Pesado';
+        case 'Accident': return 'Accidente';
+        case 'Violation': return 'Infracción';
+        case 'Hazard': return 'Peligro en la vía';
+        default: return type;
+    }
+};
+
+const getRoleLabel = (role) => {
+    switch (role) {
+        case 'admin': return 'ADMINISTRADOR';
+        case 'moderator': return 'MODERADOR';
+        case 'user': return 'USUARIO';
+        default: return role?.toUpperCase();
+    }
+};
 
 const ModerateReports = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -32,10 +54,44 @@ const ModerateReports = () => {
     }, []);
 
     useEffect(() => {
+        socket.emit('join_moderation');
+
+        socket.on('report_status_updated', ({ reportId, status, moderatorName }) => {
+            setReports(prev => prev.map(r =>
+                r._id === reportId ? { ...r, status, moderatorInChargeName: moderatorName } : r
+            ));
+        });
+
+        return () => {
+            socket.off('report_status_updated');
+        };
+    }, []);
+
+    const handleOpenDetails = async (report) => {
+        if (report.status === 'pending' || report.status === 'In Process') {
+            try {
+                const res = await axios.put(`/api/reports/${report._id}/lock`);
+                setSelectedReport(res.data);
+                setIsModalOpen(true);
+                // Notificar al socket para autolimpieza en desconexión
+                socket.emit('lock_report', report._id);
+            } catch (err) {
+                if (err.response?.status === 409) {
+                    toast.error(err.response.data.msg || "Este reporte ya está siendo revisado.");
+                } else {
+                    console.error("Error locking report:", err);
+                }
+            }
+        } else {
+            setSelectedReport(report);
+            setIsModalOpen(true);
+        }
+    };
+
+    useEffect(() => {
         const fetchReports = async () => {
             setLoading(true);
             try {
-                // Fetch based on filter
                 if (filter === 'users') {
                     const res = await axios.get('/api/users');
                     setUsersList(res.data);
@@ -51,6 +107,28 @@ const ModerateReports = () => {
         };
         if (user) fetchReports();
     }, [user, filter]);
+
+    const handleCloseDetails = async () => {
+        if (selectedReport && selectedReport.status === 'In Process' && selectedReport.moderatorInCharge === user?.id) {
+            try {
+                await axios.put(`/api/reports/${selectedReport._id}/unlock`);
+                // Limpiar el registro del socket
+                socket.emit('unlock_report');
+            } catch (err) {
+                console.error("Error unlocking report:", err);
+            }
+        }
+        setIsModalOpen(false);
+        setSelectedReport(null);
+    };
+
+    // Page-level cleanup: unlock if navigating away
+    useEffect(() => {
+        return () => {
+            // This is tricky because we don't have the latest selectedReport here easily without refs
+            // But the socket disconnect on server handles actual navigation away/tab close.
+        };
+    }, []);
 
     const getAvatarUrl = (avatarPath) => {
         if (!avatarPath) return null;
@@ -72,10 +150,16 @@ const ModerateReports = () => {
             // If we are in 'pending' view, remove the item. 
             // If in history/all, update the item's status locally.
             if (filter === 'pending') {
-                setReports(reports.filter(r => r._id !== id));
+                setReports(prev => prev.filter(r => r._id !== id));
             } else {
-                setReports(reports.map(r => r._id === id ? { ...r, status, wasSanctioned: sanctionUser, rejectionReason } : r));
+                setReports(prev => prev.map(r => r._id === id ? { ...r, status, wasSanctioned: sanctionUser, rejectionReason } : r));
             }
+
+            // Liberar el bloqueo en el socket (moderación completada)
+            socket.emit('unlock_report');
+
+            setSelectedReport(null);
+            setIsModalOpen(false);
 
             if (sanctionUser) toast.success("Usuario sancionado correctamente.");
             else toast.success("Reporte moderado correctamente.");
@@ -249,7 +333,7 @@ const ModerateReports = () => {
                                             border: usr.role === 'user' ? '1px solid var(--border-color)' : 'none',
                                             boxShadow: usr.role !== 'user' ? `0 4px 10px rgba(${usr.role === 'admin' ? '168, 85, 247' : '99, 102, 241'}, 0.2)` : 'none'
                                         }}>
-                                            {usr.role}
+                                            {getRoleLabel(usr.role)}
                                         </span>
                                         {usr.sanctions > 0 && (
                                             <span style={{
@@ -307,12 +391,16 @@ const ModerateReports = () => {
 
                                     <div style={{
                                         position: 'absolute', top: '1rem', left: '1rem',
-                                        background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.wasSanctioned ? '#991b1b' : 'var(--error)',
+                                        background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.status === 'In Process' ? 'var(--primary)' : report.wasSanctioned ? '#991b1b' : 'var(--error)',
                                         color: 'white', padding: '0.25rem 0.75rem', borderRadius: '999px',
                                         fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
                                         zIndex: 20
                                     }}>
-                                        {report.status === 'pending' ? 'Pendiente' : report.status === 'approved' ? 'Aprobado' : report.wasSanctioned ? 'Sancionado' : 'Rechazado'}
+                                        {report.wasSanctioned ? 'Sancionado' :
+                                            report.status === 'pending' ? 'Pendiente' :
+                                                report.status === 'approved' ? 'Aprobado' :
+                                                    report.status === 'In Process' ? 'En Proceso' :
+                                                        'Rechazado'}
                                     </div>
                                 </div>
 
@@ -320,7 +408,7 @@ const ModerateReports = () => {
                                 <div className="moderation-card-info">
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                         <div>
-                                            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{report.type}</h3>
+                                            <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{getIncidentLabel(report.type)}</h3>
                                             <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
                                                 Por <strong>{report.userId?.username || 'Usuario Desconocido'}</strong> • {new Date(report.timestamp).toLocaleDateString()}
                                             </div>
@@ -351,177 +439,31 @@ const ModerateReports = () => {
                                         </div>
                                     )}
 
-                                    {/* Actions Toolbar */}
                                     <div style={{
                                         display: 'flex', gap: '1rem', flexWrap: 'wrap',
                                         paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)',
                                         marginTop: 'auto'
                                     }}>
-                                        {report.status === 'pending' || filter === 'all' ? (
-                                            <>
-                                                <button
-                                                    onClick={() => {
-                                                        Swal.fire({
-                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Aprobar Reporte</h2>',
-                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa un comentario o justificación para aprobar este reporte:</div>',
-                                                            input: 'textarea',
-                                                            inputPlaceholder: 'Ej. Reporte muy útil y ubicación precisa.',
-                                                            showCancelButton: true,
-                                                            confirmButtonText: 'Confirmar Aprobación',
-                                                            cancelButtonText: 'Cancelar',
-                                                            customClass: {
-                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-success',
-                                                                cancelButton: 'swal2-lumina-cancel'
-                                                            },
-                                                            buttonsStyling: false,
-                                                            background: 'var(--surface-solid)',
-                                                            color: 'var(--text-main)',
-                                                            inputValidator: (value) => {
-                                                                if (!value || value.trim() === '') {
-                                                                    return 'El comentario es obligatorio para aprobar.';
-                                                                }
-                                                            }
-                                                        }).then((result) => {
-                                                            if (result.isConfirmed) {
-                                                                handleModerate(report._id, 'approved', false, result.value);
-                                                            }
-                                                        });
-                                                    }}
-                                                    disabled={report.status !== 'pending'}
-                                                    style={{
-                                                        flex: 1, background: report.status === 'approved' ? 'var(--bg-input)' : 'rgba(16, 185, 129, 0.15)',
-                                                        color: report.status === 'approved' ? 'var(--text-muted)' : 'var(--success)',
-                                                        opacity: report.status === 'approved' ? 0.7 : 1,
-                                                        border: `1px solid ${report.status === 'approved' ? 'transparent' : 'var(--success)'}`,
-                                                        padding: '0.75rem 1.5rem', borderRadius: '12px',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                        fontWeight: '700', cursor: report.status === 'approved' ? 'default' : 'pointer',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Check size={18} /> Aprobar
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        Swal.fire({
-                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(239, 68, 68, 0.15); color: var(--error); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div> Rechazar Reporte</h2>',
-                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Por favor, ingresa el motivo del rechazo para notificar al usuario:</div>',
-                                                            input: 'textarea',
-                                                            inputPlaceholder: 'Ej. La foto no es clara o la ubicación no coincide.',
-                                                            showCancelButton: true,
-                                                            confirmButtonText: 'Confirmar Rechazo',
-                                                            cancelButtonText: 'Cancelar',
-                                                            customClass: {
-                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-error',
-                                                                cancelButton: 'swal2-lumina-cancel'
-                                                            },
-                                                            buttonsStyling: false,
-                                                            background: 'var(--surface-solid)',
-                                                            color: 'var(--text-main)',
-                                                            inputValidator: (value) => {
-                                                                if (!value || value.trim() === '') {
-                                                                    return 'El motivo es obligatorio para rechazar.';
-                                                                }
-                                                            }
-                                                        }).then((result) => {
-                                                            if (result.isConfirmed) {
-                                                                handleModerate(report._id, 'rejected', false, result.value);
-                                                            }
-                                                        });
-                                                    }}
-                                                    disabled={report.status !== 'pending'}
-                                                    style={{
-                                                        flex: 1, background: report.status === 'rejected' ? 'var(--bg-input)' : 'rgba(239, 68, 68, 0.15)',
-                                                        color: report.status === 'rejected' ? 'var(--text-muted)' : 'var(--error)',
-                                                        opacity: report.status === 'rejected' ? 0.7 : 1,
-                                                        border: `1px solid ${report.status === 'rejected' ? 'transparent' : 'var(--error)'}`,
-                                                        padding: '0.75rem 1.5rem', borderRadius: '12px',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                                        fontWeight: '700', cursor: report.status === 'rejected' ? 'default' : 'pointer',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <X size={18} /> Rechazar
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        Swal.fire({
-                                                            title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div> Sancionar Usuario</h2>',
-                                                            html: '<div style="color: var(--text-light); font-size: 0.95rem; margin-bottom: 5px;">Este reporte es falso o malintencionado. Se le añadirá una falta al usuario. Justifícalo:</div>',
-                                                            input: 'textarea',
-                                                            inputPlaceholder: 'Ej. Tercera vez subiendo imágenes de internet. Se le suspenderá.',
-                                                            showCancelButton: true,
-                                                            confirmButtonText: 'Aplicar Sanción',
-                                                            cancelButtonText: 'Cancelar',
-                                                            customClass: {
-                                                                confirmButton: 'swal2-lumina-confirm swal2-confirm-warning',
-                                                                cancelButton: 'swal2-lumina-cancel'
-                                                            },
-                                                            buttonsStyling: false,
-                                                            background: 'var(--surface-solid)',
-                                                            color: 'var(--text-main)',
-                                                            inputValidator: (value) => {
-                                                                if (!value || value.trim() === '') {
-                                                                    return 'La justificación es obligatoria para sancionar.';
-                                                                }
-                                                            }
-                                                        }).then((result) => {
-                                                            if (result.isConfirmed) {
-                                                                handleModerate(report._id, 'rejected', true, result.value);
-                                                            }
-                                                        });
-                                                    }}
-                                                    disabled={report.status !== 'pending'}
-                                                    style={{
-                                                        background: 'var(--bg-input)', color: 'var(--text-light)', border: '1px solid var(--border-color)',
-                                                        padding: '0.75rem', borderRadius: '12px', cursor: report.status === 'pending' ? 'pointer' : 'default',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        width: 'auto', opacity: report.status === 'pending' ? 1 : 0.5,
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    title="Sancionar Usuario"
-                                                >
-                                                    <AlertTriangle size={20} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedReport(report);
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    style={{
-                                                        background: 'var(--primary)', color: 'white', border: 'none',
-                                                        padding: '0.75rem 1rem', borderRadius: '12px', cursor: 'pointer',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontWeight: '700', gap: '0.5rem'
-                                                    }}
-                                                >
-                                                    <Info size={18} /> Ver Detalles
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                                <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                                                    Este reporte ya fue moderado.
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedReport(report);
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    style={{
-                                                        background: 'var(--bg-input)', color: 'var(--primary)', border: '1px solid var(--primary)',
-                                                        padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontWeight: '700', gap: '0.5rem', fontSize: '0.85rem'
-                                                    }}
-                                                >
-                                                    <Info size={16} /> Ver Detalles
-                                                </button>
-                                            </div>
-                                        )}
+                                        <button
+                                            onClick={() => handleOpenDetails(report)}
+                                            disabled={report.status === 'In Process' && report.moderatorInCharge !== user?.id}
+                                            style={{
+                                                background: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 'var(--bg-input)' : 'var(--primary)',
+                                                color: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 'var(--text-muted)' : 'white',
+                                                border: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? '1px solid var(--border-color)' : 'none',
+                                                padding: '0.85rem 1rem', borderRadius: '12px', cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontWeight: '800', gap: '0.6rem', width: '100%',
+                                                opacity: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 0.6 : 1,
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {report.status === 'In Process' && report.moderatorInCharge !== user?.id ? (
+                                                <>En Revisión por otro Moderador</>
+                                            ) : (
+                                                <><Info size={18} /> {(['approved', 'rejected'].includes(report.status) || report.wasSanctioned) ? 'Ver Detalles' : 'Ver Detalles y Moderar'}</>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -531,12 +473,14 @@ const ModerateReports = () => {
             </div>
 
             {/* Report Detail Modal */}
-            <ReportDetailModal
-                report={selectedReport}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                isModerator={true}
-            />
+            {isModalOpen && selectedReport && (
+                <ReportDetailModal
+                    report={selectedReport}
+                    onClose={handleCloseDetails}
+                    onModerate={handleModerate}
+                    user={user}
+                />
+            )}
 
             {/* User Detail Modal */}
             <UserDetailModal

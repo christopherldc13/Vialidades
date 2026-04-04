@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
 import { Bell, User, LogOut, Moon, Sun, UserPlus } from 'lucide-react';
@@ -8,12 +8,29 @@ import { CiLocationOn } from "react-icons/ci";
 import NotificationList from './NotificationList';
 import CreateModeratorModal from './CreateModeratorModal';
 import Swal from 'sweetalert2';
+import { motion } from 'framer-motion';
 
 const Navbar = () => {
     const { logout, user } = useContext(AuthContext);
     const { theme, toggleTheme } = useContext(ThemeContext);
     const [isCreateModOpen, setIsCreateModOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const navigate = useNavigate();
+
+    // Dynamic scroll effect for navbar
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 20) {
+                setIsScrolled(true);
+            } else {
+                setIsScrolled(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const handleLogoutClick = () => {
         Swal.fire({
             title: '¿Cerrar Sesión?',
@@ -34,7 +51,6 @@ const Navbar = () => {
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                // Limpiar la sesión directamente y hacer un hard reload a '/'
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/';
@@ -42,41 +58,67 @@ const Navbar = () => {
         });
     };
 
-    return (
-        <>
-            <nav className="navbar modern-navbar">
-                <Link to="/dashboard" className="nav-brand modern-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <CiLocationOn size={26} color="var(--primary)" />
-                    <span className="navbar-logo-text">Vialidades</span>
-                </Link>
-                <div className="nav-actions">
-                    <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
-                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
+    // If user is logged in, show the "Modern/Dashboard" version
+    if (user) {
+        return (
+            <>
+                <nav className="navbar modern-navbar">
+                    <Link to="/dashboard" className="nav-brand modern-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <CiLocationOn size={26} color="var(--primary)" />
+                        <span className="navbar-logo-text">Vialidades</span>
+                    </Link>
+                    <div className="nav-actions">
+                        <button onClick={toggleTheme} className="modern-nav-btn" title="Cambiar Tema">
+                            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                        </button>
+                        {['admin', 'moderator'].includes(user.role) && (
+                            <button onClick={() => setIsCreateModOpen(true)} className="modern-nav-btn" title="Añadir Moderador">
+                                <UserPlus size={20} />
+                            </button>
+                        )}
+                        <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
+                            <TbReportSearch size={22} />
+                        </button>
+                        <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
+                            <User size={20} />
+                        </button>
+                        <NotificationList className="modern-nav-btn" />
+                        <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
+                            <LogOut size={20} />
+                        </button>
+                    </div>
+                </nav>
+                <CreateModeratorModal isOpen={isCreateModOpen} onClose={() => setIsCreateModOpen(false)} />
+            </>
+        );
+    }
 
-                    {user && (
-                        <>
-                            {['admin', 'moderator'].includes(user.role) && (
-                                <button onClick={() => setIsCreateModOpen(true)} className="modern-nav-btn" title="Añadir Moderador">
-                                    <UserPlus size={20} />
-                                </button>
-                            )}
-                            <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
-                                <TbReportSearch size={22} />
-                            </button>
-                            <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
-                                <User size={20} />
-                            </button>
-                            <NotificationList className="modern-nav-btn" />
-                            <button onClick={handleLogoutClick} className="modern-nav-btn" title="Cerrar Sesión">
-                                <LogOut size={20} />
-                            </button>
-                        </>
-                    )}
-                </div>
-            </nav>
-            <CreateModeratorModal isOpen={isCreateModOpen} onClose={() => setIsCreateModOpen(false)} />
-        </>
+    // If NO user (Landing/Auth flow), show the "Premium/Landing" version
+    return (
+        <motion.nav
+            className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}
+        >
+            <div className="nav-gradient-overlay"></div>
+
+            <div className="nav-brand">
+                <CiLocationOn size={28} className="brand-icon" style={{ color: 'var(--primary)' }} />
+                <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <span>Vialidades</span>
+                </Link>
+            </div>
+
+            <div className="nav-links">
+                <button onClick={toggleTheme} className="secondary" style={{ padding: '0.5rem', width: 'auto', border: 'none', background: 'transparent', cursor: 'pointer' }} title="Cambiar Tema">
+                    {theme === 'dark' ? <Sun size={24} color="var(--text-main)" /> : <Moon size={24} color="var(--text-main)" />}
+                </button>
+                <Link to="/login" className="nav-btn login">Iniciar Sesión</Link>
+                <Link to="/register" className="nav-btn register">Registrarme</Link>
+            </div>
+        </motion.nav>
     );
 };
 

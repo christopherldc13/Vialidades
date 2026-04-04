@@ -29,18 +29,18 @@ function LinearProgressWithLabel(props) {
                 </Typography>
             </Box>
             <Box sx={{ width: '100%' }}>
-                <LinearProgress 
-                    variant="determinate" 
-                    {...props} 
-                    sx={{ 
-                        height: 8, 
+                <LinearProgress
+                    variant="determinate"
+                    {...props}
+                    sx={{
+                        height: 8,
                         borderRadius: 4,
                         backgroundColor: 'var(--bg-input)',
                         '& .MuiLinearProgress-bar': {
                             borderRadius: 4,
                             backgroundColor: 'var(--primary)',
                         }
-                    }} 
+                    }}
                 />
             </Box>
         </Box>
@@ -61,7 +61,7 @@ const CreateReport = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [refreshLocationTrigger, setRefreshLocationTrigger] = useState(0); // Trigger for map refresh
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    
+
     // New Car Fields
     const [carBrand, setCarBrand] = useState('');
     const [carModel, setCarModel] = useState('');
@@ -177,7 +177,7 @@ const CreateReport = () => {
 
             const token = localStorage.getItem('token');
             const startTime = Date.now();
-            
+
             const res = await axios.post('/api/ai/identify-vehicle', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -235,14 +235,14 @@ const CreateReport = () => {
         try {
             setLoading(true);
             setUploadProgress(0);
-            
+
             await axios.post('/api/reports', formData, {
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     setUploadProgress(percentCompleted);
                 }
             });
-            
+
             setLoading(false);
             localStorage.removeItem('report_draft'); // Clear draft on success
 
@@ -342,7 +342,7 @@ const CreateReport = () => {
                                             { id: 'Hazard', label: 'Peligro en la vía', icon: <LuTriangleAlert />, color: '#ef4444' },
                                             { id: 'Other', label: 'Otro', icon: <IoMdHelpCircle />, color: '#64748b' }
                                         ].map((t) => (
-                                            <div 
+                                            <div
                                                 key={t.id}
                                                 onClick={() => setType(t.id)}
                                                 style={{
@@ -361,15 +361,15 @@ const CreateReport = () => {
                                                     textAlign: 'center'
                                                 }}
                                             >
-                                                <div style={{ 
-                                                    fontSize: '1.5rem', 
+                                                <div style={{
+                                                    fontSize: '1.5rem',
                                                     color: type === t.id ? 'var(--primary)' : 'var(--text-light)',
                                                     transition: 'color 0.2s'
                                                 }}>
                                                     {t.icon}
                                                 </div>
-                                                <span style={{ 
-                                                    fontSize: '0.75rem', 
+                                                <span style={{
+                                                    fontSize: '0.75rem',
                                                     fontWeight: type === t.id ? '800' : '600',
                                                     color: type === t.id ? 'var(--primary)' : 'var(--text-main)',
                                                     transition: 'color 0.2s'
@@ -411,8 +411,8 @@ const CreateReport = () => {
                                             </div>
                                             <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0 }}>Detalles del Vehículo (Opcional)</h3>
                                         </div>
-                                        
-                                        <button 
+
+                                        <button
                                             type="button"
                                             onClick={handleAIIdentify}
                                             disabled={isAnalyzing || !files.some(f => f.type.startsWith('image/'))}
@@ -481,12 +481,12 @@ const CreateReport = () => {
                                                 }
                                                 `}
                                             </style>
-                                            
+
                                             <div style={{ position: 'relative', marginBottom: '1.2rem', animation: 'aiFloat 2.5s ease-in-out infinite' }}>
                                                 <FaCar size={48} style={{ color: 'var(--primary)' }} />
                                                 <Sparkles size={18} style={{ position: 'absolute', top: -10, right: -15, color: '#FFD700', animation: 'aiPulseText 1s ease-in-out infinite' }} />
                                                 <Sparkles size={14} style={{ position: 'absolute', bottom: -5, left: -10, color: 'inherit', animation: 'aiPulseText 1.5s ease-in-out infinite 0.5s' }} />
-                                                
+
                                                 <div style={{
                                                     position: 'absolute',
                                                     left: '-20%',
@@ -505,40 +505,40 @@ const CreateReport = () => {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                             <div className="input-group" style={{ marginBottom: 0 }}>
                                                 <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Marca</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={carBrand} 
-                                                    onChange={(e) => setCarBrand(e.target.value)} 
+                                                <input
+                                                    type="text"
+                                                    value={carBrand}
+                                                    onChange={(e) => setCarBrand(e.target.value)}
                                                     placeholder="Ej: Toyota"
                                                     style={{ padding: '0.6rem' }}
                                                 />
                                             </div>
                                             <div className="input-group" style={{ marginBottom: 0 }}>
                                                 <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Modelo</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={carModel} 
-                                                    onChange={(e) => setCarModel(e.target.value)} 
+                                                <input
+                                                    type="text"
+                                                    value={carModel}
+                                                    onChange={(e) => setCarModel(e.target.value)}
                                                     placeholder="Ej: Corolla"
                                                     style={{ padding: '0.6rem' }}
                                                 />
                                             </div>
                                             <div className="input-group" style={{ marginBottom: 0 }}>
                                                 <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Año</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={carYear} 
-                                                    onChange={(e) => setCarYear(e.target.value)} 
+                                                <input
+                                                    type="text"
+                                                    value={carYear}
+                                                    onChange={(e) => setCarYear(e.target.value)}
                                                     placeholder="Ej: 2022"
                                                     style={{ padding: '0.6rem' }}
                                                 />
                                             </div>
                                             <div className="input-group" style={{ marginBottom: 0 }}>
                                                 <label style={{ fontSize: '0.75rem', marginBottom: '0.4rem' }}>Color</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={carColor} 
-                                                    onChange={(e) => setCarColor(e.target.value)} 
+                                                <input
+                                                    type="text"
+                                                    value={carColor}
+                                                    onChange={(e) => setCarColor(e.target.value)}
                                                     placeholder="Ej: Blanco"
                                                     style={{ padding: '0.6rem' }}
                                                 />
@@ -552,10 +552,10 @@ const CreateReport = () => {
                                     <p className="text-sm text-muted" style={{ textAlign: 'left', marginBottom: '0.5rem', lineHeight: '1.5' }}>
                                         Arrastra el marcador <CiLocationOn size={18} style={{ color: 'var(--primary)', flexShrink: 0, display: 'inline-block', verticalAlign: 'text-bottom' }} /> a la ubicación exacta del incidente o escriba la ubicación exacta.
                                     </p>
-                                    <DraggableMap 
-                                        location={location} 
-                                        setLocation={setLocation} 
-                                        setAddress={setAddress} 
+                                    <DraggableMap
+                                        location={location}
+                                        setLocation={setLocation}
+                                        setAddress={setAddress}
                                         refreshLocation={refreshLocationTrigger}
                                     />
 
@@ -607,8 +607,8 @@ const CreateReport = () => {
                                             style={{ display: 'none' }}
                                             id="camera-photo-upload"
                                         />
-                                        <label 
-                                            htmlFor="camera-photo-upload" 
+                                        <label
+                                            htmlFor="camera-photo-upload"
                                             onClick={() => setRefreshLocationTrigger(prev => prev + 1)}
                                             style={{
                                                 cursor: 'pointer',
@@ -636,8 +636,8 @@ const CreateReport = () => {
                                             style={{ display: 'none' }}
                                             id="camera-video-upload"
                                         />
-                                        <label 
-                                            htmlFor="camera-video-upload" 
+                                        <label
+                                            htmlFor="camera-video-upload"
                                             onClick={() => setRefreshLocationTrigger(prev => prev + 1)}
                                             style={{
                                                 cursor: 'pointer',
@@ -743,11 +743,11 @@ const CreateReport = () => {
 
                         {loading && <LinearProgressWithLabel value={uploadProgress} />}
 
-                        <button 
-                            type="submit" 
-                            disabled={loading} 
-                            style={{ 
-                                opacity: loading ? 0.7 : 1, 
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                opacity: loading ? 0.7 : 1,
                                 marginTop: '1.5rem',
                                 display: 'flex',
                                 alignItems: 'center',

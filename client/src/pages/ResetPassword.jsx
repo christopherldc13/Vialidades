@@ -45,7 +45,8 @@ function ResetPassword() {
 
     if (message) {
         return (
-            <div className="landing-container auth-wrapper modern-login-wrapper">
+            <div className="landing-container auth-wrapper modern-login-wrapper" style={{ paddingTop: '100px' }}>
+                <Navbar />
                 <div className="card modern-login-card text-center">
                     <div style={{ color: '#10b981', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
                         <CheckCircle size={64} />

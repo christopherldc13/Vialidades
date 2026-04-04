@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useRef } from 'react';
+import { useEffect, useState, useContext, useRef, useCallback } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
@@ -19,6 +19,10 @@ import { FaCar, FaCarCrash } from "react-icons/fa";
 import { BsSignStopFill } from "react-icons/bs";
 import { LuTriangleAlert } from "react-icons/lu";
 import { IoMdHelpCircle } from "react-icons/io";
+import { io } from 'socket.io-client';
+
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+
 
 const getIncidentIcon = (type) => {
     switch (type) {
@@ -58,37 +62,66 @@ const Dashboard = () => {
         window.scrollTo(0, 0);
     }, []);
 
-    useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                setLoading(true);
-                let res;
-                if (isModerator) {
-                    // Moderator: Get stats specifically
-                    const [pendingRes, statsRes] = await Promise.all([
-                        axios.get('/api/reports?status=pending'),
-                        axios.get('/api/reports/stats')
-                    ]);
+    const fetchReports = useCallback(async () => {
+        try {
+            // Only set loading on initial fetch to avoid flickering in real-time updates
+            // if (loading) setLoading(true); 
 
-                    setStats(statsRes.data);
-                    setReports(pendingRes.data);
+            if (isModerator) {
+                const [pendingRes, statsRes] = await Promise.all([
+                    axios.get('/api/reports?status=pending'),
+                    axios.get('/api/reports/stats')
+                ]);
+                setStats(statsRes.data);
+                setReports(pendingRes.data);
+            } else {
+                let res;
+                if (viewMode === 'my') {
+                    res = await axios.get('/api/reports?my=true');
                 } else {
-                    // Regular User
-                    if (viewMode === 'my') {
-                        res = await axios.get('/api/reports?my=true');
-                    } else {
-                        res = await axios.get('/api/reports'); // status=approved by default
-                    }
-                    setReports(res.data);
+                    res = await axios.get('/api/reports');
                 }
-            } catch (err) {
-                console.error("Error fetching reports:", err);
-            } finally {
-                setLoading(false);
+                setReports(res.data);
+            }
+        } catch (err) {
+            console.error("Error fetching reports:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [isModerator, viewMode]);
+
+    useEffect(() => {
+        if (user) fetchReports();
+    }, [user, fetchReports]);
+
+    // REAL-TIME UPDATES
+    useEffect(() => {
+        const handleNewReport = (report) => {
+            // Update stats
+            setStats(prev => ({ ...prev, pending: (prev.pending || 0) + 1 }));
+
+            // If we are showing pending reports for moderator, add it to the list
+            if (isModerator) {
+                setReports(prev => [report, ...prev]);
+            } else if (viewMode === 'community' && report.status === 'approved') {
+                // If a report is approved immediately (rare but possible), show it
+                setReports(prev => [report, ...prev]);
             }
         };
-        if (user) fetchReports();
-    }, [user, isModerator, viewMode]);
+
+        const handleStatusUpdate = () => {
+            // When a report is moderated, just re-fetch stats to stay accurate
+            fetchReports();
+        };
+
+        socket.on('new_report', handleNewReport);
+        socket.on('report_status_updated', handleStatusUpdate);
+
+        return () => {
+            socket.off('new_report', handleNewReport);
+            socket.off('report_status_updated', handleStatusUpdate);
+        };
+    }, [isModerator, viewMode, fetchReports]);
 
     useEffect(() => {
         const reportIdToOpen = searchParams.get('reportId');
@@ -511,12 +544,14 @@ const Dashboard = () => {
             )}
 
             {/* Report Detail Modal */}
-            <ReportDetailModal
-                report={selectedReport}
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                isModerator={isModerator}
-            />
+            {isModalOpen && selectedReport && (
+                <ReportDetailModal
+                    report={selectedReport}
+                    onClose={() => setIsModalOpen(false)}
+                    onModerate={() => { }} // Not used in normal dashboard view but avoids crashes
+                    user={user}
+                />
+            )}
         </div>
     );
 };
