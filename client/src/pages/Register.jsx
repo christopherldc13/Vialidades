@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import ThemeContext from '../context/ThemeContext';
+import Navbar from '../components/Navbar';
 
 // Set dayjs locale to Spanish
 dayjs.locale('es');
@@ -180,6 +181,19 @@ function Register() {
     useEffect(() => {
         const loadModels = async () => {
             try {
+                // Ensure TFJS is ready and try to set a stable backend if WebGL fails
+                await faceapi.tf.ready();
+
+                // If WebGL is not available, try wasm, then cpu
+                if (faceapi.tf.getBackend() !== 'webgl') {
+                    try {
+                        await faceapi.tf.setBackend('wasm');
+                    } catch (e) {
+                        console.warn("WASM backend failed, falling back to CPU", e);
+                        await faceapi.tf.setBackend('cpu');
+                    }
+                }
+
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
                     faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
@@ -189,6 +203,10 @@ function Register() {
                 setModelsLoaded(true);
             } catch (e) {
                 console.error("Error loading face-api models", e);
+                // Last resort fallback to CPU if models fail after backend init
+                try {
+                    await faceapi.tf.setBackend('cpu');
+                } catch (inner) { }
             }
         };
         loadModels();
