@@ -178,270 +178,180 @@ const Profile = () => {
         }
     };
 
+    const provinces = ['Azua','Baoruco','Barahona','Dajabón','Distrito Nacional','Duarte','El Seibo','Elías Piña','Espaillat','Hato Mayor','Hermanas Mirabal','Independencia','La Altagracia','La Romana','La Vega','María Trinidad Sánchez','Monseñor Nouel','Monte Cristi','Monte Plata','Pedernales','Peravia','Puerto Plata','Samaná','San Cristóbal','San José de Ocoa','San Juan','San Pedro de Macorís','Sánchez Ramírez','Santiago','Santiago Rodríguez','Santo Domingo','Valverde'];
+
+    const isFemale = user.gender === 'F' || user.gender === 'femenino';
+    const genderLabel = user.gender === 'M' || user.gender === 'masculino' ? 'Masculino' : user.gender === 'F' || user.gender === 'femenino' ? 'Femenino' : user.gender || 'No especificado';
+
+    const InfoRow = ({ icon, label, children }) => (
+        <div className="pf-info-row">
+            <div className="pf-info-icon">{icon}</div>
+            <div className="pf-info-content">
+                <span className="pf-info-label">{label}</span>
+                <div className="pf-info-value">{children}</div>
+            </div>
+        </div>
+    );
+
     return (
-        <div>
+        <div className="pf-page">
             <Navbar />
-            <div className="auth-container profile-container">
-                <div className="card profile-card">
-                    <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem' }}>
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            background: '#e2e8f0', // Darker gray for visibility
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: '4px solid var(--surface)',
-                            boxShadow: '0 0 0 2px var(--border-color)', // Outer ring for better definition
-                            overflow: 'hidden',
-                            position: 'relative'
-                        }}>
-                            {uploading && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    background: 'rgba(0,0,0,0.5)',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    zIndex: 10
-                                }}>
-                                    <div style={{
-                                        width: '30px',
-                                        height: '30px',
-                                        border: '3px solid rgba(255,255,255,0.3)',
-                                        borderTopColor: 'var(--text-main)',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }} />
-                                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                                </div>
-                            )}
+            <style>{`@keyframes pf-spin { to { transform: rotate(360deg); } }`}</style>
 
-                            {user.avatar ? (
-                                <img src={user.avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <User size={64} color="var(--text-secondary)" />
-                            )}
-                        </div>
+            <div className="pf-body">
 
-                        <input
-                            type="file"
-                            id="avatarInput"
-                            className="avatar-input-hidden"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            disabled={uploading}
-                        />
+                {/* ── LEFT COLUMN ── */}
+                <div className="pf-left">
 
-                        <button
-                            className="avatar-upload-btn"
-                            onClick={triggerFileInput}
-                            disabled={uploading}
-                            style={{
-                                background: uploading ? 'var(--text-muted)' : 'var(--primary)',
-                                cursor: uploading ? 'default' : 'pointer',
-                            }}>
-                            <Camera size={20} color="var(--bg-page)" />
-                        </button>
-                    </div>
-
-                    {!isEditing ? (
-                        <>
-                            <h2 style={{ marginBottom: '0.25rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                                {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
-                                <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', padding: 0, width: 'auto', margin: 0, color: 'var(--text-muted)', cursor: 'pointer', boxShadow: 'none' }}>
-                                    <Edit2 size={18} />
-                                </button>
-                            </h2>
-                            <p className="text-muted" style={{ marginBottom: '1rem', fontWeight: '500' }}>@{user.username} • {user.email}</p>
-                        </>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', justifyContent: 'center' }}>
-                            <input
-                                type="text"
-                                name="firstName"
-                                placeholder="Nombre(s)"
-                                value={editForm.firstName}
-                                onChange={handleEditChange}
-                                style={{ textAlign: 'center' }}
-                            />
-                            <input
-                                type="text"
-                                name="lastName"
-                                placeholder="Apellido(s)"
-                                value={editForm.lastName}
-                                onChange={handleEditChange}
-                                style={{ textAlign: 'center' }}
-                            />
-                        </div>
-                    )}
-
-                    <div className="profile-info-grid">
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">Teléfono</span>
-                            {isEditing ? (
-                                <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
-                            ) : (
-                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <FaPhoneAlt size={14} color="var(--primary)" />
-                                    {user.phone || 'No especificado'}
-                                </div>
-                            )}
-                        </div>
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">Cédula</span>
-                            {isEditing ? (
-                                <input type="text" value={user.cedula || 'No especificada'} disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }} />
-                            ) : (
-                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <LiaIdCard size={18} color="var(--primary)" />
-                                    {user.cedula || 'No especificada'}
-                                </div>
-                            )}
-                        </div>
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">Sexo</span>
-                            {isEditing ? (
-                                <select disabled className="profile-info-value" style={{ padding: '0.5rem', opacity: 0.6, cursor: 'not-allowed' }}>
-                                    <option>{user.gender === 'M' ? 'Masculino' : user.gender === 'F' ? 'Femenino' : user.gender || 'No especificado'}</option>
-                                </select>
-                            ) : (
-                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    {user.gender === 'F' || user.gender === 'femenino' ? (
-                                        <BsGenderFemale size={18} color="#ec4899" />
-                                    ) : (
-                                        <BsGenderMale size={18} color="#3b82f6" />
-                                    )}
-                                    {user.gender === 'M' || user.gender === 'masculino' ? 'Masculino' : user.gender === 'F' || user.gender === 'femenino' ? 'Femenino' : user.gender || 'No especificado'}
-                                </div>
-                            )}
-                        </div>
-                        <div className="profile-info-item">
-                            <span className="profile-info-label">Nacimiento</span>
-                            {isEditing ? (
-                                <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="profile-info-value" style={{ padding: '0.5rem' }} />
-                            ) : (
-                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <LiaBirthdayCakeSolid size={18} color="var(--primary)" />
-                                    {user.birthDate ? (
-                                        <>
-                                            {new Date(user.birthDate).toLocaleDateString()}{' '}
-                                            <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9em' }}>
-                                                ({calculateAge(user.birthDate)} años)
-                                            </span>
-                                        </>
-                                    ) : (
-                                        'No especificada'
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <div className="profile-info-item full-width">
-                            <span className="profile-info-label">Provincia</span>
-                            {isEditing ? (
-                                <select
-                                    name="birthProvince"
-                                    value={editForm.birthProvince}
-                                    onChange={handleEditChange}
-                                    className="profile-info-value"
-                                    style={{ padding: '0.5rem', width: '100%', borderRadius: 'var(--radius)', border: '1px solid var(--border-color)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: '0.95rem' }}
-                                >
-                                    <option value="">Selecciona una provincia...</option>
-                                    <option value="Azua">Azua</option>
-                                    <option value="Baoruco">Baoruco</option>
-                                    <option value="Barahona">Barahona</option>
-                                    <option value="Dajabón">Dajabón</option>
-                                    <option value="Distrito Nacional">Distrito Nacional</option>
-                                    <option value="Duarte">Duarte</option>
-                                    <option value="El Seibo">El Seibo</option>
-                                    <option value="Elías Piña">Elías Piña</option>
-                                    <option value="Espaillat">Espaillat</option>
-                                    <option value="Hato Mayor">Hato Mayor</option>
-                                    <option value="Hermanas Mirabal">Hermanas Mirabal</option>
-                                    <option value="Independencia">Independencia</option>
-                                    <option value="La Altagracia">La Altagracia</option>
-                                    <option value="La Romana">La Romana</option>
-                                    <option value="La Vega">La Vega</option>
-                                    <option value="María Trinidad Sánchez">María Trinidad Sánchez</option>
-                                    <option value="Monseñor Nouel">Monseñor Nouel</option>
-                                    <option value="Monte Cristi">Monte Cristi</option>
-                                    <option value="Monte Plata">Monte Plata</option>
-                                    <option value="Pedernales">Pedernales</option>
-                                    <option value="Peravia">Peravia</option>
-                                    <option value="Puerto Plata">Puerto Plata</option>
-                                    <option value="Samaná">Samaná</option>
-                                    <option value="San Cristóbal">San Cristóbal</option>
-                                    <option value="San José de Ocoa">San José de Ocoa</option>
-                                    <option value="San Juan">San Juan</option>
-                                    <option value="San Pedro de Macorís">San Pedro de Macorís</option>
-                                    <option value="Sánchez Ramírez">Sánchez Ramírez</option>
-                                    <option value="Santiago">Santiago</option>
-                                    <option value="Santiago Rodríguez">Santiago Rodríguez</option>
-                                    <option value="Santo Domingo">Santo Domingo</option>
-                                    <option value="Valverde">Valverde</option>
-                                </select>
-                            ) : (
-                                <div className="profile-info-value" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <RiUserLocationLine size={18} color="var(--primary)" />
-                                    {user.birthProvince || 'No especificada'}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {isEditing && (
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
-                            <button onClick={handleSaveProfile} disabled={saving} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: 'auto', background: 'var(--success)', marginTop: 0, padding: '0.8rem 1.5rem' }}>
-                                <Check size={18} /> {saving ? 'Guardando...' : 'Guardar'}
-                            </button>
-                            <button onClick={() => setIsEditing(false)} disabled={saving} className="secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: 'auto', marginTop: 0, padding: '0.8rem 1.5rem' }}>
-                                <X size={18} /> Cancelar
+                    {/* Avatar card */}
+                    <div className="pf-card pf-avatar-card">
+                        <div className="pf-avatar-wrap">
+                            <div className="pf-avatar-ring">
+                                {uploading && (
+                                    <div className="pf-avatar-overlay">
+                                        <div style={{ width: 28, height: 28, border: '3px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'pf-spin 0.8s linear infinite' }} />
+                                    </div>
+                                )}
+                                {user.avatar
+                                    ? <img src={user.avatar} alt="Avatar" className="pf-avatar-img" />
+                                    : <User size={56} color="var(--text-muted)" />
+                                }
+                            </div>
+                            <input type="file" id="avatarInput" className="avatar-input-hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+                            <button className="pf-cam-btn" onClick={triggerFileInput} disabled={uploading} style={{ background: uploading ? 'var(--text-muted)' : 'var(--primary)', cursor: uploading ? 'default' : 'pointer' }}>
+                                <Camera size={16} color="#fff" />
                             </button>
                         </div>
-                    )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-                        <div style={{
-                            padding: '2rem 1.5rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '20px',
-                            border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}>
-                            <Star size={32} color="var(--success)" />
-                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reputación</div>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--success)', lineHeight: '1' }}>{user.reputation || 0}</div>
+                        {!isEditing ? (
+                            <div className="pf-identity">
+                                <div className="pf-identity-name">
+                                    {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
+                                    <button onClick={() => setIsEditing(true)} className="pf-edit-icon-btn" title="Editar perfil">
+                                        <Edit2 size={15} />
+                                    </button>
+                                </div>
+                                <div className="pf-identity-user">@{user.username}</div>
+                                <div className="pf-identity-email">{user.email}</div>
+                                {user.role && user.role !== 'user' && (
+                                    <span className="pf-role-badge">{user.role}</span>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="pf-edit-name-block">
+                                <input type="text" name="firstName" placeholder="Nombre(s)" value={editForm.firstName} onChange={handleEditChange} style={{ textAlign: 'center' }} />
+                                <input type="text" name="lastName" placeholder="Apellido(s)" value={editForm.lastName} onChange={handleEditChange} style={{ textAlign: 'center' }} />
+                                <div className="pf-edit-actions">
+                                    <button onClick={handleSaveProfile} disabled={saving} className="pf-btn-save">
+                                        <Check size={15} /> {saving ? 'Guardando...' : 'Guardar'}
+                                    </button>
+                                    <button onClick={() => setIsEditing(false)} disabled={saving} className="pf-btn-cancel">
+                                        <X size={15} /> Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="pf-card pf-stats-card">
+                        <div className="pf-stat" style={{ borderColor: 'rgba(16,185,129,0.2)', background: 'rgba(16,185,129,0.07)' }}>
+                            <Star size={22} color="var(--success)" />
+                            <div className="pf-stat-body">
+                                <span className="pf-stat-label">Reputación</span>
+                                <span className="pf-stat-value" style={{ color: 'var(--success)' }}>{user.reputation || 0}</span>
+                            </div>
                         </div>
-
-                        <div style={{
-                            padding: '2rem 1.5rem', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '20px',
-                            border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}>
-                            <AlertTriangle size={32} color="var(--error)" />
-                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sanciones</div>
-                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--error)', lineHeight: '1' }}>{user.sanctions || 0}</div>
+                        <div className="pf-stat" style={{ borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.07)' }}>
+                            <AlertTriangle size={22} color="var(--error)" />
+                            <div className="pf-stat-body">
+                                <span className="pf-stat-label">Sanciones</span>
+                                <span className="pf-stat-value" style={{ color: 'var(--error)' }}>{user.sanctions || 0}</span>
+                            </div>
                         </div>
-
-                        <div style={{
-                            padding: '2rem 1.5rem', background: 'var(--bg-input)', borderRadius: '20px',
-                            border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', gap: '0.75rem', boxShadow: 'var(--shadow-sm)',
-                            transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}>
-                            <CheckCircle size={32} color={user.isVerified ? "var(--primary)" : "var(--text-light)"} />
-                            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verificado</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: user.isVerified ? "var(--primary)" : "var(--text-light)", lineHeight: '1' }}>
-                                {user.isVerified ? 'Sí' : 'No'}
+                        <div className="pf-stat" style={{ borderColor: user.isVerified ? 'rgba(99,102,241,0.25)' : 'var(--border-color)', background: user.isVerified ? 'rgba(99,102,241,0.07)' : 'var(--bg-input)' }}>
+                            <CheckCircle size={22} color={user.isVerified ? 'var(--primary)' : 'var(--text-muted)'} />
+                            <div className="pf-stat-body">
+                                <span className="pf-stat-label">Cuenta</span>
+                                <span className="pf-stat-value" style={{ color: user.isVerified ? 'var(--primary)' : 'var(--text-muted)' }}>
+                                    {user.isVerified ? 'Verificada' : 'Sin verificar'}
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
 
+                {/* ── RIGHT COLUMN ── */}
+                <div className="pf-right">
+                    <div className="pf-card">
+                        <div className="pf-card-header">
+                            <div className="pf-card-title">
+                                <FaUserEdit size={17} color="var(--primary)" />
+                                Información Personal
+                            </div>
+                            {!isEditing && (
+                                <button onClick={() => setIsEditing(true)} className="pf-edit-btn">
+                                    <Edit2 size={14} /> Editar
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="pf-info-list">
+                            <InfoRow icon={<FaPhoneAlt size={14} color="var(--primary)" />} label="Teléfono">
+                                {isEditing
+                                    ? <input type="tel" name="phone" value={editForm.phone} onChange={handleEditChange} className="pf-field-input" />
+                                    : <span>{user.phone || 'No especificado'}</span>
+                                }
+                            </InfoRow>
+
+                            <InfoRow icon={<LiaIdCard size={18} color="var(--primary)" />} label="Cédula">
+                                {isEditing
+                                    ? <input type="text" value={user.cedula || ''} disabled className="pf-field-input" style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+                                    : <span>{user.cedula || 'No especificada'}</span>
+                                }
+                            </InfoRow>
+
+                            <InfoRow icon={isFemale ? <BsGenderFemale size={17} color="#ec4899" /> : <BsGenderMale size={17} color="#3b82f6" />} label="Sexo">
+                                {isEditing
+                                    ? <select disabled className="pf-field-input" style={{ opacity: 0.5, cursor: 'not-allowed' }}><option>{genderLabel}</option></select>
+                                    : <span>{genderLabel}</span>
+                                }
+                            </InfoRow>
+
+                            <InfoRow icon={<LiaBirthdayCakeSolid size={17} color="var(--primary)" />} label="Fecha de Nacimiento">
+                                {isEditing
+                                    ? <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="pf-field-input" />
+                                    : <span>
+                                        {user.birthDate
+                                            ? <>{new Date(user.birthDate).toLocaleDateString('es-DO')} <strong style={{ color: 'var(--primary)' }}>· {calculateAge(user.birthDate)} años</strong></>
+                                            : 'No especificada'
+                                        }
+                                    </span>
+                                }
+                            </InfoRow>
+
+                            <InfoRow icon={<RiUserLocationLine size={17} color="var(--primary)" />} label="Provincia">
+                                {isEditing
+                                    ? <select name="birthProvince" value={editForm.birthProvince} onChange={handleEditChange} className="pf-field-input">
+                                        <option value="">Selecciona...</option>
+                                        {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                    : <span>{user.birthProvince || 'No especificada'}</span>
+                                }
+                            </InfoRow>
+                        </div>
+
+                        {isEditing && (
+                            <div className="pf-edit-footer">
+                                <button onClick={handleSaveProfile} disabled={saving} className="pf-btn-save">
+                                    <Check size={15} /> {saving ? 'Guardando...' : 'Guardar cambios'}
+                                </button>
+                                <button onClick={() => setIsEditing(false)} disabled={saving} className="pf-btn-cancel">
+                                    <X size={15} /> Cancelar
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

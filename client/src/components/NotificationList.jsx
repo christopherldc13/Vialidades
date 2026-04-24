@@ -1,10 +1,27 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
-import { Bell, X, Trash2 } from 'lucide-react';
+import { Bell, X, Trash2, CheckCheck, CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react';
 import AuthContext from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+
+const TYPE_CONFIG = {
+    success: { Icon: CheckCircle,   color: '#10b981', bg: 'rgba(16,185,129,0.13)',  border: 'rgba(16,185,129,0.25)' },
+    error:   { Icon: XCircle,       color: '#ef4444', bg: 'rgba(239,68,68,0.13)',   border: 'rgba(239,68,68,0.25)'  },
+    warning: { Icon: AlertTriangle, color: '#f59e0b', bg: 'rgba(245,158,11,0.13)', border: 'rgba(245,158,11,0.25)' },
+    info:    { Icon: Info,           color: '#6366f1', bg: 'rgba(99,102,241,0.13)',  border: 'rgba(99,102,241,0.25)' },
+};
+
+const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const diff = (Date.now() - d) / 1000;
+    if (diff < 60)    return 'Ahora mismo';
+    if (diff < 3600)  return `Hace ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`;
+    return d.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' }) + ' · ' +
+           d.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+};
 
 const NotificationList = ({ className }) => {
     const [notifications, setNotifications] = useState([]);
@@ -23,27 +40,17 @@ const NotificationList = ({ className }) => {
     };
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target))
                 setShowDropdown(false);
-            }
         };
-
-        if (showDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        if (showDropdown) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showDropdown]);
 
     useEffect(() => {
         if (user) {
             fetchNotifications();
-            // Poll every 30 seconds for new notifications
             const interval = setInterval(fetchNotifications, 30000);
             return () => clearInterval(interval);
         }
@@ -52,34 +59,36 @@ const NotificationList = ({ className }) => {
     const markAsRead = async (id) => {
         try {
             await axios.patch(`/api/notifications/${id}/read`);
-            setNotifications(notifications.map(n =>
-                n._id === id ? { ...n, read: true } : n
-            ));
-        } catch (err) {
-            console.error(err);
-        }
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+        } catch (err) { console.error(err); }
+    };
+
+    const markAllRead = async () => {
+        try {
+            const unread = notifications.filter(n => !n.read);
+            await Promise.all(unread.map(n => axios.patch(`/api/notifications/${n._id}/read`)));
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        } catch (err) { console.error(err); }
     };
 
     const deleteNotification = async (e, id) => {
         e.stopPropagation();
-
         Swal.fire({
-            title: 'Eliminar Notificación',
-            text: '¿Estás seguro de que deseas eliminar esta notificación?',
+            title: 'Eliminar notificación',
+            text: '¿Seguro que deseas eliminarla?',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: 'var(--error)',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar',
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     await axios.delete(`/api/notifications/${id}`);
                     setNotifications(prev => prev.filter(n => n._id !== id));
-                    toast.success("Notificación eliminada");
+                    toast.success('Notificación eliminada');
                 } catch (err) {
-                    console.error(err);
-                    toast.error("Error al eliminar la notificación");
+                    toast.error('Error al eliminar');
                 }
             }
         });
@@ -92,7 +101,7 @@ const NotificationList = ({ className }) => {
             <button
                 className={className}
                 style={{ position: 'relative', outline: 'none' }}
-                onClick={() => setShowDropdown(!showDropdown)}
+                onClick={() => setShowDropdown(v => !v)}
             >
                 <Bell size={20} className={unreadCount > 0 ? 'bell-ringing' : ''} />
                 {unreadCount > 0 && (
@@ -101,71 +110,86 @@ const NotificationList = ({ className }) => {
                         background: 'var(--error)', color: 'white',
                         fontSize: '0.7rem', fontWeight: 'bold',
                         width: 16, height: 16, borderRadius: '50%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                         {unreadCount}
                     </span>
                 )}
             </button>
 
-            {
-                showDropdown && (
-                    <div className="modern-notification-dropdown">
-                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input)' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-main)' }}>Notificaciones</h4>
-                            <X size={16} style={{ cursor: 'pointer', color: 'var(--text-light)' }} onClick={() => setShowDropdown(false)} />
+            {showDropdown && (
+                <div className="notif-panel">
+                    {/* ── Header ── */}
+                    <div className="notif-header">
+                        <div className="notif-header-left">
+                            <Bell size={15} strokeWidth={2.2} color="var(--primary)" />
+                            <span className="notif-title">Notificaciones</span>
+                            {unreadCount > 0 && (
+                                <span className="notif-badge">{unreadCount}</span>
+                            )}
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            {unreadCount > 0 && (
+                                <button className="notif-icon-btn" onClick={markAllRead} title="Marcar todas como leídas">
+                                    <CheckCheck size={14} />
+                                </button>
+                            )}
+                            <button className="notif-icon-btn" onClick={() => setShowDropdown(false)}>
+                                <X size={15} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Body ── */}
+                    <div className="notif-body">
                         {notifications.length === 0 ? (
-                            <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                No tienes notificaciones
+                            <div className="notif-empty">
+                                <Bell size={32} strokeWidth={1.5} color="var(--text-muted)" />
+                                <p>Sin notificaciones</p>
                             </div>
                         ) : (
-                            notifications.map(notification => (
-                                <div
-                                    key={notification._id}
-                                    onClick={() => {
-                                        if (!notification.read) markAsRead(notification._id);
-                                        if (notification.relatedReportId) {
-                                            setShowDropdown(false);
-                                            navigate(`/dashboard?reportId=${notification.relatedReportId}`);
-                                        }
-                                    }}
-                                    style={{
-                                        padding: '0.75rem 1rem',
-                                        borderBottom: '1px solid var(--border-color)',
-                                        background: notification.read ? 'var(--surface-solid)' : 'var(--bg-input)', /* Light blue for unread */
-                                        cursor: 'pointer',
-                                        transition: 'background 0.2s',
-                                        display: 'flex', gap: '0.75rem', alignItems: 'start',
-                                        opacity: 1 /* Ensure no transparency */
-                                    }}
-                                >
-                                    <div style={{
-                                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: '6px',
-                                        background: notification.type === 'success' ? 'var(--success)' : notification.type === 'error' ? 'var(--error)' : notification.type === 'warning' ? 'var(--warning)' : 'var(--primary)',
-                                        display: notification.read ? 'none' : 'block'
-                                    }} />
-                                    <div>
-                                        <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.4', fontWeight: notification.read ? '400' : '600' }}>
-                                            {notification.message}
-                                        </p>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                            {new Date(notification.createdAt).toLocaleDateString()} • {new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
+                            notifications.map(n => {
+                                const cfg = TYPE_CONFIG[n.type] || TYPE_CONFIG.info;
+                                const { Icon } = cfg;
+                                return (
+                                    <div
+                                        key={n._id}
+                                        className={`notif-item${n.read ? ' notif-item--read' : ' notif-item--unread'}`}
+                                        onClick={() => {
+                                            if (!n.read) markAsRead(n._id);
+                                            if (n.relatedReportId) {
+                                                setShowDropdown(false);
+                                                navigate(`/dashboard?reportId=${n.relatedReportId}`);
+                                            }
+                                        }}
+                                    >
+                                        <div
+                                            className="notif-type-icon"
+                                            style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}
+                                        >
+                                            <Icon size={15} color={cfg.color} strokeWidth={2.2} />
+                                        </div>
+
+                                        <div className="notif-content">
+                                            <p className="notif-msg">{n.message}</p>
+                                            <span className="notif-time">{formatDate(n.createdAt)}</span>
+                                        </div>
+
+                                        <button
+                                            className="notif-delete-btn"
+                                            onClick={(e) => deleteNotification(e, n._id)}
+                                            title="Eliminar"
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
                                     </div>
-                                    <Trash2
-                                        size={16}
-                                        color="#ef4444"
-                                        style={{ marginLeft: 'auto', cursor: 'pointer', flexShrink: 0 }}
-                                        onClick={(e) => deleteNotification(e, notification._id)}
-                                    />
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 

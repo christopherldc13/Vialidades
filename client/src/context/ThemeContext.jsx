@@ -22,7 +22,10 @@ export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(getInitialTheme);
 
     const toggleTheme = () => {
+        const root = window.document.documentElement;
+        root.classList.add('theme-transitioning');
         setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+        setTimeout(() => root.classList.remove('theme-transitioning'), 350);
     };
 
     useEffect(() => {

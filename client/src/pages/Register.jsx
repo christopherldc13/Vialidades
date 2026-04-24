@@ -12,6 +12,7 @@ import 'dayjs/locale/es';
 import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import ThemeContext from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
+import TermsModal from '../components/TermsModal';
 
 // Set dayjs locale to Spanish
 dayjs.locale('es');
@@ -57,6 +58,8 @@ function Register() {
     const [verificationCode, setVerificationCode] = useState('');
     const [scanningProgress, setScanningProgress] = useState(0);
     const [ocrProgress, setOcrProgress] = useState(0);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
     const { theme } = useContext(ThemeContext);
 
     const muiTheme = useMemo(() => createTheme({
@@ -424,6 +427,12 @@ function Register() {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!termsAccepted) {
+            setError('Debes aceptar los Términos y Condiciones para continuar.');
+            return;
+        }
+
         setIsLoading(true);
 
         const res = await checkRegistrationDuplicates(formData);
@@ -592,6 +601,7 @@ function Register() {
     };
 
     return (
+        <>
         <div style={{
             minHeight: '100vh',
             display: 'flex',
@@ -887,7 +897,65 @@ function Register() {
                                 )}
                             </div>
                         </div>
-                        <button type="submit" disabled={isLoading} className="login-submit-btn" style={{ marginTop: 'clamp(1.5rem, 3vh, 2rem)' }}>
+                        {/* Terms acceptance */}
+                        <div style={{
+                            marginTop: 'clamp(1.25rem, 2.5vh, 1.75rem)',
+                            padding: '1rem 1.25rem',
+                            borderRadius: '1rem',
+                            background: termsAccepted
+                                ? 'rgba(99,102,241,0.08)'
+                                : 'var(--bg-input)',
+                            border: `1.5px solid ${termsAccepted ? 'rgba(99,102,241,0.4)' : 'var(--border-color)'}`,
+                            transition: 'all 0.25s ease',
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                <div
+                                    onClick={() => setTermsAccepted(v => !v)}
+                                    style={{
+                                        width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0, marginTop: '2px',
+                                        border: `2px solid ${termsAccepted ? '#6366f1' : 'var(--border-color)'}`,
+                                        background: termsAccepted ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'transparent',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.2s ease', cursor: 'pointer',
+                                        boxShadow: termsAccepted ? '0 2px 8px rgba(99,102,241,0.4)' : 'none',
+                                    }}
+                                >
+                                    {termsAccepted && (
+                                        <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                                            <path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <span
+                                    onClick={() => setTermsAccepted(v => !v)}
+                                    style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5', cursor: 'pointer', userSelect: 'none' }}
+                                >
+                                    He leído y acepto los{' '}
+                                    <button
+                                        type="button"
+                                        onClick={e => { e.stopPropagation(); setShowTermsModal(true); }}
+                                        style={{
+                                            background: 'none', border: 'none', padding: 0,
+                                            color: 'var(--primary)', fontWeight: 700, cursor: 'pointer',
+                                            fontFamily: 'inherit', fontSize: 'inherit',
+                                            textDecoration: 'underline', textUnderlineOffset: '3px',
+                                            width: 'auto', display: 'inline', margin: 0,
+                                            boxShadow: 'none',
+                                        }}
+                                    >
+                                        Términos y Condiciones
+                                    </button>
+                                    {' '}de uso de Vialidades, incluyendo el tratamiento de mis datos personales y biométricos, y asumo la responsabilidad del contenido que publique en la plataforma.
+                                </span>
+                            </div>
+                        </div>
+
+                        <button type="submit" disabled={isLoading || !termsAccepted} className="login-submit-btn" style={{
+                            marginTop: 'clamp(1rem, 2vh, 1.5rem)',
+                            opacity: termsAccepted ? 1 : 0.5,
+                            cursor: termsAccepted ? 'pointer' : 'not-allowed',
+                            transition: 'opacity 0.2s ease',
+                        }}>
                             Siguiente (KYC)
                         </button>
                     </form>
@@ -1040,6 +1108,14 @@ function Register() {
                 )}
             </div>
         </div>
+
+        <TermsModal
+            isOpen={showTermsModal}
+            onClose={() => setShowTermsModal(false)}
+            onAccept={() => setTermsAccepted(true)}
+            theme={theme}
+        />
+        </>
     );
 }
 

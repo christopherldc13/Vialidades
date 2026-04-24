@@ -280,7 +280,8 @@ router.post('/login', async (req, res) => {
                         role: user.role,
                         reputation: user.reputation,
                         sanctions: user.sanctions,
-                        avatar: user.avatar
+                        avatar: user.avatar,
+                        isVerified: user.isVerified
                     }
                 });
             }
@@ -297,7 +298,10 @@ router.post('/google', async (req, res) => {
     try {
         const ticket = await googleClient.verifyIdToken({
             idToken: credential,
-            // audience: process.env.GOOGLE_CLIENT_ID // Optional if we want to strict-check
+            audience: [
+                process.env.GOOGLE_CLIENT_ID,
+                '60456172765-aejg7e2na3nm6b476hjhn3c1q7n3u91u.apps.googleusercontent.com'
+            ]
         });
         const payload = ticket.getPayload();
         const email = payload['email'];
@@ -375,7 +379,8 @@ router.post('/google', async (req, res) => {
                         role: user.role,
                         reputation: user.reputation,
                         sanctions: user.sanctions,
-                        avatar: user.avatar
+                        avatar: user.avatar,
+                        isVerified: user.isVerified
                     }
                 });
             }
@@ -454,7 +459,8 @@ router.post('/verify', async (req, res) => {
                         role: user.role,
                         reputation: user.reputation,
                         sanctions: user.sanctions,
-                        avatar: user.avatar
+                        avatar: user.avatar,
+                        isVerified: user.isVerified
                     }
                 });
             }
@@ -563,7 +569,7 @@ router.post('/forgot-password', async (req, res) => {
         // Set expire: 60 mins (increased from 10m for better UX)
         user.resetPasswordExpire = Date.now() + 60 * 60 * 1000;
 
-        await user.save();
+        await user.save({ validateBeforeSave: false });
 
         // Create reset url dynamically based on request origin
         const currentOrigin = req.headers.origin || `https://${req.get('host')}`;

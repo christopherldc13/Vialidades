@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import axios from 'axios';
+import Navbar from '../components/Navbar';
 
 function ForgotPassword() {
     const [email, setEmail] = useState('');
