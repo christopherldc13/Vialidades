@@ -56,9 +56,16 @@ const Dashboard = () => {
     const { user, loading: authLoading } = useContext(AuthContext);
     const [selectedReport, setSelectedReport] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
+
+    useEffect(() => {
+        setTypeFilter('all');
+        setStatusFilter('all');
+    }, [viewMode]);
 
     const fetchReports = useCallback(async () => {
         try {
