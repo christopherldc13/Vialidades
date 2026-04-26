@@ -297,6 +297,18 @@ button:not([class*="Mui"]) {
   letter-spacing: normal;
 }
 
+/* Filter chip pills — override global button width/margin */
+button.filter-chip {
+  width: auto !important;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+}
+
 /* Preview image remove button - overrides global button styles */
 .preview-remove-btn {
   position: absolute !important;

@@ -34,6 +34,30 @@ const getRoleLabel = (role) => {
     }
 };
 
+const DR_PROVINCES = [
+    'Azua','Bahoruco','Barahona','Dajabón','Distrito Nacional','Duarte',
+    'El Seibo','Elías Piña','Espaillat','Hato Mayor','Hermanas Mirabal',
+    'Independencia','La Altagracia','La Romana','La Vega',
+    'María Trinidad Sánchez','Monseñor Nouel','Monte Cristi','Monte Plata',
+    'Pedernales','Peravia','Puerto Plata','Samaná','San Cristóbal',
+    'San José de Ocoa','San Juan','San Pedro de Macorís','Sánchez Ramírez',
+    'Santiago','Santiago Rodríguez','Santo Domingo','Valverde',
+];
+
+const SELECT_STYLE = {
+    padding: '0.5rem 0.9rem',
+    borderRadius: '10px',
+    border: '1px solid var(--border-color)',
+    background: 'var(--surface-solid)',
+    color: 'var(--text-main)',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    outline: 'none',
+    minWidth: '160px',
+};
+
 const ModerateReports = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const initialFilter = searchParams.get('filter') || 'pending';
@@ -41,6 +65,8 @@ const ModerateReports = () => {
     const [reports, setReports] = useState([]);
     const [usersList, setUsersList] = useState([]);
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [provinceFilter, setProvinceFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const { user } = useContext(AuthContext);
     const [selectedReport, setSelectedReport] = useState(null);
@@ -169,6 +195,19 @@ const ModerateReports = () => {
         }
     };
 
+    useEffect(() => { setTypeFilter('all'); setProvinceFilter('all'); }, [filter]);
+
+    const filteredReports = filter === 'users'
+        ? reports
+        : reports.filter(r => {
+            if (typeFilter !== 'all' && r.type !== typeFilter) return false;
+            if (provinceFilter !== 'all') {
+                const addr = (r.location?.address || '').toLowerCase();
+                if (!addr.includes(provinceFilter.toLowerCase())) return false;
+            }
+            return true;
+        });
+
     if (user && !['admin', 'moderator'].includes(user.role)) {
         return <div className="container" style={{ padding: '2rem' }}>No tienes permisos.</div>;
     }
@@ -253,6 +292,23 @@ const ModerateReports = () => {
                         </ToggleButtonGroup>
                     </div>
                 </div>
+
+                {/* Type + Province filter bar — hidden on users tab */}
+                {filter !== 'users' && (
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
+                        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={SELECT_STYLE}>
+                            <option value="all">Todos los tipos</option>
+                            <option value="Traffic">Tráfico</option>
+                            <option value="Accident">Accidente</option>
+                            <option value="Violation">Infracción</option>
+                            <option value="Hazard">Peligro</option>
+                        </select>
+                        <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} style={SELECT_STYLE}>
+                            <option value="all">Todas las provincias</option>
+                            {DR_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
+                )}
 
                 {/* Content */}
                 {loading ? (
@@ -364,7 +420,7 @@ const ModerateReports = () => {
                             ))}
                         </div>
                     )
-                ) : reports.length === 0 ? (
+                ) : filteredReports.length === 0 ? (
                     <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '24px', marginTop: '1.5rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-lg)' }}>
                         <div style={{
                             background: 'rgba(99, 102, 241, 0.1)',
@@ -378,12 +434,18 @@ const ModerateReports = () => {
                         }}>
                             <Inbox size={32} />
                         </div>
-                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.25rem' }}>No hay reportes en esta sección</h3>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>Selecciona otro filtro o vuelve más tarde cuando haya nueva actividad.</p>
+                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.25rem' }}>
+                            {reports.length === 0 ? 'No hay reportes en esta sección' : 'No hay reportes para este tipo'}
+                        </h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>
+                            {reports.length === 0
+                                ? 'Selecciona otro filtro o vuelve más tarde cuando haya nueva actividad.'
+                                : 'Prueba seleccionando otro tipo de incidente.'}
+                        </p>
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gap: '1.5rem', marginTop: '2rem' }}>
-                        {reports.map((report) => (
+                        {filteredReports.map((report) => (
                             <div key={report._id} className="moderation-card moderation-card-responsive">
                                 {/* Media Side */}
                                 <div className="moderation-card-media">

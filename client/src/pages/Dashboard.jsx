@@ -22,6 +22,30 @@ import { io } from 'socket.io-client';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
 
+const DR_PROVINCES = [
+    'Azua','Bahoruco','Barahona','Dajabón','Distrito Nacional','Duarte',
+    'El Seibo','Elías Piña','Espaillat','Hato Mayor','Hermanas Mirabal',
+    'Independencia','La Altagracia','La Romana','La Vega',
+    'María Trinidad Sánchez','Monseñor Nouel','Monte Cristi','Monte Plata',
+    'Pedernales','Peravia','Puerto Plata','Samaná','San Cristóbal',
+    'San José de Ocoa','San Juan','San Pedro de Macorís','Sánchez Ramírez',
+    'Santiago','Santiago Rodríguez','Santo Domingo','Valverde',
+];
+
+const SELECT_STYLE = {
+    padding: '0.5rem 0.9rem',
+    borderRadius: '10px',
+    border: '1px solid var(--border-color)',
+    background: 'var(--surface-solid)',
+    color: 'var(--text-main)',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    outline: 'none',
+    minWidth: '160px',
+};
+
 const TYPE_CONFIG = {
     Traffic:   { label: 'Tráfico',    icon: <FaCar />,           color: '#3b82f6', bg: 'rgba(59,130,246,0.12)'  },
     Accident:  { label: 'Accidente',  icon: <FaCarCrash />,      color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
@@ -58,6 +82,7 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [typeFilter, setTypeFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [provinceFilter, setProvinceFilter] = useState('all');
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -65,6 +90,7 @@ const Dashboard = () => {
     useEffect(() => {
         setTypeFilter('all');
         setStatusFilter('all');
+        setProvinceFilter('all');
     }, [viewMode]);
 
     const fetchReports = useCallback(async () => {
@@ -135,6 +161,19 @@ const Dashboard = () => {
             }
         }
     }, [searchParams, reports, loading, setSearchParams]);
+
+    const filteredReports = reports.filter(r => {
+        if (typeFilter !== 'all' && r.type !== typeFilter) return false;
+        if (viewMode === 'my' && statusFilter !== 'all') {
+            const key = r.wasSanctioned ? 'sanctioned' : r.status;
+            if (key !== statusFilter) return false;
+        }
+        if (provinceFilter !== 'all') {
+            const addr = (r.location?.address || '').toLowerCase();
+            if (!addr.includes(provinceFilter.toLowerCase())) return false;
+        }
+        return true;
+    });
 
     if (authLoading) {
         return (
@@ -363,6 +402,33 @@ const Dashboard = () => {
                 {/* ─── USER REPORT GRID ─── */}
                 {!isModerator && (
                     <div style={{ padding: '0 1.5rem' }}>
+
+                        {/* Filter bar */}
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem', alignItems: 'center' }}>
+                            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={SELECT_STYLE}>
+                                <option value="all">Todos los tipos</option>
+                                <option value="Traffic">Tráfico</option>
+                                <option value="Accident">Accidente</option>
+                                <option value="Violation">Infracción</option>
+                                <option value="Hazard">Peligro</option>
+                            </select>
+
+                            <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} style={SELECT_STYLE}>
+                                <option value="all">Todas las provincias</option>
+                                {DR_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+
+                            {viewMode === 'my' && (
+                                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={SELECT_STYLE}>
+                                    <option value="all">Todos los estados</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="approved">Aprobado</option>
+                                    <option value="rejected">Rechazado</option>
+                                    <option value="sanctioned">Sancionado</option>
+                                </select>
+                            )}
+                        </div>
+
                         <div className="report-grid">
                             {loading ? (
                                 Array.from(new Array(6)).map((_, i) => (
@@ -381,18 +447,22 @@ const Dashboard = () => {
                                         </Box>
                                     </Box>
                                 ))
-                            ) : reports.length === 0 ? (
+                            ) : filteredReports.length === 0 ? (
                                 <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '5rem 2rem' }}>
                                     <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📋</div>
                                     <p style={{ color: 'var(--text-main)', fontWeight: '700', fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                                        {viewMode === 'my' ? 'No has subido ningún reporte aún.' : 'No hay reportes aprobados recientes.'}
+                                        {reports.length === 0
+                                            ? (viewMode === 'my' ? 'No has subido ningún reporte aún.' : 'No hay reportes aprobados recientes.')
+                                            : 'No hay reportes para este filtro.'}
                                     </p>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                        {viewMode === 'my' ? 'Sé el primero en reportar un incidente.' : 'Vuelve más tarde.'}
+                                        {reports.length === 0
+                                            ? (viewMode === 'my' ? 'Sé el primero en reportar un incidente.' : 'Vuelve más tarde.')
+                                            : 'Prueba seleccionando otro tipo o estado.'}
                                     </p>
                                 </div>
                             ) : (
-                                reports.map((report) => {
+                                filteredReports.map((report) => {
                                     const typeColor = getIncidentColor(report.type);
                                     const typeBg = getIncidentBg(report.type);
                                     const statusKey = report.wasSanctioned ? 'sanctioned' : report.status;
