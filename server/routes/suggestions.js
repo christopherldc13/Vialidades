@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Suggestion = require('../models/Suggestion');
+const auth = require('../middleware/auth');
 
 // @route   POST api/suggestions
 // @desc    Submit a user suggestion
@@ -27,6 +28,22 @@ router.post('/', async (req, res) => {
 
     } catch (err) {
         console.error('Error in suggestion submission:', err.message);
+        res.status(500).send('Error interno del servidor');
+    }
+});
+
+// @route   GET api/suggestions
+// @desc    Get all suggestions (moderator/admin only)
+// @access  Private
+router.get('/', auth, async (req, res) => {
+    if (!['moderator', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({ msg: 'Acceso denegado.' });
+    }
+    try {
+        const suggestions = await Suggestion.find().sort({ createdAt: -1 });
+        res.json(suggestions);
+    } catch (err) {
+        console.error('Error fetching suggestions:', err.message);
         res.status(500).send('Error interno del servidor');
     }
 });

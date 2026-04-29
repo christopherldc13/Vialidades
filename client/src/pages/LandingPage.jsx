@@ -4,7 +4,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon } from 'lucide-react';
+import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, Fingerprint, ShieldCheck, Gavel, FileText } from 'lucide-react';
 import { CiLocationOn } from "react-icons/ci";
 import { LiaSatelliteSolid } from "react-icons/lia";
 import { motion } from 'framer-motion';
@@ -24,6 +24,81 @@ const createPulseIcon = () => {
         iconAnchor: [10, 10]
     });
 };
+
+const LANDING_RULES = [
+    {
+        Icon: Database,
+        color: '#3b82f6',
+        gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)',
+        title: 'Datos Personales',
+        subtitle: 'Recopilación y Tratamiento',
+        points: [
+            'Recopilamos nombre, cédula, teléfono y correo para verificar tu identidad.',
+            'Tus datos biométricos no se comparten con terceros y se almacenan cifrados.',
+            'Solo usamos tu información para verificar identidad y prevenir fraudes.',
+        ],
+    },
+    {
+        Icon: PenLine,
+        color: '#f59e0b',
+        gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)',
+        title: 'Contenido Responsable',
+        subtitle: 'Responsabilidad del Usuario',
+        points: [
+            'Eres el único responsable de los reportes e imágenes que publiques.',
+            'La información debe ser veraz y corresponder a situaciones reales.',
+            'El contenido falso puede resultar en suspensión permanente de la cuenta.',
+        ],
+    },
+    {
+        Icon: BadgeCheck,
+        color: '#10b981',
+        gradient: 'linear-gradient(135deg, #10b981, #34d399)',
+        title: 'Veracidad de Reportes',
+        subtitle: 'Información Auténtica',
+        points: [
+            'Solo reporta incidentes que hayas presenciado directamente.',
+            'Los reportes falsos serán eliminados y notificados a las autoridades.',
+            'Está prohibida la suplantación de identidad y uso de documentos falsos.',
+        ],
+    },
+    {
+        Icon: Fingerprint,
+        color: '#6366f1',
+        gradient: 'linear-gradient(135deg, #6366f1, #818cf8)',
+        title: 'Verificación KYC',
+        subtitle: 'Identidad Obligatoria',
+        points: [
+            'Debes verificar tu identidad con cédula y selfie en tiempo real.',
+            'El sistema aplica detección de vida para evitar imágenes estáticas.',
+            'Los datos faciales se transmiten cifrados y no se ceden a terceros.',
+        ],
+    },
+    {
+        Icon: ShieldCheck,
+        color: '#0ea5e9',
+        gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
+        title: 'Seguridad y Privacidad',
+        subtitle: 'Protección de Datos',
+        points: [
+            'Tu contraseña se almacena con cifrado bcrypt y nunca es visible.',
+            'Las sesiones se gestionan con tokens JWT de tiempo limitado.',
+            'Puedes solicitar la eliminación de tus datos en cualquier momento.',
+        ],
+    },
+    {
+        Icon: Gavel,
+        color: '#f43f5e',
+        gradient: 'linear-gradient(135deg, #f43f5e, #fb7185)',
+        title: 'Sanciones',
+        subtitle: 'Sistema de Moderación',
+        points: [
+            'Los reportes falsos repetidos generan sanciones acumulativas.',
+            'El comportamiento abusivo puede resultar en inhabilitación permanente.',
+            'Evadir restricciones creando cuentas adicionales está prohibido.',
+        ],
+    },
+];
 
 const LandingPage = () => {
     const { user, loading } = useContext(AuthContext);
@@ -571,6 +646,109 @@ const LandingPage = () => {
                             </div>
                         </motion.div>
                     </div>
+                </div>
+            </section>
+
+            {/* ─── Terms & Rules Section ─── */}
+            <section style={{ padding: '3rem 1.5rem 6rem', position: 'relative', overflow: 'hidden' }}>
+                {/* Background glows */}
+                <div style={{ position: 'absolute', top: '10%', left: '-8%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(244,63,94,0.05) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
+
+                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    {/* Header */}
+                    <motion.div
+                        style={{ textAlign: 'center', marginBottom: '4rem' }}
+                        initial={{ opacity: 0, y: 24 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.7 }}
+                    >
+                        <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.75rem',
+                            padding: '0.6rem 1.2rem',
+                            background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                            borderRadius: '99px', color: 'var(--primary)', fontWeight: '700', fontSize: '0.9rem',
+                            marginBottom: '1.75rem',
+                        }}>
+                            <FileText size={18} /> Reglas y Términos de Uso
+                        </div>
+                        <h2 style={{
+                            fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '900',
+                            color: 'var(--text-main)', letterSpacing: '-0.02em',
+                            lineHeight: 1.15, marginBottom: '1rem',
+                        }}>
+                            Compromisos de la <span style={{ color: 'var(--primary)' }}>Comunidad</span>
+                        </h2>
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-light)', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
+                            Al registrarte en Vialidades aceptas estas reglas, diseñadas para mantener una plataforma segura, veraz y justa para todos.
+                        </p>
+                    </motion.div>
+
+                    {/* Cards grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                        {LANDING_RULES.map((rule, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 28 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: '-40px' }}
+                                transition={{ duration: 0.55, delay: i * 0.07 }}
+                                style={{
+                                    background: 'var(--surface)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '24px',
+                                    padding: '1.75rem',
+                                    display: 'flex', flexDirection: 'column', gap: '1rem',
+                                    backdropFilter: 'blur(12px)',
+                                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                                    position: 'relative', overflow: 'hidden',
+                                }}
+                                whileHover={{ y: -4, boxShadow: `0 16px 40px -12px ${rule.color}30` }}
+                            >
+                                {/* Top accent bar */}
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: rule.gradient, borderRadius: '24px 24px 0 0' }} />
+
+                                {/* Icon + subtitle */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                                    <div style={{
+                                        width: '44px', height: '44px', borderRadius: '14px',
+                                        background: rule.gradient, flexShrink: 0,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: `0 6px 16px ${rule.color}40`,
+                                    }}>
+                                        <rule.Icon size={20} color="white" strokeWidth={2} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)', lineHeight: 1.2 }}>{rule.title}</div>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>{rule.subtitle}</div>
+                                    </div>
+                                </div>
+
+                                {/* Bullet points */}
+                                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                                    {rule.points.map((pt, j) => (
+                                        <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
+                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: rule.color, flexShrink: 0, marginTop: '7px', opacity: 0.8 }} />
+                                            {pt}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        style={{ textAlign: 'center', marginTop: '3rem', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.7 }}
+                    >
+                        Los términos completos se presentarán al momento de registrarte.<br />
+                        Vialidades se reserva el derecho de actualizar estas reglas. Los cambios se notificarán por correo electrónico.
+                    </motion.p>
                 </div>
             </section>
 

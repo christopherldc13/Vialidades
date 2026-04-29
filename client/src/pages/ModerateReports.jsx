@@ -12,6 +12,7 @@ import ReportDetailModal from '../components/ReportDetailModal';
 import UserDetailModal from '../components/UserDetailModal';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { io } from 'socket.io-client';
+import './DashboardExtras.css';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
 
@@ -44,19 +45,6 @@ const DR_PROVINCES = [
     'Santiago','Santiago Rodríguez','Santo Domingo','Valverde',
 ];
 
-const SELECT_STYLE = {
-    padding: '0.5rem 0.9rem',
-    borderRadius: '10px',
-    border: '1px solid var(--border-color)',
-    background: 'var(--surface-solid)',
-    color: 'var(--text-main)',
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    outline: 'none',
-    minWidth: '160px',
-};
 
 const ModerateReports = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +55,8 @@ const ModerateReports = () => {
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
     const [typeFilter, setTypeFilter] = useState('all');
     const [provinceFilter, setProvinceFilter] = useState('all');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [loading, setLoading] = useState(true);
     const { user } = useContext(AuthContext);
     const [selectedReport, setSelectedReport] = useState(null);
@@ -195,15 +185,27 @@ const ModerateReports = () => {
         }
     };
 
-    useEffect(() => { setTypeFilter('all'); setProvinceFilter('all'); }, [filter]);
+    useEffect(() => {
+        setTypeFilter('all');
+        setProvinceFilter('all');
+        setDateFrom('');
+        setDateTo('');
+    }, [filter]);
 
     const filteredReports = filter === 'users'
         ? reports
         : reports.filter(r => {
+            if (filter === 'all' && r.status === 'pending') return false;
             if (typeFilter !== 'all' && r.type !== typeFilter) return false;
             if (provinceFilter !== 'all') {
                 const addr = (r.location?.address || '').toLowerCase();
                 if (!addr.includes(provinceFilter.toLowerCase())) return false;
+            }
+            if (filter === 'all' && dateFrom) {
+                if (new Date(r.timestamp) < new Date(dateFrom)) return false;
+            }
+            if (filter === 'all' && dateTo) {
+                if (new Date(r.timestamp) > new Date(dateTo + 'T23:59:59')) return false;
             }
             return true;
         });
@@ -215,98 +217,91 @@ const ModerateReports = () => {
     return (
         <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
             <Navbar />
-            <div className="container" style={{ maxWidth: '1500px', margin: '0 auto', padding: '1rem 1.5rem 3rem' }}>
+            <div className="container mod-page-container">
 
-
-                <div className="dashboard-header modern-dashboard-header" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
-                            <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--primary)', background: 'rgba(99, 102, 241, 0.1)', padding: '0.4rem', borderRadius: '10px' }}>
-                                <ArrowLeft size={18} />
-                            </Link>
-                            <h1 style={{ fontWeight: '800', color: 'var(--text-main)', margin: 0, fontSize: '1.5rem' }}>
+                {/* Header */}
+                <div className="mod-panel-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--primary)', background: 'rgba(99,102,241,0.1)', padding: '0.4rem', borderRadius: '10px', flexShrink: 0 }}>
+                            <ArrowLeft size={18} />
+                        </Link>
+                        <div>
+                            <h1 style={{ fontWeight: '800', color: 'var(--text-main)', margin: 0, fontSize: '1.35rem', lineHeight: 1.2 }}>
                                 Panel de Moderación
                             </h1>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: 0 }}>
+                                Gestiona y revisa los reportes de incidentes o usuarios.
+                            </p>
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, opacity: 0.8 }}>
-                            Gestiona y revisa los reportes de incidentes o usuarios.
-                        </p>
-                    </div>
-
-                    {/* Filters */}
-                    <div style={{ display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', paddingBottom: '4px' }}>
-                        <ToggleButtonGroup
-                            value={filter}
-                            exclusive
-                            onChange={(e, newFilter) => {
-                                if (newFilter) {
-                                    setFilter(newFilter);
-                                    setSearchParams({ filter: newFilter });
-                                }
-                            }}
-                            aria-label="filter toggle"
-                            className="toggle-group"
-                            style={{
-                                display: 'inline-flex',
-                                background: 'var(--bg-page)',
-                                padding: '0.4rem',
-                                borderRadius: '20px',
-                                gap: '0.3rem',
-                                border: '1px solid var(--border-color)',
-                                minWidth: 'min-content'
-                            }}
-                        >
-                            {[
-                                { id: 'pending', label: 'Pendientes', icon: AlertTriangle, color: 'var(--warning)' },
-                                { id: 'approved', label: 'Aprobados', icon: Check, color: 'var(--success)' },
-                                { id: 'rejected', label: 'Rechazados', icon: X, color: 'var(--error)' },
-                                { id: 'sanctioned', label: 'Sancionados', icon: AlertTriangle, color: '#b91c1c' },
-                                { id: 'all', label: 'Historial', icon: AiOutlineHistory, color: '#64748b' },
-                                { id: 'users', label: 'Usuarios', icon: Users, color: '#3b82f6' }
-                            ].map(tab => (
-                                <ToggleButton
-                                    key={tab.id}
-                                    value={tab.id}
-                                    style={{
-                                        border: 'none',
-                                        borderRadius: '16px',
-                                        padding: '0.8rem 1.6rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.6rem',
-                                        fontWeight: filter === tab.id ? '800' : '600',
-                                        color: filter === tab.id ? 'var(--primary)' : 'var(--text-light)',
-                                        background: filter === tab.id ? 'var(--surface-solid)' : 'transparent',
-                                        textTransform: 'none',
-                                        fontSize: '0.95rem',
-                                        whiteSpace: 'nowrap',
-                                        boxShadow: filter === tab.id ? '0 8px 16px -4px rgba(99, 102, 241, 0.2)' : 'none',
-                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        fontFamily: 'inherit'
-                                    }}
-                                >
-                                    {tab.icon && <tab.icon size={18} color={filter === tab.id ? 'var(--primary)' : tab.color} />}
-                                    {tab.label}
-                                </ToggleButton>
-                            ))}
-                        </ToggleButtonGroup>
                     </div>
                 </div>
 
-                {/* Type + Province filter bar — hidden on users tab */}
-                {filter !== 'users' && (
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
-                        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={SELECT_STYLE}>
+                {/* Tab bar */}
+                <div className="mod-tabs-scroll">
+                    <ToggleButtonGroup
+                        value={filter}
+                        exclusive
+                        onChange={(_, newFilter) => {
+                            if (newFilter) {
+                                setFilter(newFilter);
+                                setSearchParams({ filter: newFilter });
+                            }
+                        }}
+                        aria-label="filter toggle"
+                        className="mod-tabs-group"
+                    >
+                        {[
+                            { id: 'pending',   label: 'Pendientes',  icon: AlertTriangle,    color: 'var(--warning)' },
+                            { id: 'approved',  label: 'Aprobados',   icon: Check,            color: 'var(--success)' },
+                            { id: 'rejected',  label: 'Rechazados',  icon: X,                color: 'var(--error)'   },
+                            { id: 'sanctioned',label: 'Sancionados', icon: AlertTriangle,    color: '#b91c1c'        },
+                            { id: 'all',       label: 'Historial',   icon: AiOutlineHistory, color: '#64748b'        },
+                            { id: 'users',     label: 'Usuarios',    icon: Users,            color: '#3b82f6'        },
+                        ].map(tab => (
+                            <ToggleButton
+                                key={tab.id}
+                                value={tab.id}
+                                className={`mod-tab-btn${filter === tab.id ? ' mod-tab-active' : ''}`}
+                            >
+                                <tab.icon size={16} color={filter === tab.id ? 'var(--primary)' : tab.color} />
+                                <span className="mod-tab-label">{tab.label}</span>
+                            </ToggleButton>
+                        ))}
+                    </ToggleButtonGroup>
+                </div>
+
+                {/* Filters — only in Historial */}
+                {filter === 'all' && (
+                    <div className="filter-bar">
+                        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="filter-select">
                             <option value="all">Todos los tipos</option>
                             <option value="Traffic">Tráfico</option>
                             <option value="Accident">Accidente</option>
                             <option value="Violation">Infracción</option>
                             <option value="Hazard">Peligro</option>
                         </select>
-                        <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} style={SELECT_STYLE}>
+                        <div className="filter-bar-sep" />
+                        <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} className="filter-select">
                             <option value="all">Todas las provincias</option>
                             {DR_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
+                        <div className="filter-bar-sep" />
+                        <div className="date-range-group">
+                            <div className="date-range-inputs">
+                                <div className="date-input-wrap">
+                                    <span className="date-input-label">Desde</span>
+                                    <input type="date" value={dateFrom} max={dateTo || undefined} onChange={e => setDateFrom(e.target.value)} className="filter-date" />
+                                </div>
+                                <span className="date-range-sep">—</span>
+                                <div className="date-input-wrap">
+                                    <span className="date-input-label">Hasta</span>
+                                    <input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)} className="filter-date" />
+                                </div>
+                                {(dateFrom || dateTo) && (
+                                    <button className="date-clear-btn" onClick={() => { setDateFrom(''); setDateTo(''); }}>✕</button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 

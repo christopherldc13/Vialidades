@@ -62,24 +62,32 @@ html.theme-transitioning *::after {
 
 /* Dark Mode Overrides */
 html.dark {
-  --bg-page: #0a0a0a;
-  --bg-gradient: radial-gradient(circle at top right, #262626 0%, #171717 40%, #0a0a0a 100%);
-  --surface: rgba(23, 23, 23, 0.85);
-  --surface-solid: #171717;
-  --bg-input: rgba(38, 38, 38, 0.7);
-  --bg-input-focus: #404040;
+  --bg-page: #0e0e16;
+  --bg-gradient: radial-gradient(circle at top right, #1a1830 0%, #111120 45%, #0e0e16 100%);
+  --surface: rgba(18, 18, 28, 0.88);
+  --surface-solid: #161624;
+  --bg-input: rgba(26, 26, 40, 0.8);
+  --bg-input-focus: #1e1e30;
 
-  --text-main: #f5f5f5;
-  --text-light: #d4d4d4;
-  --text-muted: #a3a3a3;
+  --text-main: #e8e8f2;
+  --text-light: #b8b8d0;
+  --text-muted: #7878a0;
 
-  --border-color: #404040;
-  --border-light: rgba(255, 255, 255, 0.1);
+  --border-color: #28283e;
+  --border-light: rgba(255, 255, 255, 0.07);
 
-  --btn-primary-bg: #ffffff;
-  --btn-primary-text: #0a0a0a;
-  --btn-primary-hover: #e5e5e5;
-  --icon-bg: #262626;
+  --btn-primary-bg: #e8e8f2;
+  --btn-primary-text: #0e0e16;
+  --btn-primary-hover: #d0d0e8;
+  --icon-bg: #1e1e30;
+}
+
+/* Landing page y auth: preservar su fondo original en modo oscuro */
+html.dark body:has(.landing-container),
+html.dark body:has(.auth-container),
+html.dark body:has(.auth-wrapper) {
+  background: radial-gradient(circle at top right, #262626 0%, #171717 40%, #0a0a0a 100%) !important;
+  background-attachment: fixed !important;
 }
 
 * {
@@ -97,6 +105,13 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   text-rendering: optimizeSpeed;
+}
+
+@media (max-width: 900px) {
+  body {
+    background-attachment: scroll;
+    overscroll-behavior-y: none;
+  }
 }
 
 /* Centering Wrapper for Auth Pages (Login, Register, Reset, etc.) */
@@ -1524,7 +1539,6 @@ html.dark .nav-gradient-overlay {
 .premium-login-layout {
   display: flex;
   height: 100dvh;
-  /* Dynamic viewport height to prevent mobile address bar issues */
   width: 100vw;
   background: var(--bg-page);
   overflow: hidden;
@@ -1648,7 +1662,8 @@ html.dark .nav-gradient-overlay {
   filter: blur(80px);
   opacity: 0.12;
   border-radius: 50%;
-  animation: blob-bounce 15s infinite alternate;
+  animation: blob-scale 15s infinite alternate;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
 }
@@ -1664,9 +1679,16 @@ html.dark .nav-gradient-overlay {
   filter: blur(80px);
   opacity: 0.08;
   border-radius: 50%;
-  animation: blob-bounce 20s infinite alternate-reverse;
+  animation: blob-scale 20s infinite alternate-reverse;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
+}
+
+/* Scale-only blob: no translate so it never extends scroll bounds */
+@keyframes blob-scale {
+  0%   { transform: scale(1);    opacity: 0.12; }
+  100% { transform: scale(1.08); opacity: 0.07; }
 }
 
 .premium-login-card {
@@ -1912,17 +1934,30 @@ button.premium-btn:hover,
 @media (max-width: 900px) {
   .premium-login-layout {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    touch-action: pan-y;
   }
 
   .premium-login-visual {
     display: none;
-    /* Hide visual on mobile for pure focus */
   }
 
   .premium-login-form-container {
-    padding: 1rem;
-    height: 100%;
-    /* Keep internal scroll strictly confined */
+    padding: 0.75rem 1rem 2rem;
+    height: auto;
+    min-height: unset;
+    overflow-y: visible;
+    overflow-x: hidden;
+    flex: 1;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .premium-login-form-container::before,
+  .premium-login-form-container::after {
+    animation: none;
   }
 }
 
@@ -2083,6 +2118,79 @@ html.dark .modern-navbar {
   padding: 0 !important;
 }
 
+/* ─── Desktop nav buttons group ─── */
+.nav-desktop-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ─── Mobile hamburger menu ─── */
+.nav-mobile-menu {
+  display: none;
+  position: relative;
+}
+
+.mobile-dropdown {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 0.4rem;
+  min-width: 200px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  animation: fadeInScale 0.15s ease;
+}
+
+.mobile-dropdown-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  width: 100% !important;
+  padding: 0.7rem 0.9rem !important;
+  border-radius: 10px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  font-family: inherit !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  transition: background 0.15s !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.mobile-dropdown-item:hover {
+  background: var(--bg-page) !important;
+}
+
+.mobile-dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.2rem 0.4rem;
+}
+
+.mobile-dropdown-logout {
+  color: var(--error, #ef4444) !important;
+}
+
+@media (max-width: 640px) {
+  .nav-desktop-btns {
+    display: none;
+  }
+  .nav-mobile-menu {
+    display: block;
+  }
+}
+
 @keyframes fadeInScale {
   from {
     opacity: 0;
@@ -2164,17 +2272,6 @@ html.dark .modern-navbar {
   overflow: hidden;
 }
 
-.premium-login-form-container {
-  flex: 1;
-  background: var(--bg-page);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-y: auto;
-  padding: 100px 2rem 2rem 2rem;
-  /* Added top padding for Navbar */
-  position: relative;
-}
 
 .modern-dashboard-header::before {
   content: '';
@@ -2315,9 +2412,7 @@ html.dark .fixed-footer {
 
 /* ── Notification Panel ─────────────────────────────────── */
 .notif-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  right: -10px;
+  position: fixed;
   width: clamp(300px, 92vw, 380px);
   max-height: 480px;
   display: flex;
@@ -2326,7 +2421,7 @@ html.dark .fixed-footer {
   border: 1px solid var(--border-color);
   border-radius: 1rem;
   box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-  z-index: 1100;
+  z-index: 9999;
   overflow: hidden;
 }
 
@@ -2420,16 +2515,34 @@ html.dark .fixed-footer {
   background: rgba(239,68,68,0.1) !important;
 }
 
-/* Mobile */
+/* Mobile: compact panel */
 @media (max-width: 640px) {
   .notif-panel {
-    position: fixed;
-    top: 64px;
-    right: 0.75rem;
-    left: 0.75rem;
-    width: auto;
-    max-height: calc(100vh - 130px);
-    border-radius: 0.875rem;
+    top: 64px !important;
+    left: auto !important;
+    right: 0.75rem !important;
+    width: 82vw !important;
+    max-width: 340px !important;
+    max-height: 55vh !important;
+  }
+  .notif-header {
+    padding: 0.6rem 0.875rem;
+  }
+  .notif-item {
+    padding: 0.6rem 0.875rem;
+    gap: 0.6rem;
+  }
+  .notif-type-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 0.5rem;
+  }
+  .notif-msg {
+    font-size: 0.78rem;
+    margin-bottom: 0.15rem;
+  }
+  .notif-time {
+    font-size: 0.68rem;
   }
 }
 
@@ -2911,16 +3024,15 @@ html.dark .fixed-footer {
   }
 }
 
-/* Navbar Mobile Optimization for Moderator Tools */
+/* Navbar Mobile Optimization */
 @media (max-width: 500px) {
   .navbar-logo-text {
-    display: none !important;
+    font-size: 1.15rem !important;
   }
 
   .nav-actions {
     gap: 0.25rem !important;
     justify-content: flex-end !important;
-    width: 100% !important;
   }
 
   .modern-nav-btn {
