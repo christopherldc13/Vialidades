@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import Navbar from '../components/Navbar';
 
 function ResetPassword() {
     const { token } = useParams();
