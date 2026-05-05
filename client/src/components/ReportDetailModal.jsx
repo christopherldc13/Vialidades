@@ -134,8 +134,25 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                 </span>
                             </div>
                         </div>
-                        <button onClick={onClose} className="modal-close-btn" style={{ flexShrink: 0 }}>
-                            <X size={20} />
+                        <button
+                            onClick={onClose}
+                            className="modal-close-btn"
+                            title="Cerrar"
+                            style={{
+                                flexShrink: 0,
+                                width: 36, height: 36,
+                                borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(239,68,68,0.12)',
+                                border: '1.5px solid rgba(239,68,68,0.35)',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                transition: 'background 0.18s, border-color 0.18s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.25)'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.12)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.35)'; }}
+                        >
+                            <X size={18} strokeWidth={2.5} />
                         </button>
                     </div>
 
@@ -334,11 +351,6 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                 </button>
                             </div>
                         )}
-                        <div className="modal-close-wrapper">
-                            <button onClick={onClose} className="modal-action-btn modal-action-btn-full">
-                                Cerrar
-                            </button>
-                        </div>
                     </div>
                 </motion.div>
             </motion.div>

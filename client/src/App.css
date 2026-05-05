@@ -2754,20 +2754,20 @@ html.dark .fixed-footer {
 
 @media (max-width: 600px) {
   .modal-footer-modern {
-    padding: 0.6rem 0.4rem !important;
-    gap: 0.25rem !important;
+    padding: 0.75rem 0.75rem !important;
+    gap: 0.5rem !important;
   }
 
   .modal-footer-modern button {
-    padding: 0.4rem 0.1rem !important;
-    font-size: 0.58rem !important;
-    gap: 0.1rem !important;
-    border-radius: 6px !important;
+    padding: 0.65rem 0.4rem !important;
+    font-size: 0.82rem !important;
+    gap: 0.35rem !important;
+    border-radius: 10px !important;
   }
 
   .modal-footer-modern button svg {
-    width: 10px !important;
-    height: 10px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
 
   .modal-footer-actions,
