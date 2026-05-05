@@ -14,7 +14,7 @@ import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { io } from 'socket.io-client';
 import './DashboardExtras.css';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''));
 
 const getIncidentLabel = (type) => {
     switch (type) {

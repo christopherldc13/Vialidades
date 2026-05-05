@@ -575,7 +575,7 @@ router.post('/forgot-password', async (req, res) => {
         const currentOrigin = req.headers.origin || `https://${req.get('host')}`;
         // Since the backend might be on a different port than the frontend (e.g. 5000 vs 5173 during dev),
         // we'll prioritize FRONTEND_URL from env, fallback to origin, fallback to https://localhost:5173
-        const frontendUrl = process.env.FRONTEND_URL || (req.headers.origin ? req.headers.origin : 'https://localhost:5173');
+        const frontendUrl = (process.env.FRONTEND_URL || req.headers.origin || 'https://localhost:5173').replace(/\/$/, '');
         const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
         try {

@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Camera, Video, Sparkles, X } from 'lucide-react';
+import { Camera, Video, Sparkles, X, Upload } from 'lucide-react';
 import DraggableMap from '../components/DraggableMap';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -61,6 +61,7 @@ const CreateReport = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [refreshLocationTrigger, setRefreshLocationTrigger] = useState(0); // Trigger for map refresh
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
     // New Car Fields
     const [carBrand, setCarBrand] = useState('');
@@ -90,31 +91,40 @@ const CreateReport = () => {
     }, []);
 
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const fileArray = Array.from(e.target.files);
-
-            // Validate Files
-            const validFiles = [];
-            const newPreviews = [];
-
-            fileArray.forEach(file => {
-                const isVideo = file.type.startsWith('video');
-                const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB video, 10MB image
-
-                if (file.size > maxSize) {
-                    toast.error(`El archivo ${file.name} es demasiado grande. Máximo ${isVideo ? '100MB' : '10MB'}.`);
-                    return;
-                }
-                validFiles.push(file);
-                newPreviews.push(URL.createObjectURL(file));
-            });
-
-            if (validFiles.length > 0) {
-                setFiles(prevFiles => [...prevFiles, ...validFiles]);
-                setPreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+    const processFiles = (fileList) => {
+        const validFiles = [];
+        const newPreviews = [];
+        Array.from(fileList).forEach(file => {
+            const isVideo = file.type.startsWith('video');
+            const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error(`${file.name} es demasiado grande. Máx ${isVideo ? '100MB' : '10MB'}.`);
+                return;
             }
+            validFiles.push(file);
+            newPreviews.push(URL.createObjectURL(file));
+        });
+        if (validFiles.length > 0) {
+            setFiles(prev => [...prev, ...validFiles]);
+            setPreviews(prev => [...prev, ...newPreviews]);
         }
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files?.length > 0) processFiles(e.target.files);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files?.length > 0) processFiles(e.dataTransfer.files);
+    };
+
+    const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragEnter = (e) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false);
     };
 
     const removeFile = (index) => {
@@ -125,10 +135,45 @@ const CreateReport = () => {
         setPreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     };
 
+    const AI_SUPPORTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff'];
+
     const handleAIIdentify = async () => {
-        const imageFile = files.find(f => f.type.startsWith('image/'));
+        const imageFile = files.find(f => AI_SUPPORTED.includes(f.type));
         if (!imageFile) {
-            toast.error('Por favor, selecciona una imagen primero.');
+            const hasAnyImage = files.some(f => f.type.startsWith('image/'));
+            if (hasAnyImage) {
+                const incompatibleFile = files.find(f => f.type.startsWith('image/'));
+                const ext = incompatibleFile?.name?.split('.').pop()?.toUpperCase() || 'desconocido';
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Formato no compatible',
+                    html: `El archivo <strong>.${ext}</strong> no es compatible con el reconocimiento de IA.<br><br>
+                           <span style="font-size:0.88rem;color:var(--text-muted)">Formatos compatibles:</span><br>
+                           <strong style="color:var(--primary)">JPG · PNG · WEBP · GIF · BMP · TIFF</strong>`,
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        confirmButton: 'swal2-lumina-confirm',
+                        popup: 'swal2-lumina-popup',
+                        title: 'swal2-lumina-title',
+                        htmlContainer: 'swal2-lumina-html'
+                    },
+                    buttonsStyling: false,
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sin imagen',
+                    text: 'Sube una imagen compatible antes de usar el reconocimiento de IA.',
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        confirmButton: 'swal2-lumina-confirm',
+                        popup: 'swal2-lumina-popup',
+                        title: 'swal2-lumina-title',
+                        htmlContainer: 'swal2-lumina-html'
+                    },
+                    buttonsStyling: false,
+                });
+            }
             return;
         }
 
@@ -255,11 +300,11 @@ const CreateReport = () => {
     }
 
     const incidentTypes = [
-        { id: 'Traffic',   label: 'Tráfico Pesado',   icon: <FaCar />,          color: '#f59e0b', bg: 'rgba(245,158,11,0.1)'  },
-        { id: 'Accident',  label: 'Accidente',         icon: <FaCarCrash />,     color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
-        { id: 'Violation', label: 'Infracción',        icon: <BsSignStopFill />, color: '#6366f1', bg: 'rgba(99,102,241,0.1)'  },
-        { id: 'Hazard',    label: 'Peligro en la vía', icon: <LuTriangleAlert />,color: '#f97316', bg: 'rgba(249,115,22,0.1)'  },
-        { id: 'Other',     label: 'Otro',              icon: <IoMdHelpCircle />, color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+        { id: 'Traffic', label: 'Tráfico Pesado', icon: <FaCar />, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+        { id: 'Accident', label: 'Accidente', icon: <FaCarCrash />, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+        { id: 'Violation', label: 'Infracción', icon: <BsSignStopFill />, color: '#6366f1', bg: 'rgba(99,102,241,0.1)' },
+        { id: 'Hazard', label: 'Peligro en la vía', icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
+        { id: 'Other', label: 'Otro', icon: <IoMdHelpCircle />, color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
     ];
 
     const SectionLabel = ({ number, text }) => (
@@ -368,8 +413,8 @@ const CreateReport = () => {
                                     <button
                                         type="button"
                                         onClick={handleAIIdentify}
-                                        disabled={isAnalyzing || !files.some(f => f.type.startsWith('image/'))}
-                                        title={!files.some(f => f.type.startsWith('image/')) ? 'Sube una foto primero' : 'Identificar con IA'}
+                                        disabled={isAnalyzing}
+                                        title="Identificar vehículo con IA"
                                         style={{
                                             display: 'flex', alignItems: 'center', gap: '0.4rem',
                                             padding: '0.45rem 0.9rem', borderRadius: '0.6rem',
@@ -377,8 +422,8 @@ const CreateReport = () => {
                                             border: '1.5px solid var(--primary)',
                                             color: 'var(--primary)',
                                             fontSize: '0.8rem', fontWeight: 700,
-                                            cursor: (isAnalyzing || !files.some(f => f.type.startsWith('image/'))) ? 'not-allowed' : 'pointer',
-                                            opacity: (isAnalyzing || !files.some(f => f.type.startsWith('image/'))) ? 0.5 : 1,
+                                            cursor: isAnalyzing ? 'not-allowed' : 'pointer',
+                                            opacity: isAnalyzing ? 0.5 : 1,
                                             width: 'auto', margin: 0, boxShadow: 'none',
                                             transition: 'all 0.2s ease',
                                         }}
@@ -387,6 +432,9 @@ const CreateReport = () => {
                                         {isAnalyzing ? 'Detectando...' : 'Identificar con IA'}
                                     </button>
                                 </div>
+                                <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '1rem', marginTop: '-0.25rem' }}>
+                                    IA compatible con: JPG · PNG · WEBP · GIF · BMP · TIFF
+                                </p>
 
                                 {isAnalyzing ? (
                                     <div style={{
@@ -465,31 +513,72 @@ const CreateReport = () => {
                             <div className="cr-section">
                                 <SectionLabel number="5" text="Fotos y Videos" />
 
-                                <div className="cr-media-grid" style={{ marginBottom: files.length > 0 ? '1rem' : 0 }}>
-                                    {[
-                                        { id: 'camera-photo-upload', accept: 'image/*', capture: 'environment', icon: <Camera size={22} />, label: 'Foto' },
-                                        { id: 'camera-video-upload', accept: 'video/*', capture: 'environment', icon: <Video size={22} />, label: 'Video' },
-                                        { id: 'gallery-upload', accept: 'image/*,video/*', multiple: true, icon: <GrGallery size={20} />, label: 'Galería' },
-                                    ].map(({ id, accept, capture, multiple, icon, label }) => (
-                                        <div key={id}>
-                                            <input type="file" accept={accept} capture={capture} multiple={multiple} onChange={handleFileChange} style={{ display: 'none' }} id={id} />
-                                            <label
-                                                htmlFor={id}
-                                                onClick={() => setRefreshLocationTrigger(p => p + 1)}
-                                                style={{
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                    gap: '0.4rem', padding: '1.1rem 0.5rem',
-                                                    border: '1.5px dashed var(--border-color)',
-                                                    borderRadius: '0.875rem', background: 'var(--bg-page)',
-                                                    cursor: 'pointer', transition: 'all 0.18s ease',
-                                                    color: 'var(--primary)',
-                                                }}
-                                            >
-                                                {icon}
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>{label}</span>
-                                            </label>
+                                {/* Format info */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '0.625rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0 }}>📷 Imágenes</span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>JPG · PNG · WEBP · GIF · HEIC · HEIF · BMP · TIFF · SVG · AVIF</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-light)', marginLeft: 'auto', flexShrink: 0 }}>Máx 10 MB</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0 }}>🎬 Videos</span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MP4 · MOV · AVI · MKV · WEBM · FLV · WMV · M4V · 3GP · MPEG</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-light)', marginLeft: 'auto', flexShrink: 0 }}>Máx 100 MB</span>
+                                    </div>
+                                </div>
+
+                                {/* Drop zone */}
+                                <div
+                                    onDragOver={handleDragOver}
+                                    onDragEnter={handleDragEnter}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    style={{
+                                        border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border-color)'}`,
+                                        borderRadius: '0.875rem',
+                                        background: isDragging ? 'rgba(99,102,241,0.06)' : 'var(--bg-page)',
+                                        transition: 'all 0.18s ease',
+                                        padding: isDragging ? '1.5rem' : '0',
+                                        marginBottom: files.length > 0 ? '0.75rem' : '0',
+                                        position: 'relative',
+                                    }}
+                                >
+                                    {isDragging ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--primary)', padding: '1rem 0' }}>
+                                            <Upload size={28} strokeWidth={1.5} />
+                                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Suelta los archivos aquí</span>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="cr-media-grid" style={{ marginBottom: 0, border: 'none', background: 'transparent', padding: 0 }}>
+                                            {[
+                                                { id: 'camera-photo-upload', accept: 'image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif,image/bmp,image/tiff,image/svg+xml,image/avif', capture: 'environment', icon: <Camera size={22} />, label: 'Foto' },
+                                                { id: 'camera-video-upload', accept: 'video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,video/x-flv,video/x-ms-wmv,video/m4v,video/3gpp,video/3gpp2,video/mpeg', capture: 'environment', icon: <Video size={22} />, label: 'Video' },
+                                                { id: 'gallery-upload', accept: 'image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic,image/heif,image/bmp,image/tiff,image/svg+xml,image/avif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,video/x-flv,video/x-ms-wmv,video/m4v,video/3gpp,video/3gpp2,video/mpeg', multiple: true, icon: <GrGallery size={20} />, label: 'Galería' },
+                                            ].map(({ id, accept, capture, multiple, icon, label }) => (
+                                                <div key={id}>
+                                                    <input type="file" accept={accept} capture={capture} multiple={multiple} onChange={handleFileChange} style={{ display: 'none' }} id={id} />
+                                                    <label
+                                                        htmlFor={id}
+                                                        onClick={() => setRefreshLocationTrigger(p => p + 1)}
+                                                        style={{
+                                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                            gap: '0.4rem', padding: '1.1rem 0.5rem',
+                                                            borderRadius: '0.875rem', background: 'var(--bg-page)',
+                                                            cursor: 'pointer', transition: 'all 0.18s ease',
+                                                            color: 'var(--primary)',
+                                                        }}
+                                                    >
+                                                        {icon}
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>{label}</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: files.length > 0 ? '0.75rem' : '0', marginTop: '0.4rem' }}>
+                                    También puedes arrastrar y soltar archivos directamente aquí
                                 </div>
 
                                 {files.length > 0 && (

@@ -2,7 +2,23 @@ const express = require('express');
 const router = express.Router();
 const Groq = require('groq-sdk');
 const multer = require('multer');
+const { Jimp, JimpMime } = require('jimp');
 const auth = require('../middleware/auth');
+
+const GROQ_SUPPORTED  = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const JIMP_CONVERTIBLE = ['image/bmp', 'image/tiff'];
+
+async function toGroqCompatibleBase64(buffer, mimetype) {
+    if (GROQ_SUPPORTED.includes(mimetype)) {
+        return { base64: buffer.toString('base64'), mime: mimetype };
+    }
+    if (JIMP_CONVERTIBLE.includes(mimetype)) {
+        const image = await Jimp.fromBuffer(buffer);
+        const jpegBuffer = await image.getBuffer(JimpMime.jpeg);
+        return { base64: jpegBuffer.toString('base64'), mime: 'image/jpeg' };
+    }
+    throw new Error(`Formato no compatible con IA: ${mimetype}. Usa JPG, PNG, WEBP, GIF, BMP o TIFF.`);
+}
 
 // Setup multer for memory storage
 const upload = multer({ 
@@ -26,9 +42,9 @@ router.post('/identify-vehicle', auth, upload.single('image'), async (req, res) 
 
         const groq = new Groq({ apiKey });
         
-        // Convert the file buffer to base64
-        const base64Image = req.file.buffer.toString("base64");
-        const dataUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+        // Convert to a Groq-compatible format (JPEG if the original isn't supported)
+        const { base64: base64Image, mime } = await toGroqCompatibleBase64(req.file.buffer, req.file.mimetype);
+        const dataUrl = `data:${mime};base64,${base64Image}`;
 
         const prompt = `Analiza esta imagen de un vehículo y extrae la siguiente información en formato JSON estricto (importante: no agregues texto adicional, ni bloques de código markdown extra, solo el JSON puro):
 {

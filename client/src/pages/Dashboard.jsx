@@ -20,7 +20,7 @@ import { LuTriangleAlert } from "react-icons/lu";
 import { IoMdHelpCircle } from "react-icons/io";
 import { io } from 'socket.io-client';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''));
 
 const DR_PROVINCES = [
     'Azua','Bahoruco','Barahona','Dajabón','Distrito Nacional','Duarte',
@@ -693,9 +693,9 @@ const Dashboard = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        {renderSection('today', '🕐 Reportes de hoy',           todayR, 3)}
-                                        {renderSection('week',  '📅 Reportes de esta semana',    weekR,  3)}
-                                        {renderSection('month', '🗓️ Reportes del mes',           monthR, 3)}
+                                        {renderSection('today', '🕐 Reportes de hoy',           todayR, 4)}
+                                        {renderSection('week',  '📅 Reportes de esta semana',    weekR,  4)}
+                                        {renderSection('month', '🗓️ Reportes del mes',           monthR, 4)}
                                     </>
                                 )}
                             </div>
