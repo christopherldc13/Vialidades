@@ -20,6 +20,23 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// @route   GET api/users/:id
+// @desc    Get a single user by ID
+// @access  Private (Admin/Moderator only)
+router.get('/:id', auth, async (req, res) => {
+    try {
+        if (!['admin', 'moderator'].includes(req.user.role)) {
+            return res.status(403).json({ msg: 'No tienes permisos' });
+        }
+        const user = await User.findById(req.params.id).select('-password');
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        res.json(user);
+    } catch (err) {
+        console.error('Error fetching user:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT api/users/promote
 // @desc    Promote a user to moderator
 // @access  Private (Admin/Moderator only)

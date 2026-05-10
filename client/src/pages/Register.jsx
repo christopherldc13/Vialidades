@@ -22,21 +22,20 @@ function Register() {
     const navigate = useNavigate();
     const webcamRef = useRef(null);
 
-    // Scroll to top on mount
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
     // Step state
     // 1: Form, 2: ID Capture, 3: Selfie Capture, 4: Verify Code
     const [step, setStep] = useState(1);
+
+    // Scroll to top when step changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [step]);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [modelsLoaded, setModelsLoaded] = useState(false);
 
     // Mobile specific state for ID scanning
-    const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
     const [showPassword, setShowPassword] = useState(false);
     const [flashlightOn, setFlashlightOn] = useState(false);
     const [trackSupportsTorch, setTrackSupportsTorch] = useState(false);
@@ -176,12 +175,6 @@ function Register() {
     }), [theme]);
 
     useEffect(() => {
-        const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    useEffect(() => {
         const loadModels = async () => {
             try {
                 // Ensure TFJS is ready and try to set a stable backend if WebGL fails
@@ -235,7 +228,7 @@ function Register() {
     useEffect(() => {
         let intervalId;
         let steadyCount = 0; // Target: 5 seconds
-        const requiredTicks = 5; // 5 ticks of 1 second
+        const requiredTicks = 3; // 3 ticks of 1 second = 3 second hold
 
         if (step === 2 && modelsLoaded && isIdScannerActive && !isProcessingId) {
             intervalId = setInterval(async () => {
@@ -433,15 +426,21 @@ function Register() {
             return;
         }
 
-        setIsLoading(true);
-
-        const res = await checkRegistrationDuplicates(formData);
+        const requiredFields = ['firstName', 'lastName', 'username', 'email', 'password', 'birthDate', 'gender', 'phone', 'cedula', 'birthProvince'];
+        const missing = requiredFields.filter(f => !formData[f] || formData[f].toString().trim() === '');
+        if (missing.length > 0) {
+            setError('Por favor completa todos los campos requeridos antes de continuar.');
+            return;
+        }
 
         if (strength <= 2) {
             setError('La contraseña es muy débil. Por favor intenta combinar letras, números y símbolos.');
-            setIsLoading(false);
             return;
         }
+
+        setIsLoading(true);
+
+        const res = await checkRegistrationDuplicates(formData);
 
         setIsLoading(false);
 
@@ -451,17 +450,6 @@ function Register() {
             setError(res.msg); // Muestra el mensaje de error específico
         }
     };
-
-    const captureId = useCallback(() => {
-        const imageSrc = webcamRef.current.getScreenshot();
-        if (!imageSrc) {
-            setError("No se pudo capturar la imagen. Revisa los permisos de tu cámara.");
-            return;
-        }
-        setIdImage(imageSrc);
-        setError('');
-        setStep(3); // Move to Selfie capture
-    }, [webcamRef]);
 
     const captureSelfieAndSubmit = useCallback(async () => {
         const imageSrc = webcamRef.current.getScreenshot();
@@ -602,28 +590,47 @@ function Register() {
 
     return (
         <>
+        <style>{`
+            @keyframes kycScanLine {
+                0%   { top: 3%;  opacity: 0; }
+                8%   { opacity: 1; }
+                92%  { opacity: 1; }
+                100% { top: 94%; opacity: 0; }
+            }
+            @keyframes kycPulseGlow {
+                0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 10px rgba(34,197,94,0.3); }
+                50%       { box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 28px rgba(34,197,94,0.75); }
+            }
+            @keyframes kycIdleGlow {
+                0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 8px rgba(99,102,241,0.25); }
+                50%       { box-shadow: 0 0 0 9999px rgba(0,0,0,0.55), 0 0 18px rgba(99,102,241,0.55); }
+            }
+            @keyframes kycSpinner {
+                from { transform: rotate(0deg); }
+                to   { transform: rotate(360deg); }
+            }
+        `}</style>
         <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '100px 2rem 2rem 2rem',
+            padding: '96px 1rem 3rem 1rem',
             background: 'var(--bg-page)',
             position: 'relative',
-            zIndex: 1
+            zIndex: 1,
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
         }}>
             <Navbar />
-            <div className="premium-login-card" style={{ maxWidth: '650px', width: '100%', padding: 'clamp(1.5rem, 3vh, 2.5rem) clamp(1rem, 2.5vw, 2rem)' }}>
-                <div className="login-header">
-                    <h2>
+            <div className="premium-login-card" style={{ maxWidth: '560px', width: '100%', margin: '0 auto', padding: 'clamp(1.25rem, 3vh, 2rem) clamp(1rem, 2.5vw, 1.75rem)' }}>
+                <div className="login-header" style={step === 2 || step === 3 ? { marginBottom: '0.5rem', marginTop: 0 } : {}}>
+                    <h2 style={step === 2 || step === 3 ? { fontSize: '1.15rem', marginBottom: '0.15rem' } : {}}>
                         {step === 1 ? 'Crear Cuenta' :
-                            step === 2 ? 'Veridad de Cédula' :
+                            step === 2 ? 'Verificación de Cédula' :
                                 step === 3 ? 'Verificación Facial' : 'Verificar Cuenta'}
                     </h2>
-                    <p className="text-muted">
+                    <p className="text-muted" style={step === 2 || step === 3 ? { fontSize: '0.8rem' } : {}}>
                         {step === 1 ? 'Únete a nuestra plataforma' :
-                            step === 2 ? 'Toma una foto clara a tu cédula para el proceso KYC' :
-                                step === 3 ? 'Toma una selfie para comprobar tu identidad' : 'Ingresa el código enviado a tu correo'}
+                            step === 2 ? 'Identifica tu cédula frente a la cámara' :
+                                step === 3 ? 'Sigue las instrucciones para validar tu identidad' : 'Ingresa el código enviado a tu correo'}
                     </p>
                 </div>
 
@@ -962,24 +969,56 @@ function Register() {
                 )}
 
                 {step === 2 && (
-                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
                         {!isIdScannerActive ? (
-                            <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '400px' }}>
-                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🪪</div>
-                                <h3 style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>Escaneo Automático</h3>
-                                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-                                    El sistema detectará y capturará la foto de tu cédula automáticamente para validar tu nombre, cédula y rostro en el siguiente paso.
-                                </p>
-                                <button onClick={() => setIsIdScannerActive(true)} type="button" className="login-submit-btn" style={{ marginBottom: '10px' }}>
-                                    <i className="fas fa-camera" style={{ marginRight: '8px' }}></i> Iniciar Escáner
+                            /* ── Step 2 Intro (flat, mobile-first) ── */
+                            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                {/* Progress dots */}
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                                    {[1,2,3].map(n => (
+                                        <div key={n} style={{ width: n === 2 ? '24px' : '8px', height: '8px', borderRadius: '999px', background: n === 2 ? '#6366f1' : 'var(--border-color)', transition: 'all 0.3s' }} />
+                                    ))}
+                                </div>
+
+                                {/* Icon + title row */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.06))', border: '1.5px solid rgba(99,102,241,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
+                                        🪪
+                                    </div>
+                                    <div>
+                                        <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#6366f1', textTransform: 'uppercase', marginBottom: '2px' }}>Paso 2 · KYC</p>
+                                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>Escaneo de Cédula</h3>
+                                    </div>
+                                </div>
+
+                                {/* Tips grid — 2 columns on mobile */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    {[
+                                        { icon: '💡', text: 'Buena iluminación' },
+                                        { icon: '📐', text: 'Posición horizontal' },
+                                        { icon: '🔍', text: 'Texto visible' },
+                                        { icon: '✋', text: 'Mantén firme' },
+                                    ].map(({ icon, text }) => (
+                                        <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', background: 'var(--bg-input)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                                            <span style={{ fontSize: '0.95rem', flexShrink: 0 }}>{icon}</span>
+                                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Buttons */}
+                                <button onClick={() => setIsIdScannerActive(true)} type="button" className="login-submit-btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: 0 }}>
+                                    <i className="fas fa-camera"></i> Iniciar Escáner
                                 </button>
-                                <button onClick={() => { setStep(1); setFlashlightOn(false); setError(''); setSuccess(''); setIdImage(null); }} type="button" style={{ width: '100%', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem' }}>
-                                    Atrás
+                                <button onClick={() => { setStep(1); setFlashlightOn(false); setError(''); setSuccess(''); setIdImage(null); }} type="button" style={{ width: '100%', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500 }}>
+                                    ← Atrás
                                 </button>
                             </div>
                         ) : (
-                            <>
-                                <div style={{ position: 'relative', width: '100%', maxWidth: '400px', aspectRatio: '1.58', borderRadius: '12px', overflow: 'hidden', border: `4px solid ${isIdAligned ? '#22c55e' : '#ffff00'}`, transition: 'border-color 0.3s' }}>
+                            /* ── Step 2 Active scanner ── */
+                            <div style={{ width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                {/* Scanner viewport */}
+                                <div style={{ position: 'relative', width: '100%', aspectRatio: '1.586', borderRadius: '14px', overflow: 'hidden', background: '#000' }}>
                                     <Webcam
                                         audio={false}
                                         ref={webcamRef}
@@ -990,43 +1029,78 @@ function Register() {
                                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'absolute', top: 0, left: 0 }}
                                     />
 
-                                    {/* Overlay guide for ID */}
-                                    <div style={{ position: 'absolute', top: '15%', left: '10%', right: '10%', bottom: '15%', border: `2px solid ${isProcessingId || isIdAligned ? '#22c55e' : 'rgba(255,255,255,0.7)'}`, borderRadius: '8px', zIndex: 1, pointerEvents: 'none', transition: 'border-color 0.3s' }}>
-                                        <div style={{ position: 'absolute', top: '-28px', left: 0, width: '100%', textAlign: 'center', color: isProcessingId || isIdAligned ? '#22c55e' : '#ffff00', fontWeight: 'bold', fontSize: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-                                            {isProcessingId ? '¡Listo! Procesando...' : isIdAligned ? '¡No te muevas! ' + scanningProgress + '%' : 'Enfocando Cédula...'}
-                                        </div>
-                                        {isIdAligned && !isProcessingId && (
-                                            <div style={{ position: 'absolute', bottom: '-20px', left: '10%', right: '10%', height: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${scanningProgress}%`, height: '100%', background: '#22c55e', transition: 'width 1s linear' }}></div>
-                                            </div>
-                                        )}
+                                    {/* Dark vignette + ID guide window */}
+                                    <div style={{
+                                        position: 'absolute', top: '12%', left: '8%', right: '8%', bottom: '12%',
+                                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.52)',
+                                        borderRadius: '8px', zIndex: 1, pointerEvents: 'none',
+                                    }}>
+                                        {/* Corner brackets */}
+                                        {[
+                                            { top: 0, left: 0, borderTop: '3px solid', borderLeft: '3px solid', borderTopLeftRadius: '6px' },
+                                            { top: 0, right: 0, borderTop: '3px solid', borderRight: '3px solid', borderTopRightRadius: '6px' },
+                                            { bottom: 0, left: 0, borderBottom: '3px solid', borderLeft: '3px solid', borderBottomLeftRadius: '6px' },
+                                            { bottom: 0, right: 0, borderBottom: '3px solid', borderRight: '3px solid', borderBottomRightRadius: '6px' },
+                                        ].map((style, i) => (
+                                            <div key={i} style={{ position: 'absolute', width: '20px', height: '20px', borderColor: isIdAligned ? '#22c55e' : '#6366f1', transition: 'border-color 0.3s', ...style }} />
+                                        ))}
+
+                                        {/* Animated scan line — always mounted so animation never restarts */}
+                                        <div style={{
+                                            position: 'absolute', left: 0, right: 0, height: '2px',
+                                            background: 'linear-gradient(90deg, transparent, #22c55e, transparent)',
+                                            animation: 'kycScanLine 1.5s linear infinite',
+                                            zIndex: 2,
+                                            opacity: (isIdAligned && !isProcessingId) ? 1 : 0,
+                                            transition: 'opacity 0.3s',
+                                            willChange: 'top',
+                                        }} />
                                     </div>
 
-                                    {/* Controls Overlay */}
-                                    <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {trackSupportsTorch && (
-                                            <button
-                                                onClick={() => setFlashlightOn(!flashlightOn)}
-                                                type="button"
-                                                style={{ width: '40px', height: '40px', borderRadius: '50%', background: flashlightOn ? 'var(--primary)' : 'rgba(0,0,0,0.5)', color: 'white', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1rem', padding: 0 }}
-                                            >
-                                                <i className="fas fa-bolt"></i>
-                                            </button>
-                                        )}
+                                    {/* Torch button */}
+                                    {trackSupportsTorch && (
+                                        <button
+                                            onClick={() => setFlashlightOn(!flashlightOn)}
+                                            type="button"
+                                            style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 3, width: '38px', height: '38px', borderRadius: '50%', background: flashlightOn ? '#facc15' : 'rgba(0,0,0,0.55)', color: flashlightOn ? '#1a1a00' : 'white', border: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1rem', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                                        >
+                                            <i className="fas fa-lightbulb"></i>
+                                        </button>
+                                    )}
+
+                                    {/* Status pill */}
+                                    <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 3, whiteSpace: 'nowrap', padding: '0.35rem 1rem', borderRadius: '999px', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', fontSize: '0.8rem', fontWeight: 600, color: isProcessingId ? '#fbbf24' : isIdAligned ? '#22c55e' : '#e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span>{isProcessingId ? '⏳' : isIdAligned ? '✅' : '📋'}</span>
+                                        {isProcessingId ? 'Procesando…' : isIdAligned ? `Capturando ${scanningProgress}%` : 'Coloca tu cédula'}
                                     </div>
                                 </div>
-                                <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Identificación: Coloca tu cédula horizontalmente dentro del cuadro.</p>
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
-                                    <button onClick={() => { setIsIdScannerActive(false); setFlashlightOn(false); }} type="button" style={{ flex: 1, background: 'var(--bg-input)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem' }}>Cancelar Escáner</button>
-                                </div>
-                            </>
+
+                                {/* Progress bar (visible while scanning) */}
+                                {isIdAligned && !isProcessingId && (
+                                    <div style={{ width: '100%', height: '6px', background: 'var(--bg-input)', borderRadius: '999px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${scanningProgress}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #22c55e)', borderRadius: '999px', transition: 'width 1s linear' }} />
+                                    </div>
+                                )}
+
+                                <button onClick={() => { setIsIdScannerActive(false); setFlashlightOn(false); }} type="button" style={{ width: '100%', background: 'var(--bg-input)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '0.75rem', borderRadius: '0.75rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                                    Cancelar Escáner
+                                </button>
+                            </div>
                         )}
                     </div>
                 )}
 
                 {step === 3 && (
-                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div style={{ position: 'relative', width: '100%', maxWidth: '400px', borderRadius: '12px', overflow: 'hidden', border: `5px solid ${isSelfieAligned ? '#22c55e' : (modelsLoaded ? 'var(--primary)' : 'orange')}`, transition: 'border-color 0.3s' }}>
+                    <div className="webcam-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '1rem' }}>
+                        {/* Progress dots */}
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            {[1,2,3].map(n => (
+                                <div key={n} style={{ width: n === 3 ? '24px' : '8px', height: '8px', borderRadius: '999px', background: n === 3 ? (isSelfieAligned ? '#22c55e' : '#6366f1') : 'var(--border-color)', transition: 'all 0.3s' }} />
+                            ))}
+                        </div>
+
+                        {/* Webcam with oval guide */}
+                        <div style={{ position: 'relative', width: '100%', aspectRatio: '3/4', borderRadius: '20px', overflow: 'hidden', background: '#000' }}>
                             <Webcam
                                 audio={false}
                                 ref={webcamRef}
@@ -1034,37 +1108,58 @@ function Register() {
                                 screenshotQuality={1}
                                 videoConstraints={{ facingMode: "user", width: 1920, height: 1080 }}
                                 mirrored={true}
-                                style={{ width: '100%', height: 'auto', display: 'block' }}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', position: 'absolute', top: 0, left: 0 }}
                             />
-                            {/* Face outline overlay */}
-                            <div style={{ position: 'absolute', top: '15%', left: '25%', right: '25%', bottom: '25%', border: `3px dashed ${isSelfieAligned ? '#22c55e' : 'rgba(255,255,255,0.7)'}`, borderRadius: '50%', zIndex: 1, pointerEvents: 'none' }}></div>
 
-                            {/* Processing Overlay */}
+                            {/* Oval face guide with animated glow */}
+                            {!isLoading && (
+                                <div style={{
+                                    position: 'absolute', top: '10%', left: '18%', right: '18%', bottom: '22%',
+                                    borderRadius: '50%',
+                                    border: `3px solid ${isSelfieAligned ? '#22c55e' : (modelsLoaded ? '#6366f1' : '#f59e0b')}`,
+                                    boxShadow: isSelfieAligned
+                                        ? '0 0 0 9999px rgba(0,0,0,0.52)'
+                                        : '0 0 0 9999px rgba(0,0,0,0.52)',
+                                    animation: isSelfieAligned ? 'kycPulseGlow 1.8s ease-in-out infinite' : (modelsLoaded ? 'kycIdleGlow 2.5s ease-in-out infinite' : 'none'),
+                                    zIndex: 1, pointerEvents: 'none', transition: 'border-color 0.3s',
+                                }} />
+                            )}
+
+                            {/* Processing overlay */}
                             {isLoading && (
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderRadius: '8px' }}>
-                                    <h3 style={{ color: 'white', textAlign: 'center', marginBottom: '10px' }}>Validación Biométrica y OCR...</h3>
-                                    <div style={{ width: '80%', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', overflow: 'hidden', marginBottom: '10px' }}>
-                                        <div style={{ width: `${ocrProgress}%`, height: '8px', background: '#22c55e', transition: 'width 0.2s linear' }}></div>
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1.5rem', borderRadius: '20px' }}>
+                                    <div style={{ width: '52px', height: '52px', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.12)', borderTopColor: '#6366f1', animation: 'kycSpinner 0.9s linear infinite' }} />
+                                    <h3 style={{ color: 'white', textAlign: 'center', margin: 0, fontSize: '1rem', fontWeight: 700 }}>Validación Biométrica y OCR</h3>
+                                    <div style={{ width: '85%', height: '6px', background: 'rgba(255,255,255,0.12)', borderRadius: '999px', overflow: 'hidden' }}>
+                                        <div style={{ width: `${ocrProgress}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #22c55e)', borderRadius: '999px', transition: 'width 0.2s linear' }} />
                                     </div>
-                                    <p style={{ color: '#22c55e', fontWeight: 'bold', marginBottom: '15px' }}>{ocrProgress}% Completado</p>
-                                    <p style={{ color: '#ccc', textAlign: 'center', fontSize: '0.9rem', padding: '0 20px', lineHeight: '1.5' }}>
-                                        Por favor, mantén esta ventana abierta. Estamos analizando tu cédula con OCR Avanzado de alta precisión.<br /><br />
-                                        <strong style={{ color: '#fbbf24' }}>Este proceso toma 20 segundos de manera garantizada para no emitir errores.</strong>
+                                    <p style={{ color: '#22c55e', fontWeight: 700, margin: 0, fontSize: '0.95rem' }}>{ocrProgress}% Completado</p>
+                                    <p style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', fontSize: '0.8rem', lineHeight: '1.6', margin: 0 }}>
+                                        Analizando tu cédula con OCR de alta precisión.<br />
+                                        <strong style={{ color: '#fbbf24' }}>Este proceso toma ~20 segundos.</strong>
                                     </p>
                                 </div>
                             )}
 
-                            {/* Dynamic Liveness Instruction */}
+                            {/* Status pill */}
                             {!isLoading && (
-                                <div style={{ position: 'absolute', bottom: '10%', left: '10%', right: '10%', textAlign: 'center', color: isSelfieAligned ? '#22c55e' : '#ffff00', fontWeight: 'bold', fontSize: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.8)', background: 'rgba(0,0,0,0.6)', padding: '8px', borderRadius: '8px', zIndex: 2 }}>
+                                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 3, whiteSpace: 'nowrap', padding: '0.35rem 1rem', borderRadius: '999px', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', fontSize: '0.8rem', fontWeight: 600, color: isSelfieAligned ? '#22c55e' : '#e2e8f0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <span>{isSelfieAligned ? '✅' : (modelsLoaded ? '👤' : '⏳')}</span>
                                     {livenessStatus}
                                 </div>
                             )}
+
+                            {/* Top-left step label */}
+                            {!isLoading && (
+                                <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 3, padding: '0.25rem 0.65rem', borderRadius: '999px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', fontSize: '0.7rem', fontWeight: 700, color: isSelfieAligned ? '#22c55e' : (modelsLoaded ? '#a5b4fc' : '#fbbf24'), letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    Paso 3 · Prueba de vida
+                                </div>
+                            )}
                         </div>
-                        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Prueba de Vida en Vivo: Sigue las instrucciones en el video para validar tu identidad contra la cédula automáticamente.</p>
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '1rem', width: '100%', maxWidth: '400px' }}>
-                            <button onClick={() => { setStep(2); setError(''); setSuccess(''); }} type="button" disabled={isLoading} style={{ flex: 1, background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border-color)', opacity: isLoading ? 0.7 : 1, padding: '0.75rem', borderRadius: '0.75rem' }}>Atrás</button>
-                        </div>
+
+                        <button onClick={() => { setStep(2); setError(''); setSuccess(''); }} type="button" disabled={isLoading} style={{ width: '100%', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', opacity: isLoading ? 0.5 : 1, padding: '0.75rem', borderRadius: '0.75rem', cursor: isLoading ? 'not-allowed' : 'pointer', fontSize: '0.875rem', fontWeight: 500 }}>
+                            ← Atrás
+                        </button>
                     </div>
                 )}
 

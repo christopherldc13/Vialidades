@@ -312,38 +312,23 @@ router.patch('/:id/moderate', auth, async (req, res) => {
                 report.wasSanctioned = true;
             }
         } else if (status === 'approved') {
-            report.moderatorComment = moderatorComment; // Store positive feedback if needed
-            // Apply Automatic Face Blurring for Approved Reports
+            report.moderatorComment = moderatorComment;
+
+            // Apply Cloudinary face-blur to all images via URL transformation
             let modified = false;
-            // (Blur logic remains the same)
-            if (report.media && report.media.length > 0) {
-                report.media.forEach(item => {
-                    if (item.type === 'image' && item.url.includes('/upload/')) {
-                        if (!item.url.includes('/e_blur_faces/')) {
-                            item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
-                            modified = true;
-                        }
-                        if (item.url.toLowerCase().endsWith('.heic')) {
-                            item.url = item.url.replace(/\.heic$/i, '.jpg');
-                            modified = true;
-                        }
+            const allItems = [...(report.media || []), ...(report.photos || [])];
+            allItems.forEach(item => {
+                if (item.type === 'image' && item.url && item.url.includes('/upload/')) {
+                    if (!item.url.includes('/e_blur_faces/')) {
+                        item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
+                        modified = true;
                     }
-                });
-            }
-            if (report.photos && report.photos.length > 0) {
-                report.photos.forEach(item => {
-                    if (item.type === 'image' && item.url.includes('/upload/')) {
-                        if (!item.url.includes('/e_blur_faces/')) {
-                            item.url = item.url.replace('/upload/', '/upload/e_blur_faces/');
-                            modified = true;
-                        }
-                        if (item.url.toLowerCase().endsWith('.heic')) {
-                            item.url = item.url.replace(/\.heic$/i, '.jpg');
-                            modified = true;
-                        }
+                    if (item.url.toLowerCase().endsWith('.heic')) {
+                        item.url = item.url.replace(/\.heic$/i, '.jpg');
+                        modified = true;
                     }
-                });
-            }
+                }
+            });
 
             if (modified) {
                 report.markModified('media');

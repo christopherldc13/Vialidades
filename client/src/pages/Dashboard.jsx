@@ -126,7 +126,14 @@ const Dashboard = () => {
                 setReports(prev => [report, ...prev]);
             }
         };
-        const handleStatusUpdate = () => { fetchReports(); };
+        const handleStatusUpdate = ({ reportId, status, wasSanctioned }) => {
+            // Update the matching report immediately in state (no network round-trip needed)
+            setReports(prev => prev.map(r =>
+                r._id === reportId ? { ...r, status, wasSanctioned } : r
+            ));
+            // For community view also re-fetch so newly approved reports appear
+            if (viewMode === 'community') fetchReports();
+        };
         socket.on('new_report', handleNewReport);
         socket.on('report_status_updated', handleStatusUpdate);
         return () => {

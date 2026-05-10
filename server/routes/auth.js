@@ -33,16 +33,21 @@ router.post('/check-duplicates', async (req, res) => {
         });
 
         if (existingUser) {
-            if (existingUser.cedula === cedula) return res.status(400).json({ msg: 'Esta cédula ya está registrada.' });
+            // Cedula/phone: if the existing account is a moderator or admin it's the same
+            // person registering a separate user account — allow it.
+            const isSamePerson = existingUser.role === 'moderator' || existingUser.role === 'admin';
+
+            if (existingUser.cedula === cedula && !isSamePerson) return res.status(400).json({ msg: 'Esta cédula ya está registrada.' });
+            if (existingUser.phone === phone && !isSamePerson) return res.status(400).json({ msg: 'Este número de teléfono ya está registrado.' });
             if (existingUser.username === username) return res.status(400).json({ msg: 'Este nombre de usuario ya está en uso.' });
             if (existingUser.email === email) return res.status(400).json({ msg: 'Este correo electrónico ya está registrado.' });
-            if (existingUser.phone === phone) return res.status(400).json({ msg: 'Este número de teléfono ya está registrado.' });
         }
 
-        // Name and Last Name combined check (case insensitive)
+        // Name and Last Name combined check — only block if the match is another regular user
         const nameMatch = await User.findOne({
             firstName: { $regex: new RegExp(`^${normalizedFirstName}$`, 'i') },
-            lastName: { $regex: new RegExp(`^${normalizedLastName}$`, 'i') }
+            lastName:  { $regex: new RegExp(`^${normalizedLastName}$`, 'i') },
+            role: 'user'
         });
 
         if (nameMatch) {

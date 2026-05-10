@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle } from 'lucide-react';
 import { FaPhoneAlt } from "react-icons/fa";
 import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
@@ -7,6 +7,12 @@ import { RiUserLocationLine } from "react-icons/ri";
 import { motion, AnimatePresence } from 'framer-motion';
 
 const UserDetailModal = ({ user, isOpen, onClose }) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
+
     if (!isOpen || !user) return null;
 
     const getAvatarUrl = (avatarPath) => {

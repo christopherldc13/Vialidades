@@ -7,7 +7,6 @@ import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle, Inbox } f
 import { AiOutlineHistory } from "react-icons/ai";
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Swal from 'sweetalert2';
 import ReportDetailModal from '../components/ReportDetailModal';
 import UserDetailModal from '../components/UserDetailModal';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
@@ -72,16 +71,24 @@ const ModerateReports = () => {
     useEffect(() => {
         socket.emit('join_moderation');
 
-        socket.on('report_status_updated', ({ reportId, status, moderatorName }) => {
-            setReports(prev => prev.map(r =>
-                r._id === reportId ? { ...r, status, moderatorInChargeName: moderatorName } : r
-            ));
-        });
+        const handleStatusUpdate = ({ reportId, status, moderatorName, wasSanctioned }) => {
+            setReports(prev => {
+                // In pending view, remove report once it's been moderated
+                if (filter === 'pending' && ['approved', 'rejected'].includes(status)) {
+                    return prev.filter(r => r._id !== reportId);
+                }
+                return prev.map(r =>
+                    r._id === reportId ? { ...r, status, wasSanctioned, moderatorInChargeName: moderatorName } : r
+                );
+            });
+        };
+
+        socket.on('report_status_updated', handleStatusUpdate);
 
         return () => {
-            socket.off('report_status_updated');
+            socket.off('report_status_updated', handleStatusUpdate);
         };
-    }, []);
+    }, [filter]);
 
     const handleOpenDetails = async (report) => {
         if (report.status === 'pending' || report.status === 'In Process') {
@@ -328,8 +335,13 @@ const ModerateReports = () => {
                                     position: 'relative',
                                     overflow: 'hidden'
                                 }}
-                                    onClick={() => {
-                                        setSelectedUser(usr);
+                                    onClick={async () => {
+                                        try {
+                                            const res = await axios.get(`/api/users/${usr._id}`);
+                                            setSelectedUser(res.data);
+                                        } catch {
+                                            setSelectedUser(usr);
+                                        }
                                         setIsUserModalOpen(true);
                                     }}
                                     className="moderation-card premium-user-card"

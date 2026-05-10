@@ -138,6 +138,46 @@ const obtenerPlantillaBase = (tituloEs, tituloEn, contenidoEs, contenidoEn, boto
             .en-title { color: #606090 !important; }
             .footer { border-color: #22223a !important; }
             .footer p { color: #40405a !important; }
+            .digit-box { background-color: #1e1e2d !important; border-color: #5b21b6 !important; color: #d8b4fe !important; }
+            .code-label { color: #c4b5fd !important; }
+            .warning-box { background-color: #271710 !important; border-color: #5c2410 !important; }
+            .warning-text { color: #fdba74 !important; }
+        }
+        
+        /* Verification Code specific */
+        .digit-box {
+            width: 46px; height: 58px;
+            background-color: #f5f3ff;
+            border: 2px solid #c4b5fd;
+            border-radius: 12px;
+            text-align: center;
+            line-height: 58px;
+            font-size: 28px;
+            font-weight: 800;
+            color: #4f46e5;
+            font-family: 'Courier New', Courier, monospace;
+            display: inline-block;
+        }
+        .code-label {
+            margin: 0 0 14px 0;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            color: #8b5cf6;
+        }
+        .warning-box {
+            background-color: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+        }
+        .warning-text {
+            margin: 0;
+            font-size: 13px;
+            color: #92400e;
+            line-height: 1.6;
         }
         @media (max-width: 600px) {
             .wrapper { padding: 20px 12px !important; }
@@ -206,19 +246,23 @@ exports.sendVerificationEmail = async (email, firstName, code) => {
     try {
         const tituloEs = "Verifica tu cuenta";
         const tituloEn = "Verify your account";
+
         const contenidoEs = `
-            <p>Hola <strong>${firstName}</strong>,</p>
-            <p>Usa el siguiente código para activar tu perfil en Vialidades:</p>
-            <div style="margin:28px 0;text-align:center;">
-                <div style="display:inline-block;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:16px;padding:20px 40px;">
-                    <span style="font-size:38px;font-weight:800;color:#4f46e5;letter-spacing:10px;font-family:monospace;">${code}</span>
-                </div>
+            <p style="margin:0 0 6px 0;">Hola <strong>${firstName}</strong>,</p>
+            <p style="margin:0 0 24px 0;">Ingresa este código en la aplicación para verificar tu cuenta en <strong>Vialidades</strong>. Es válido por <strong>10 minutos</strong>.</p>
+
+            <p class="code-label" style="text-align:center;">Tu código de verificación</p>
+            <div style="background:#f5f3ff;border:2px solid #c4b5fd;border-radius:16px;padding:22px 16px;text-align:center;margin:0 0 24px 0;">
+                <span style="font-size:28px;font-weight:800;color:#4f46e5;letter-spacing:10px;font-family:'Courier New',Courier,monospace;">${code}</span>
             </div>
-            <p style="font-size:13px;color:#9ca3af;">Este código expira en pocos minutos. No lo compartas con nadie.</p>
+
+            <div class="warning-box">
+                <p class="warning-text">⚠️ Nunca compartas este código con nadie. Vialidades <strong>nunca</strong> te pedirá este código por teléfono o chat.</p>
+            </div>
         `;
         const contenidoEn = `
-            <p>Hello <strong>${firstName}</strong>,</p>
-            <p>Use the code above to activate your Vialidades profile. Do not share this code with anyone.</p>
+            <p style="margin:0 0 6px 0;">Hello <strong>${firstName}</strong>,</p>
+            <p style="margin:0;">Use the code above to verify your Vialidades account. It expires in 10 minutes. Never share it with anyone — Vialidades will never ask for it.</p>
         `;
         const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
         await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Código de Verificación | Verification Code", html });
@@ -249,9 +293,17 @@ exports.sendWelcomeEmail = async (email, firstName, generatedPassword) => {
     } catch (error) { console.error("Error envío bienvenida:", error); throw error; }
 };
 
+const REPORT_TYPE_ES = {
+    Traffic:   'Tráfico Pesado',
+    Accident:  'Accidente',
+    Violation: 'Infracción de Tránsito',
+    Hazard:    'Peligro en la Vía',
+};
+
 exports.sendReportStatusEmail = async (email, firstName, reportType, status, moderatorComment = '') => {
     try {
         const approved = status === 'approved';
+        const reportTypeEs = REPORT_TYPE_ES[reportType] || reportType;
         const tituloEs = approved ? "Tu reporte fue aprobado ✓" : "Actualización de tu reporte";
         const tituloEn = approved ? "Your report was approved ✓" : "Your report has been updated";
 
@@ -262,7 +314,7 @@ exports.sendReportStatusEmail = async (email, firstName, reportType, status, mod
         const contenidoEs = `
             <p>Hola <strong>${firstName}</strong>,</p>
             ${statusBadge}
-            <p>Tu reporte sobre <strong>"${reportType}"</strong> ha sido ${approved ? 'revisado y <strong>aprobado</strong> por nuestro equipo de moderación' : 'revisado por nuestro equipo de moderación'}.</p>
+            <p>Tu reporte sobre <strong>"${reportTypeEs}"</strong> ha sido ${approved ? 'revisado y <strong>aprobado</strong> por nuestro equipo de moderación' : 'revisado por nuestro equipo de moderación'}.</p>
             ${moderatorComment ? `
             <div style="background:#f8f9fc;border-left:3px solid #6366f1;border-radius:0 10px 10px 0;padding:14px 18px;margin:20px 0;">
                 <p style="margin:0;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Nota del moderador</p>
@@ -272,7 +324,7 @@ exports.sendReportStatusEmail = async (email, firstName, reportType, status, mod
         `;
         const contenidoEn = `
             <p>Hello <strong>${firstName}</strong>,</p>
-            <p>Your report regarding <strong>"${reportType}"</strong> has been ${approved ? 'approved' : 'reviewed'} by our moderation team.</p>
+            <p>Your report regarding <strong>"${reportTypeEs}"</strong> has been ${approved ? 'approved' : 'reviewed'} by our moderation team.</p>
             ${moderatorComment ? `<p><em>Moderator note: ${moderatorComment}</em></p>` : ''}
         `;
         const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');

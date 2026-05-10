@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -39,6 +39,11 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
     const [showRawMetadata, setShowRawMetadata] = useState({});
     const isModerator = user?.role === 'moderator' || user?.role === 'admin';
     const isModerated = useRef(false);
+
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = ''; };
+    }, []);
 
     if (!report) return null;
 
