@@ -13,6 +13,9 @@ import { createTheme, ThemeProvider as MUIThemeProvider } from '@mui/material/st
 import ThemeContext from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
 import TermsModal from '../components/TermsModal';
+import { TbCameraSelfie } from 'react-icons/tb';
+import { IoMailUnreadOutline } from 'react-icons/io5';
+import { HiOutlineIdentification } from 'react-icons/hi2';
 
 // Set dayjs locale to Spanish
 dayjs.locale('es');
@@ -588,6 +591,248 @@ function Register() {
         }
     };
 
+    const [isDesktop] = useState(() => screen.width > 1024 && navigator.maxTouchPoints === 0);
+
+    if (isDesktop) {
+        return (
+            <>
+                <Navbar />
+                <style>{`
+                    .landing-nav {
+                        background: var(--bg-page) !important;
+                        backdrop-filter: none !important;
+                        box-shadow: none !important;
+                    }
+                    .nav-gradient-overlay { opacity: 0 !important; }
+                    @keyframes floatPhone {
+                        0%, 100% { transform: translateY(0px) rotate(-3deg); }
+                        50%       { transform: translateY(-16px) rotate(-3deg); }
+                    }
+                    @keyframes pulseGlow {
+                        0%, 100% { opacity: 0.35; transform: scale(1); }
+                        50%       { opacity: 0.65; transform: scale(1.06); }
+                    }
+                    @keyframes ringPulse {
+                        0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.18; }
+                        50%       { transform: translate(-50%,-50%) scale(1.12); opacity: 0.08; }
+                    }
+                    @keyframes kycScanLineD {
+                        0%   { top: 8%;  opacity: 0; }
+                        8%   { opacity: 1; }
+                        92%  { opacity: 1; }
+                        100% { top: 88%; opacity: 0; }
+                    }
+                    .dbp {
+                        margin-top: 64px;
+                        height: calc(100dvh - 64px);
+                        display: flex;
+                        background: var(--bg-page);
+                        overflow: hidden;
+                        position: relative;
+                    }
+                    .dbp-left {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding: clamp(1.5rem, 4vw, 4rem);
+                        gap: clamp(1rem, 2.5vh, 2.5rem);
+                        min-width: 0;
+                        overflow: hidden;
+                        position: relative;
+                    }
+                    .dbp-right {
+                        flex: 1.1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-start;
+                        padding: clamp(1.5rem, 4vw, 5rem);
+                        min-width: 0;
+                        overflow: hidden;
+                    }
+                    .dbp-right-inner {
+                        width: 100%;
+                        max-width: clamp(380px, 36vw, 600px);
+                    }
+                    .dbp-phone {
+                        width: clamp(140px, 14vw, 240px);
+                        height: clamp(250px, 40vh, 440px);
+                        border-radius: clamp(24px, 2.8vw, 40px);
+                        background: linear-gradient(160deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+                        border: clamp(3px, 0.3vw, 5px) solid rgba(99,102,241,0.55);
+                        box-shadow: 0 clamp(16px,2vw,32px) clamp(40px,4vw,72px) rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: clamp(0.5rem, 1.2vh, 1rem);
+                        position: relative;
+                        overflow: hidden;
+                        flex-shrink: 0;
+                    }
+                    .dbp-phone-icon {
+                        font-size: clamp(1.8rem, 5vh, 3.2rem);
+                        color: #a5b4fc;
+                        display: flex;
+                    }
+                    .dbp-phone-bar1 { width: 58%; height: clamp(3px,0.5vh,5px); border-radius: 3px; background: rgba(99,102,241,0.65); }
+                    .dbp-phone-bar2 { width: 42%; height: clamp(2px,0.35vh,4px); border-radius: 2px; background: rgba(255,255,255,0.18); }
+                    .dbp-label {
+                        font-size: clamp(0.6rem, 0.9vw, 0.78rem);
+                        font-weight: 800;
+                        letter-spacing: 0.18em;
+                        text-transform: uppercase;
+                        color: var(--primary);
+                        margin-bottom: 0.25rem;
+                    }
+                    .dbp-sublabel {
+                        font-size: clamp(0.78rem, 1.1vw, 0.98rem);
+                        color: var(--text-muted);
+                        font-weight: 500;
+                    }
+                    .dbp-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        background: rgba(239,68,68,0.1);
+                        border: 1px solid rgba(239,68,68,0.28);
+                        border-radius: 999px;
+                        padding: clamp(0.25rem,0.5vh,0.35rem) clamp(0.7rem,1.2vw,1rem);
+                        margin-bottom: clamp(0.75rem,1.8vh,1.4rem);
+                    }
+                    .dbp-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
+                    .dbp-badge-text { font-size: clamp(0.6rem,0.75vw,0.75rem); font-weight: 800; color: #ef4444; letter-spacing: 0.06em; text-transform: uppercase; }
+                    .dbp-h1 {
+                        font-size: clamp(1.5rem, 2.8vw, 3rem);
+                        font-weight: 900;
+                        color: var(--text-main);
+                        margin: 0 0 clamp(0.5rem,1.2vh,1rem) 0;
+                        line-height: 1.15;
+                        letter-spacing: -0.03em;
+                    }
+                    .dbp-p {
+                        font-size: clamp(0.82rem, 1.05vw, 1.05rem);
+                        color: var(--text-muted);
+                        line-height: 1.65;
+                        margin: 0 0 clamp(1rem,2.5vh,2rem) 0;
+                    }
+                    .dbp-steps { display: flex; flex-direction: column; gap: clamp(0.5rem,1.2vh,0.85rem); margin-bottom: clamp(1rem,2.5vh,2rem); }
+                    .dbp-step {
+                        display: flex;
+                        align-items: center;
+                        gap: clamp(0.6rem,1vw,1rem);
+                        padding: clamp(0.6rem,1.4vh,1rem) clamp(0.75rem,1.2vw,1.2rem);
+                        background: var(--surface-solid);
+                        border: 1px solid var(--border-color);
+                        border-radius: clamp(10px,1vw,16px);
+                        transition: border-color 0.2s;
+                    }
+                    .dbp-step:hover { border-color: rgba(99,102,241,0.4); }
+                    .dbp-step-icon {
+                        width: clamp(34px,3.5vw,50px);
+                        height: clamp(34px,3.5vw,50px);
+                        border-radius: clamp(8px,0.8vw,12px);
+                        background: rgba(99,102,241,0.1);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: clamp(1rem,1.8vw,1.5rem);
+                        color: var(--primary);
+                        flex-shrink: 0;
+                    }
+                    .dbp-step-title { font-weight: 700; font-size: clamp(0.8rem,1vw,0.98rem); color: var(--text-main); }
+                    .dbp-step-desc { font-size: clamp(0.7rem,0.85vw,0.82rem); color: var(--text-muted); margin-top: 2px; }
+                    .dbp-btn {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        width: 100%;
+                        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+                        color: #fff;
+                        padding: clamp(0.75rem,1.8vh,1.1rem) 2rem;
+                        border-radius: clamp(10px,1vw,16px);
+                        font-weight: 700;
+                        font-size: clamp(0.85rem,1.1vw,1.05rem);
+                        text-decoration: none;
+                        box-shadow: 0 clamp(6px,1vh,10px) clamp(20px,2vw,32px) rgba(139,92,246,0.4);
+                        transition: transform 0.2s, box-shadow 0.2s;
+                    }
+                    .dbp-btn:hover {
+                        transform: translateY(-3px);
+                        box-shadow: 0 clamp(10px,1.5vh,16px) clamp(28px,3vw,44px) rgba(139,92,246,0.55);
+                    }
+                    .dbp-divider {
+                        width: 1px;
+                        height: 55%;
+                        background: var(--border-color);
+                        flex-shrink: 0;
+                        align-self: center;
+                    }
+                `}</style>
+                <div className="dbp">
+                    <div style={{ position: 'fixed', top: '-10vh', left: '-8vw', width: 'clamp(260px,28vw,500px)', height: 'clamp(260px,28vw,500px)', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%)', animation: 'pulseGlow 7s ease-in-out infinite', pointerEvents: 'none', zIndex: 0 }} />
+                    <div style={{ position: 'fixed', bottom: '-8vh', right: '-6vw', width: 'clamp(220px,24vw,420px)', height: 'clamp(220px,24vw,420px)', borderRadius: '50%', background: 'radial-gradient(circle, rgba(129,140,248,0.11) 0%, transparent 70%)', animation: 'pulseGlow 9s ease-in-out infinite 2s', pointerEvents: 'none', zIndex: 0 }} />
+
+                    <div className="dbp-left" style={{ zIndex: 1 }}>
+                        <div style={{ position: 'absolute', left: '50%', top: '50%', width: 'clamp(280px,28vw,460px)', height: 'clamp(280px,28vw,460px)', borderRadius: '50%', border: '1px solid rgba(99,102,241,0.1)', transform: 'translate(-50%,-50%)', animation: 'ringPulse 6s ease-in-out infinite', pointerEvents: 'none' }} />
+                        <div style={{ position: 'absolute', left: '50%', top: '50%', width: 'clamp(380px,38vw,620px)', height: 'clamp(380px,38vw,620px)', borderRadius: '50%', border: '1px solid rgba(99,102,241,0.06)', transform: 'translate(-50%,-50%)', animation: 'ringPulse 9s ease-in-out infinite 1.5s', pointerEvents: 'none' }} />
+                        <div style={{ animation: 'floatPhone 4s ease-in-out infinite', position: 'relative' }}>
+                            <div className="dbp-phone">
+                                <div style={{ width: '28%', height: 'clamp(3px,0.4vh,4px)', borderRadius: '2px', background: 'rgba(255,255,255,0.22)', position: 'absolute', top: 'clamp(10px,1.5vh,16px)' }} />
+                                <div className="dbp-phone-icon"><HiOutlineIdentification /></div>
+                                <div className="dbp-phone-bar1" />
+                                <div className="dbp-phone-bar2" />
+                                <div style={{ position: 'absolute', left: '12px', right: '12px', height: '2px', background: 'linear-gradient(90deg, transparent, #22c55e, transparent)', top: '45%', boxShadow: '0 0 10px #22c55e', animation: 'kycScanLineD 2.2s linear infinite' }} />
+                            </div>
+                            <div style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', width: 'clamp(60px,6vw,100px)', height: 'clamp(12px,1.5vh,20px)', background: 'rgba(99,102,241,0.22)', filter: 'blur(12px)', borderRadius: '50%' }} />
+                        </div>
+                        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                            <div className="dbp-label">Vialidades · KYC</div>
+                            <div className="dbp-sublabel">Verificación de identidad segura</div>
+                        </div>
+                    </div>
+
+                    <div className="dbp-divider" style={{ zIndex: 1 }} />
+
+                    <div className="dbp-right" style={{ zIndex: 1 }}>
+                        <div className="dbp-right-inner">
+                            <div className="dbp-badge">
+                                <span className="dbp-badge-dot" />
+                                <span className="dbp-badge-text">No disponible en escritorio</span>
+                            </div>
+                            <h1 className="dbp-h1">
+                                El registro requiere<br />tu <span style={{ color: 'var(--primary)' }}>teléfono</span>
+                            </h1>
+                            <p className="dbp-p">
+                                Para garantizar la seguridad de tu cuenta, el proceso incluye verificación de cédula y reconocimiento facial — funciones que requieren la cámara de un dispositivo móvil.
+                            </p>
+                            <div className="dbp-steps">
+                                {[
+                                    { icon: <HiOutlineIdentification />, label: 'Escaneo de cédula', desc: 'Captura ambos lados de tu documento' },
+                                    { icon: <TbCameraSelfie />, label: 'Selfie de verificación', desc: 'Confirma que eres tú en tiempo real' },
+                                    { icon: <IoMailUnreadOutline />, label: 'Código de confirmación', desc: 'Verifica tu correo electrónico' },
+                                ].map(({ icon, label, desc }) => (
+                                    <div key={label} className="dbp-step">
+                                        <div className="dbp-step-icon">{icon}</div>
+                                        <div>
+                                            <div className="dbp-step-title">{label}</div>
+                                            <div className="dbp-step-desc">{desc}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <Link to="/login" className="dbp-btn">
+                                Ir a Iniciar Sesión →
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
         <style>{`
@@ -983,7 +1228,7 @@ function Register() {
                                 {/* Icon + title row */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                     <div style={{ width: '56px', height: '56px', flexShrink: 0, borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.06))', border: '1.5px solid rgba(99,102,241,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>
-                                        🪪
+                                        <HiOutlineIdentification color="#6366f1" />
                                     </div>
                                     <div>
                                         <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#6366f1', textTransform: 'uppercase', marginBottom: '2px' }}>Paso 2 · KYC</p>
