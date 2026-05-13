@@ -11,10 +11,16 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { Skeleton, Box } from '@mui/material';
 
+const parseLocalDate = (dobString) => {
+    if (!dobString) return null;
+    const [y, m, d] = dobString.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
 const calculateAge = (dobString) => {
     if (!dobString) return '';
     const today = new Date();
-    const dob = new Date(dobString);
+    const dob = parseLocalDate(dobString);
     let age = today.getFullYear() - dob.getFullYear();
     const m = today.getMonth() - dob.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
@@ -323,7 +329,7 @@ const Profile = () => {
                                     ? <input type="date" name="birthDate" value={editForm.birthDate} onChange={handleEditChange} className="pf-field-input" />
                                     : <span>
                                         {user.birthDate
-                                            ? <>{new Date(user.birthDate).toLocaleDateString('es-DO')} <strong style={{ color: 'var(--primary)' }}>· {calculateAge(user.birthDate)} años</strong></>
+                                            ? <>{parseLocalDate(user.birthDate).toLocaleDateString('es-DO')} <strong style={{ color: 'var(--primary)' }}>· {calculateAge(user.birthDate)} años</strong></>
                                             : 'No especificada'
                                         }
                                     </span>
