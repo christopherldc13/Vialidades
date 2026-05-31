@@ -729,7 +729,7 @@ const Dashboard = () => {
                                         return (
                                             <button
                                                 onClick={(e) => !alreadyFlagged && handleFlagReport(e, report._id)}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', width: '100%', marginTop: '0.65rem', background: 'none', border: 'none', cursor: alreadyFlagged ? 'default' : 'pointer', color: alreadyFlagged ? '#f59e0b' : 'var(--text-muted)', fontSize: '0.75rem', padding: '0.1rem 0', transition: 'color 0.15s' }}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', width: '100%', marginTop: '0.5rem', marginBottom: 0, background: 'none', border: 'none', boxShadow: 'none', cursor: alreadyFlagged ? 'default' : 'pointer', color: alreadyFlagged ? '#f59e0b' : 'var(--text-muted)', fontSize: '0.72rem', padding: '0.15rem 0', transition: 'color 0.15s', fontFamily: 'inherit', fontWeight: '400', letterSpacing: '0.01em' }}
                                                 onMouseEnter={e => { if (!alreadyFlagged) e.currentTarget.style.color = '#f59e0b'; }}
                                                 onMouseLeave={e => { if (!alreadyFlagged) e.currentTarget.style.color = 'var(--text-muted)'; }}
                                             >
