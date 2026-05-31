@@ -1,17 +1,49 @@
-import { useEffect } from 'react';
-import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle, MinusCircle, Trash2, Plus } from 'lucide-react';
 import { FaPhoneAlt } from "react-icons/fa";
 import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
 import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
 import { RiUserLocationLine } from "react-icons/ri";
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
-const UserDetailModal = ({ user, isOpen, onClose }) => {
+const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate }) => {
+    const [user, setUser] = useState(initialUser);
+    const [loading, setLoading] = useState(null);
+
+    useEffect(() => { setUser(initialUser); }, [initialUser]);
     useEffect(() => {
         if (!isOpen) return;
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
+
+    const handleSanction = async (action) => {
+        const labels = {
+            reduce: { title: 'Reducir sanción', text: '¿Quitar 1 sanción y restaurar 25 pts de reputación?', confirm: 'Sí, reducir' },
+            clear:  { title: 'Eliminar todas las sanciones', text: '¿Eliminar todas las sanciones y restaurar reputación a 100?', confirm: 'Sí, limpiar' },
+            add:    { title: 'Añadir sanción manual', text: '¿Aplicar 1 sanción y reducir 25 pts de reputación?', confirm: 'Sí, sancionar' },
+        };
+        const { title, text, confirm } = labels[action];
+        const confirmClass = action === 'add' ? 'swal2-lumina-confirm' : action === 'clear' ? 'swal2-lumina-confirm-green' : 'swal2-lumina-confirm-amber';
+        const result = await Swal.fire({
+            title, text, icon: 'warning', showCancelButton: true,
+            confirmButtonText: confirm, cancelButtonText: 'Cancelar',
+            customClass: { popup: 'swal2-lumina-popup', confirmButton: confirmClass, cancelButton: 'swal2-lumina-cancel' }
+        });
+        if (!result.isConfirmed) return;
+        setLoading(action);
+        try {
+            const { data } = await axios.patch(`/api/users/${user._id}/sanctions/${action}`);
+            setUser(data);
+            onSanctionUpdate?.(data);
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error', text: err?.response?.data?.msg || 'No se pudo actualizar la sanción.', customClass: { popup: 'swal2-lumina-popup' } });
+        } finally {
+            setLoading(null);
+        }
+    };
 
     if (!isOpen || !user) return null;
 
@@ -155,6 +187,63 @@ const UserDetailModal = ({ user, isOpen, onClose }) => {
                                     <Calendar size={16} /> <strong>Miembro desde:</strong> {new Date(user.createdAt).toLocaleDateString()}
                                 </div>
                             </div>
+
+                            {/* Sanction Management — only for regular users */}
+                            {user.role === 'user' && (
+                                <div style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Shield size={18} color="#f59e0b" /> Gestión de Sanciones
+                                    </h3>
+
+                                    {/* Progress bar */}
+                                    <div style={{ marginBottom: '1.2rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Sanciones acumuladas</span>
+                                            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : 'var(--text-main)' }}>
+                                                {user.sanctions || 0} / 3
+                                            </span>
+                                        </div>
+                                        <div style={{ height: '8px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${((user.sanctions || 0) / 3) * 100}%`, background: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : '#10b981', borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                                        </div>
+                                        {(user.sanctions || 0) >= 3 && (
+                                            <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '0.4rem', fontWeight: '600' }}>⛔ Cuenta suspendida permanentemente</p>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                                        <button
+                                            onClick={() => handleSanction('reduce')}
+                                            disabled={!user.sanctions || loading === 'reduce'}
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                            onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(245,158,11,0.18)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; }}
+                                        >
+                                            <MinusCircle size={16} /> {loading === 'reduce' ? 'Procesando...' : 'Reducir 1 sanción (+25 reputación)'}
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleSanction('clear')}
+                                            disabled={!user.sanctions || loading === 'clear'}
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                            onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
+                                        >
+                                            <Trash2 size={16} /> {loading === 'clear' ? 'Procesando...' : 'Eliminar todas las sanciones'}
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleSanction('add')}
+                                            disabled={!!loading}
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+                                        >
+                                            <Plus size={16} /> {loading === 'add' ? 'Procesando...' : 'Aplicar sanción manual (-25 reputación)'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                     </div>

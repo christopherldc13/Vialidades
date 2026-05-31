@@ -31,7 +31,7 @@ const timelineSteps = [
     {
         id: 4,
         title: 'Resolución',
-        description: 'El mapa de vialidades se actualiza en tiempo real para todos los conductores.',
+        description: 'El mapa de vialidades se actualiza para todos los conductores.',
         icon: Map,
         color: '#10b981', // emerald
         glow: 'rgba(16, 185, 129, 0.4)'

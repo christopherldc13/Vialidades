@@ -76,7 +76,7 @@ const SECTIONS = [
                 </p>
                 <Bullets items={[
                     'Captura de tu cédula de identidad para validar nombre y número mediante OCR.',
-                    'Selfie en tiempo real para comparar tu rostro con la foto de la cédula.',
+                    'Selfie para comparar tu rostro con la foto de la cédula.',
                     'Detección de vida (liveness check) para prevenir el uso de imágenes estáticas.',
                     'Los descriptores faciales se generan localmente y se transmiten cifrados.',
                 ]} />

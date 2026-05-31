@@ -2338,6 +2338,34 @@ html.dark .modern-navbar {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
+button.card-menu-btn {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: rgba(255,255,255,0.92) !important;
+  color: #111827 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 0.15s !important;
+}
+
+button.card-menu-btn:hover {
+  background: white !important;
+  transform: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+}
+
+button.card-menu-btn svg {
+  color: #111827 !important;
+  stroke: #111827 !important;
+}
+
 /* Fixed Footer */
 .fixed-footer {
   position: fixed;
@@ -2907,6 +2935,46 @@ html.dark .fixed-footer {
 .swal2-lumina-confirm:hover,
 .swal2-lumina-cancel:hover {
   transform: translateY(-2px) !important;
+}
+
+.swal2-lumina-confirm-amber {
+  background: #f59e0b !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  box-shadow: 0 4px 15px rgba(245,158,11,0.3) !important;
+  width: auto !important;
+  flex: 1 !important;
+  margin: 0 !important;
+  padding: 0.75rem 1.5rem !important;
+}
+
+.swal2-lumina-confirm-amber:hover {
+  background: #d97706 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(245,158,11,0.4) !important;
+}
+
+.swal2-lumina-confirm-green {
+  background: #10b981 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  box-shadow: 0 4px 15px rgba(16,185,129,0.3) !important;
+  width: auto !important;
+  flex: 1 !important;
+  margin: 0 !important;
+  padding: 0.75rem 1.5rem !important;
+}
+
+.swal2-lumina-confirm-green:hover {
+  background: #059669 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(16,185,129,0.4) !important;
 }
 
 .swal2-lumina-cancel {

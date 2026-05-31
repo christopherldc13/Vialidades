@@ -7,8 +7,11 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const axios = require('axios');
 const auth = require('../middleware/auth');
-const { sendReportStatusEmail } = require('../utils/emailService');
+const { sendReportStatusEmail, sendContentViolationEmail, sendReportPublishedEmail } = require('../utils/emailService');
+const { checkImageContent } = require('../utils/contentModeration');
+const Sanction = require('../models/Sanction');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -35,6 +38,56 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage: storage });
+const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+
+// Pre-upload content check (called from frontend on file select)
+router.post('/check-media', auth, uploadMemory.single('media'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ msg: 'No file provided' });
+
+    try {
+        const FormData = require('form-data');
+        const form = new FormData();
+        form.append('media', req.file.buffer, {
+            filename: req.file.originalname || 'image.jpg',
+            contentType: req.file.mimetype || 'image/jpeg'
+        });
+        form.append('models', 'nudity-2.0,violence,offensive,gore');
+        form.append('api_user', (process.env.SIGHTENGINE_API_USER   || '').replace(/[\r\n\t\0 ]+/g, ''));
+        form.append('api_secret', (process.env.SIGHTENGINE_API_SECRET || '').replace(/[\r\n\t\0 ]+/g, ''));
+
+        const { data } = await axios.post('https://api.sightengine.com/1.0/check.json', form, {
+            headers: form.getHeaders(),
+            timeout: 10000
+        });
+
+        console.log('[check-media] scores:', JSON.stringify({
+            nudity: data.nudity,
+            violence: data.violence,
+            gore: data.gore,
+            offensive: data.offensive
+        }));
+
+        const reasons = [];
+        if (data.nudity) {
+            if ((data.nudity.sexual_activity ?? 0) > 0.3) reasons.push('contenido sexual explícito');
+            if ((data.nudity.sexual_display  ?? 0) > 0.3) reasons.push('exhibición sexual');
+            if ((data.nudity.erotica         ?? 0) > 0.3) reasons.push('contenido erótico');
+            if ((data.nudity.raw             ?? 0) > 0.3) reasons.push('desnudez explícita');
+            if ((data.nudity.sextoy          ?? 0) > 0.3) reasons.push('contenido sexual');
+            if ((data.nudity.suggestive      ?? 0) > 0.7) reasons.push('contenido sugestivo');
+            // catch-all: si "none" es bajo, hay algún tipo de desnudez
+            if ((data.nudity.none            ?? 1) < 0.5) reasons.push('contenido inapropiado');
+        }
+        if ((data.violence?.prob ?? 0) > 0.5) reasons.push('contenido violento');
+        if ((data.gore?.prob     ?? 0) > 0.5) reasons.push('imágenes gore');
+        if ((data.offensive?.prob ?? 0) > 0.5) reasons.push('contenido ofensivo');
+
+        res.json({ isFlagged: reasons.length > 0, reasons });
+    } catch (err) {
+        console.error('[check-media] ERROR:', err.response?.status, JSON.stringify(err.response?.data), err.message);
+        res.status(500).json({ msg: 'Error al verificar la imagen', detail: err.message });
+    }
+});
 
 // Create Report
 router.post('/', auth, upload.array('media', 5), async (req, res) => {
@@ -44,6 +97,10 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
 
         if (!type || !description || !lat || !lng) {
             return res.status(400).json({ msg: 'Please enter all fields' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ msg: 'Debes adjuntar al menos una imagen o video al reporte.' });
         }
 
         // Check for sanctions
@@ -96,20 +153,85 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
             }
         }
 
+        // --- Auto Content Moderation (Sightengine) ---
+        console.log('[ContentModeration] API_USER set:', !!process.env.SIGHTENGINE_API_USER, '| Images to check:', media.filter(m => m.type === 'image').length);
+        if (process.env.SIGHTENGINE_API_USER) {
+            const imagesToCheck = media.filter(m => m.type === 'image');
+            const flaggedReasons = [];
+
+            for (const img of imagesToCheck) {
+                try {
+                    const result = await checkImageContent(img.url);
+                    if (result.isFlagged) flaggedReasons.push(...result.reasons);
+                } catch (modErr) {
+                    console.error('[ContentModeration] Sightengine error:', modErr.message);
+                }
+            }
+
+            if (flaggedReasons.length > 0) {
+                const uniqueReasons = [...new Set(flaggedReasons)];
+                const rejectionComment = `[AUTO] Contenido inapropiado detectado: ${uniqueReasons.join(', ')}.`;
+
+                // Save rejected report for audit trail
+                const rejectedReport = new Report({
+                    userId,
+                    type,
+                    description,
+                    location: { lat, lng, address },
+                    media,
+                    photos: media.filter(m => m.type === 'image'),
+                    carInfo: { brand: carBrand, model: carModel, year: carYear, color: carColor },
+                    status: 'rejected',
+                    moderatorComment: rejectionComment,
+                    wasSanctioned: true
+                });
+                const savedReport = await rejectedReport.save();
+
+                // Apply sanction
+                const isFirstReport = user.reputation === 0;
+                user.reputation = isFirstReport ? 25 : Math.max(1, user.reputation - 25);
+
+                let expiresAt = null;
+                if (user.sanctions === 0) expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                else if (user.sanctions === 1) expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+                await new Sanction({ userId: user._id, reportId: savedReport._id, status: 'active', expiresAt }).save();
+                user.sanctions += 1;
+                await user.save();
+
+                // Send email notification
+                sendContentViolationEmail(user.email, user.firstName, uniqueReasons, user.sanctions)
+                    .catch(err => console.error('Error enviando email de sanción:', err));
+
+                // Notify user via notification system (silent rejection)
+                await new Notification({
+                    userId: user._id,
+                    type: 'warning',
+                    message: `⚠️ Tu reporte fue rechazado porque el sistema detectó contenido inapropiado en las imágenes adjuntas. Recuerda que subir este tipo de contenido está prohibido y puede resultar en la suspensión de tu cuenta (${user.sanctions}/3 sanciones).`
+                }).save();
+
+                const io = require('../socket').getIo();
+                io.emit('report_status_updated', { reportId: savedReport._id, status: 'rejected', wasSanctioned: true });
+
+                // Devuelve 200 para que el frontend muestre éxito — la notificación llega por el sistema
+                return res.json(savedReport);
+            }
+        }
+
         const newReport = new Report({
             userId,
             type,
             description,
             location: { lat, lng, address },
-            media, // New field
-            photos: media.filter(m => m.type === 'image'), // Backward compatibility
+            media,
+            photos: media.filter(m => m.type === 'image'),
             carInfo: {
                 brand: carBrand,
                 model: carModel,
                 year: carYear,
                 color: carColor
             },
-            status: 'pending'
+            status: 'approved'
         });
 
         const report = await newReport.save();
@@ -117,6 +239,14 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
         // Notify in Real-Time
         const io = require('../socket').getIo();
         io.emit('new_report', report);
+
+        // Send published email (fire-and-forget)
+        sendReportPublishedEmail(user.email, user.firstName, {
+            type: report.type,
+            description: report.description,
+            address: report.location?.address || null,
+            timestamp: report.timestamp
+        }).catch(err => console.error('Error enviando email de publicación:', err));
 
         res.json(report);
     } catch (err) {
@@ -234,6 +364,7 @@ router.get('/', auth, async (req, res) => {
 
         if (my === 'true') {
             query.userId = req.user.id;
+            query.hiddenByUser = { $ne: true };
         } else if (['moderator', 'admin'].includes(req.user.role)) {
             // Global vs. Personalized logic
             if (status === 'pending') {
@@ -261,8 +392,9 @@ router.get('/', auth, async (req, res) => {
                 query.moderatorId = req.user.id;
             }
         } else {
-            // Regular users ONLY see approved reports in the feed
-            query.status = 'approved';
+            // Regular users see approved + reports under community review
+            query.status = { $in: ['approved', 'In Process'] };
+            query.hiddenByUser = { $ne: true };
         }
 
         const reports = await Report.find(query).sort({ timestamp: -1 }).populate('userId', 'username avatar');
@@ -288,8 +420,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // Moderate Report
 router.patch('/:id/moderate', auth, async (req, res) => {
-    const { status, moderatorComment } = req.body; // Ignore moderatorId from body, use req.user.id
-    const Sanction = require('../models/Sanction'); // Import Sanction model
+    const { status, moderatorComment } = req.body;
     console.log("MODERATION REQUEST BODY:", req.body);
 
     // Robust boolean conversion
@@ -477,6 +608,52 @@ router.put('/:id/unlock', auth, async (req, res) => {
         res.json(report);
     } catch (err) {
         console.error("Error unlocking report:", err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Flag report (community report)
+router.post('/:id/flag', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
+
+        if (report.userId.toString() === req.user.id)
+            return res.status(400).json({ msg: 'No puedes denunciar tu propio reporte.' });
+
+        const alreadyFlagged = report.flags.some(f => f.toString() === req.user.id);
+        if (alreadyFlagged)
+            return res.status(400).json({ msg: 'Ya denunciaste este reporte.' });
+
+        report.flags.push(req.user.id);
+
+        if (report.flags.length >= 3 && report.status === 'approved') {
+            report.status = 'In Process';
+            const io = require('../socket').getIo();
+            io.emit('report_flagged', { reportId: report._id, status: 'In Process', flagsCount: report.flags.length });
+        }
+
+        await report.save();
+        res.json({ flagsCount: report.flags.length, status: report.status });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Hide report (soft delete by user)
+router.patch('/:id/hide', auth, async (req, res) => {
+    try {
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
+        if (report.userId.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'No autorizado' });
+        }
+        report.hiddenByUser = true;
+        await report.save();
+        res.json({ msg: 'Reporte ocultado correctamente' });
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });

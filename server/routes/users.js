@@ -139,4 +139,53 @@ router.post('/moderator', auth, async (req, res) => {
     }
 });
 
+// Sanction management (moderator/admin only)
+const isMod = (req, res) => {
+    if (!['admin', 'moderator'].includes(req.user.role)) {
+        res.status(403).json({ msg: 'No tienes permisos' });
+        return false;
+    }
+    return true;
+};
+
+// Reduce sanctions by 1
+router.patch('/:id/sanctions/reduce', auth, async (req, res) => {
+    try {
+        if (!isMod(req, res)) return;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        if (user.sanctions <= 0) return res.status(400).json({ msg: 'El usuario no tiene sanciones.' });
+        user.sanctions = Math.max(0, user.sanctions - 1);
+        user.reputation = Math.min(100, (user.reputation || 0) + 25);
+        await user.save();
+        res.json(user);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// Clear all sanctions
+router.patch('/:id/sanctions/clear', auth, async (req, res) => {
+    try {
+        if (!isMod(req, res)) return;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        user.sanctions = 0;
+        user.reputation = 100;
+        await user.save();
+        res.json(user);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// Add manual sanction
+router.patch('/:id/sanctions/add', auth, async (req, res) => {
+    try {
+        if (!isMod(req, res)) return;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        user.sanctions = (user.sanctions || 0) + 1;
+        user.reputation = Math.max(0, (user.reputation || 100) - 25);
+        await user.save();
+        res.json(user);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
 module.exports = router;

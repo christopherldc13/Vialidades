@@ -69,7 +69,7 @@ const LANDING_RULES = [
         title: 'Verificación KYC',
         subtitle: 'Identidad Obligatoria',
         points: [
-            'Debes verificar tu identidad con cédula y selfie en tiempo real.',
+            'Debes verificar tu identidad con cédula y selfie.',
             'El sistema aplica detección de vida para evitar imágenes estáticas.',
             'Los datos faciales se transmiten cifrados y no se ceden a terceros.',
         ],
@@ -104,7 +104,7 @@ const LandingPage = () => {
     const { user, loading } = useContext(AuthContext);
     const { theme } = useContext(ThemeContext);
     const [heatPoints, setHeatPoints] = useState([]);
-    const [mapType, setMapType] = useState('standard'); // 'standard' or 'satellite'
+    const [mapType, setMapType] = useState('satellite'); // 'standard' or 'satellite'
 
     // Suggestions Form State
     const [suggestionForm, setSuggestionForm] = useState({
@@ -214,7 +214,7 @@ const LandingPage = () => {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.8, delay: 0.5 }}
                     >
-                        <strong>Vialidades de Tránsito</strong> es la plataforma más avanzada para reportar y monitorear incidentes viales en tiempo real.
+                        <strong>Vialidades de Tránsito</strong> es una plataforma para reportar y monitorear incidentes viales.
                         Únete a miles de ciudadanos mejorando la movilidad de nuestra ciudad.
                     </motion.p>
                     <motion.div
@@ -396,18 +396,6 @@ const LandingPage = () => {
                     <div className="icon-bg"><Shield size={24} /></div>
                     <h3>Gana Reputación</h3>
                     <p>Contribuye con reportes veraces y sube de nivel en la comunidad.</p>
-                </motion.div>
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10, scale: 1.02 }}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                >
-                    <div className="icon-bg"><Users size={24} /></div>
-                    <h3>Evita el Tráfico</h3>
-                    <p>Consulta el estado de las vías antes de salir de casa.</p>
                 </motion.div>
             </section>
 

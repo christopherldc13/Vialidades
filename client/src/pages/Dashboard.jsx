@@ -2,9 +2,10 @@ import { useEffect, useState, useContext, useCallback } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
-import { Plus, TrendingUp, MapPin, Calendar, MessageSquare, Mail } from 'lucide-react';
+import { Plus, TrendingUp, MapPin, Calendar, MessageSquare, Mail, Trash2, MoreVertical, Eye, Flag } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip } from '@mui/material';
+import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
 import { Clock, CheckCircle, XCircle, AlertCircle, PieChart as PieChartIcon, Activity, BarChart2 } from 'lucide-react';
@@ -41,10 +42,11 @@ const TYPE_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-    pending:   { label: 'Pendiente',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
-    approved:  { label: 'Aprobado',    color: '#10b981', bg: 'rgba(16,185,129,0.12)'  },
-    rejected:  { label: 'Rechazado',   color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-    sanctioned:{ label: 'Sancionado',  color: '#b91c1c', bg: 'rgba(185,28,28,0.12)'   },
+    pending:      { label: 'Pendiente',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
+    approved:     { label: 'Aprobado',     color: '#10b981', bg: 'rgba(16,185,129,0.12)'  },
+    rejected:     { label: 'Rechazado',    color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+    sanctioned:   { label: 'Sancionado',   color: '#b91c1c', bg: 'rgba(185,28,28,0.12)'   },
+    'In Process': { label: 'En revisión',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)'  },
 };
 
 const formatDate = (dateStr) => {
@@ -74,6 +76,7 @@ const Dashboard = () => {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [expandedSections, setExpandedSections] = useState({});
+    const [cardMenu, setCardMenu] = useState({ anchorEl: null, reportId: null });
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -134,11 +137,22 @@ const Dashboard = () => {
             // For community view also re-fetch so newly approved reports appear
             if (viewMode === 'community') fetchReports();
         };
+        const handleReportFlagged = ({ reportId, status, flagsCount }) => {
+            if (isModerator) {
+                fetchReports();
+            } else {
+                setReports(prev => prev.map(r =>
+                    r._id === reportId ? { ...r, status, flags: Array(flagsCount).fill(null) } : r
+                ));
+            }
+        };
         socket.on('new_report', handleNewReport);
         socket.on('report_status_updated', handleStatusUpdate);
+        socket.on('report_flagged', handleReportFlagged);
         return () => {
             socket.off('new_report', handleNewReport);
             socket.off('report_status_updated', handleStatusUpdate);
+            socket.off('report_flagged', handleReportFlagged);
         };
     }, [isModerator, viewMode, fetchReports]);
 
@@ -577,6 +591,50 @@ const Dashboard = () => {
 
                 {/* ─── USER REPORT SECTION ─── */}
                 {!isModerator && (() => {
+                    const handleHideReport = async (e, reportId) => {
+                        e.stopPropagation();
+                        const result = await Swal.fire({
+                            title: 'Eliminar reporte',
+                            text: '¿Estás seguro de que deseas eliminar este reporte? Dejará de ser visible para ti y para el público.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí, eliminar',
+                            cancelButtonText: 'Cancelar',
+                            confirmButtonColor: '#ef4444',
+                            customClass: { popup: 'swal2-lumina-popup', cancelButton: 'swal2-lumina-cancel' }
+                        });
+                        if (!result.isConfirmed) return;
+                        try {
+                            await axios.patch(`/api/reports/${reportId}/hide`);
+                            setReports(prev => prev.filter(r => r._id !== reportId));
+                        } catch (err) {
+                            console.error('Hide report error:', err?.response?.status, err?.response?.data);
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el reporte.', customClass: { popup: 'swal2-lumina-popup' } });
+                        }
+                    };
+
+                    const handleFlagReport = async (e, reportId) => {
+                        e.stopPropagation();
+                        const result = await Swal.fire({
+                            title: 'Denunciar reporte',
+                            text: 'Si consideras que este reporte contiene información falsa o inapropiada, puedes denunciarlo para que un moderador lo revise.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí, denunciar',
+                            cancelButtonText: 'Cancelar',
+                            customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                        });
+                        if (!result.isConfirmed) return;
+                        try {
+                            const { data } = await axios.post(`/api/reports/${reportId}/flag`);
+                            setReports(prev => prev.map(r => r._id === reportId ? { ...r, flags: Array(data.flagsCount).fill(null), status: data.status } : r));
+                            Swal.fire({ icon: 'success', title: 'Denuncia enviada', text: 'Gracias. Nuestro equipo revisará este reporte.', customClass: { popup: 'swal2-lumina-popup' }, timer: 2500, showConfirmButton: false });
+                        } catch (err) {
+                            const msg = err?.response?.data?.msg || 'No se pudo enviar la denuncia.';
+                            Swal.fire({ icon: 'info', title: 'Aviso', text: msg, customClass: { popup: 'swal2-lumina-popup' } });
+                        }
+                    };
+
                     const renderCard = (report) => {
                         const typeColor = getIncidentColor(report.type);
                         const typeBg = getIncidentBg(report.type);
@@ -586,9 +644,44 @@ const Dashboard = () => {
                             <div
                                 key={report._id}
                                 className="report-card modern-report-card"
-                                onClick={() => { setSelectedReport(report); setIsModalOpen(true); }}
-                                style={{ cursor: 'pointer' }}
+                                onClick={() => { if (cardMenu.reportId === report._id) return; setSelectedReport(report); setIsModalOpen(true); }}
+                                style={{ cursor: 'pointer', position: 'relative' }}
                             >
+                                {viewMode === 'my' && (
+                                    <>
+                                        <button
+                                            className="card-menu-btn"
+                                            onClick={(e) => { e.stopPropagation(); setCardMenu({ anchorEl: e.currentTarget, reportId: report._id }); }}
+                                            style={{ position: 'absolute', top: '0.6rem', right: '0.6rem', zIndex: 5, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+                                        >
+                                            <MoreVertical size={17} strokeWidth={2.5} color="#111827" />
+                                        </button>
+                                        <Menu
+                                            anchorEl={cardMenu.anchorEl}
+                                            open={cardMenu.reportId === report._id}
+                                            onClose={() => setCardMenu({ anchorEl: null, reportId: null })}
+                                            onClick={() => setCardMenu({ anchorEl: null, reportId: null })}
+                                            PaperProps={{ style: { borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '175px', padding: '0.25rem 0' } }}
+                                            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                                        >
+                                            <MenuItem
+                                                onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setIsModalOpen(true); }}
+                                                style={{ fontSize: '0.88rem', gap: '0.6rem', padding: '0.55rem 1rem' }}
+                                            >
+                                                <ListItemIcon style={{ minWidth: 'unset' }}><Eye size={15} color="var(--primary)" /></ListItemIcon>
+                                                <ListItemText primary="Ver detalles" primaryTypographyProps={{ fontSize: '0.88rem' }} />
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={(e) => { e.stopPropagation(); handleHideReport(e, report._id); }}
+                                                style={{ fontSize: '0.88rem', gap: '0.6rem', padding: '0.55rem 1rem', color: '#ef4444' }}
+                                            >
+                                                <ListItemIcon style={{ minWidth: 'unset' }}><Trash2 size={15} color="#ef4444" /></ListItemIcon>
+                                                <ListItemText primary="Eliminar reporte" primaryTypographyProps={{ fontSize: '0.88rem', color: '#ef4444' }} />
+                                            </MenuItem>
+                                        </Menu>
+                                    </>
+                                )}
                                 <div className="report-image-container">
                                     <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} />
                                 </div>
@@ -622,13 +715,29 @@ const Dashboard = () => {
                                                 {report.location?.address || (report.location ? `${report.location.lat?.toFixed(4)}, ${report.location.lng?.toFixed(4)}` : 'Sin ubicación')}
                                             </span>
                                         </div>
-                                        {(report.timestamp || report.createdAt) && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0, marginLeft: '0.5rem' }}>
-                                                <Calendar size={12} color="var(--text-muted)" />
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' }}>{formatDate(report.timestamp || report.createdAt)}</span>
-                                            </div>
-                                        )}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                                            {(report.timestamp || report.createdAt) && (
+                                                <>
+                                                    <Calendar size={12} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500', whiteSpace: 'nowrap' }}>{formatDate(report.timestamp || report.createdAt)}</span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
+                                    {viewMode === 'community' && report.userId?.toString() !== user?._id && (() => {
+                                        const alreadyFlagged = report.flags?.some(f => (f?._id || f)?.toString() === user?._id);
+                                        return (
+                                            <button
+                                                onClick={(e) => !alreadyFlagged && handleFlagReport(e, report._id)}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', width: '100%', marginTop: '0.65rem', background: 'none', border: 'none', cursor: alreadyFlagged ? 'default' : 'pointer', color: alreadyFlagged ? '#f59e0b' : 'var(--text-muted)', fontSize: '0.75rem', padding: '0.1rem 0', transition: 'color 0.15s' }}
+                                                onMouseEnter={e => { if (!alreadyFlagged) e.currentTarget.style.color = '#f59e0b'; }}
+                                                onMouseLeave={e => { if (!alreadyFlagged) e.currentTarget.style.color = 'var(--text-muted)'; }}
+                                            >
+                                                <Flag size={11} fill={alreadyFlagged ? '#f59e0b' : 'none'} />
+                                                {alreadyFlagged ? 'Ya denunciaste este reporte' : '¿Deseas denunciar este reporte?'}
+                                            </button>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         );

@@ -91,9 +91,10 @@ const CreateReport = () => {
     }, []);
 
 
-    const processFiles = (fileList) => {
+    const processFiles = (fileList, inputEl = null) => {
         const validFiles = [];
         const newPreviews = [];
+
         Array.from(fileList).forEach(file => {
             const isVideo = file.type.startsWith('video');
             const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
@@ -104,14 +105,18 @@ const CreateReport = () => {
             validFiles.push(file);
             newPreviews.push(URL.createObjectURL(file));
         });
+
         if (validFiles.length > 0) {
             setFiles(prev => [...prev, ...validFiles]);
             setPreviews(prev => [...prev, ...newPreviews]);
         }
+
+        // Resetea el input para que el mismo archivo pueda seleccionarse de nuevo
+        if (inputEl) inputEl.value = '';
     };
 
     const handleFileChange = (e) => {
-        if (e.target.files?.length > 0) processFiles(e.target.files);
+        if (e.target.files?.length > 0) processFiles(e.target.files, e.target);
     };
 
     const handleDrop = (e) => {
@@ -228,6 +233,34 @@ const CreateReport = () => {
 
         const finalType = type === 'Other' ? customType : type;
         if (!finalType.trim()) { toast.error('Por favor especifica el tipo de incidente.'); return; }
+
+        if (files.length === 0) {
+            Swal.fire({
+                title: 'Se requiere multimedia',
+                html: `
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:0.5rem 0">
+                        <div style="width:64px;height:64px;border-radius:50%;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:2rem;">📎</div>
+                        <p style="margin:0;color:var(--text-light);font-size:0.95rem;line-height:1.6;text-align:center;">
+                            Los reportes deben incluir <strong>al menos una imagen o video</strong> como evidencia del incidente.
+                        </p>
+                    </div>
+                `,
+                confirmButtonText: 'Tomar / Adjuntar imagen',
+                confirmButtonColor: 'var(--primary)',
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    popup: 'swal2-lumina-popup',
+                    title: 'swal2-lumina-title',
+                    confirmButton: 'swal2-lumina-confirm',
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    document.getElementById('camera-photo-upload')?.click();
+                }
+            });
+            return;
+        }
 
         const formData = new FormData();
         // userId is handled by backend from token

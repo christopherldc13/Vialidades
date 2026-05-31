@@ -207,7 +207,7 @@ router.post('/login', async (req, res) => {
     try {
         let user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+            return res.status(400).json({ msg: 'Correo o contraseña incorrectos' });
         }
 
         if (!user.isVerified) {
@@ -217,7 +217,7 @@ router.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+            return res.status(400).json({ msg: 'Correo o contraseña incorrectos' });
         }
 
         // --- SANCTIONS CHECK ---

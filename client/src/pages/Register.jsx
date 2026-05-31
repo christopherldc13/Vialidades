@@ -811,7 +811,7 @@ function Register() {
                             <div className="dbp-steps">
                                 {[
                                     { icon: <HiOutlineIdentification />, label: 'Escaneo de cédula', desc: 'Captura ambos lados de tu documento' },
-                                    { icon: <TbCameraSelfie />, label: 'Selfie de verificación', desc: 'Confirma que eres tú en tiempo real' },
+                                    { icon: <TbCameraSelfie />, label: 'Selfie de verificación', desc: 'Confirma que eres tú' },
                                     { icon: <IoMailUnreadOutline />, label: 'Código de confirmación', desc: 'Verifica tu correo electrónico' },
                                 ].map(({ icon, label, desc }) => (
                                     <div key={label} className="dbp-step">

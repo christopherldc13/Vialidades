@@ -26,10 +26,12 @@ const ReportSchema = new mongoose.Schema({
         color: { type: String }
     },
     status: { type: String, enum: ['pending', 'approved', 'rejected', 'In Process'], default: 'pending' },
+    hiddenByUser: { type: Boolean, default: false },
     moderatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     moderatorInCharge: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     moderatorComment: { type: String },
     wasSanctioned: { type: Boolean, default: false },
+    flags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     timestamp: { type: Date, default: Date.now }
 });
 

@@ -300,6 +300,50 @@ const REPORT_TYPE_ES = {
     Hazard:    'Peligro en la Vía',
 };
 
+exports.sendContentViolationEmail = async (email, firstName, reasons, totalSanctions) => {
+    try {
+        const tituloEs = '⚠️ Sanción por contenido inapropiado';
+        const tituloEn = '⚠️ Sanction for inappropriate content';
+
+        const isPermanent = totalSanctions >= 3;
+        const sanctionDuration = totalSanctions === 1 ? '24 horas' : totalSanctions === 2 ? '48 horas' : 'permanente';
+
+        const contenidoEs = `
+            <p>Hola <strong>${firstName}</strong>,</p>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin:16px 0;">
+                <p style="margin:0;font-size:14px;color:#991b1b;font-weight:600;">Tu reporte fue rechazado automáticamente</p>
+                <p style="margin:8px 0 0 0;font-size:13px;color:#b91c1c;">
+                    El sistema detectó <strong>${reasons.join(', ')}</strong> en las imágenes adjuntas.
+                </p>
+            </div>
+            <p>Subir contenido inapropiado o sensible está estrictamente prohibido en <strong>Vialidades</strong>. Como resultado:</p>
+            <ul style="padding-left:20px;color:#4b5563;font-size:14px;line-height:2;">
+                <li>Tu reporte fue <strong>rechazado</strong> y no será visible en la plataforma.</li>
+                <li>Se aplicó una <strong>sanción</strong> a tu cuenta (${totalSanctions}/3).</li>
+                <li>Tu reputación ha sido <strong>reducida</strong>.</li>
+                ${!isPermanent ? `<li>Tienes una restricción de <strong>${sanctionDuration}</strong> para publicar.</li>` : `<li>Tu cuenta ha sido <strong>inhabilitada permanentemente</strong> para publicar reportes.</li>`}
+            </ul>
+            <p style="font-size:13px;color:#9ca3af;margin-top:16px;">
+                Si crees que esto fue un error, puedes contactarnos respondiendo este correo.
+                Recuerda que acumular 3 sanciones resulta en la suspensión permanente de tu cuenta.
+            </p>
+        `;
+        const contenidoEn = `
+            <p>Hello <strong>${firstName}</strong>,</p>
+            <p>Your report was automatically rejected because our system detected <strong>${reasons.join(', ')}</strong> in the attached images.
+            A sanction has been applied to your account (${totalSanctions}/3). Accumulating 3 sanctions results in a permanent account suspension.</p>
+        `;
+
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({
+            from: `"Vialidades" <${CORREO_REMITENTE}>`,
+            to: email,
+            subject: '⚠️ Sanción aplicada | Sanction applied',
+            html
+        });
+    } catch (error) { console.error('Error envío email sanción:', error); }
+};
+
 exports.sendReportStatusEmail = async (email, firstName, reportType, status, moderatorComment = '') => {
     try {
         const approved = status === 'approved';
@@ -330,4 +374,42 @@ exports.sendReportStatusEmail = async (email, firstName, reportType, status, mod
         const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
         await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "Estado de tu reporte | Report status", html });
     } catch (error) { console.error("Error envío estado reporte:", error); }
+};
+
+exports.sendReportPublishedEmail = async (email, firstName, { type, description, address, timestamp }) => {
+    try {
+        const reportTypeEs = REPORT_TYPE_ES[type] || type;
+        const fecha = new Date(timestamp).toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        const tituloEs = '🗺️ Tu reporte ha sido publicado';
+        const tituloEn = '🗺️ Your report has been published';
+
+        const contenidoEs = `
+            <p>Hola <strong>${firstName}</strong>,</p>
+            <p>Tu reporte ha sido recibido y ya está <strong>visible para la comunidad</strong> en Vialidades. Aquí está el resumen:</p>
+            <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:20px 24px;margin:20px 0;">
+                <p style="margin:0 0 10px 0;font-size:13px;color:#6d28d9;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Detalles del reporte</p>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+                    <tr><td style="padding:5px 0;color:#6b7280;width:110px;">Tipo</td><td style="padding:5px 0;font-weight:600;">${reportTypeEs}</td></tr>
+                    <tr><td style="padding:5px 0;color:#6b7280;">Descripción</td><td style="padding:5px 0;">${description}</td></tr>
+                    ${address ? `<tr><td style="padding:5px 0;color:#6b7280;">Ubicación</td><td style="padding:5px 0;">${address}</td></tr>` : ''}
+                    <tr><td style="padding:5px 0;color:#6b7280;">Publicado</td><td style="padding:5px 0;">${fecha}</td></tr>
+                </table>
+            </div>
+            <p style="font-size:13px;color:#9ca3af;">Gracias por contribuir a mejorar la seguridad vial en tu comunidad. Tu aporte hace la diferencia.</p>
+        `;
+        const contenidoEn = `
+            <p>Hello <strong>${firstName}</strong>,</p>
+            <p>Your report (<strong>${reportTypeEs}</strong>) has been received and is now visible to the community on Vialidades.
+            ${address ? `Location: ${address}.` : ''} Thank you for helping improve road safety.</p>
+        `;
+
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({
+            from: `"Vialidades" <${CORREO_REMITENTE}>`,
+            to: email,
+            subject: '🗺️ Tu reporte fue publicado | Your report is live',
+            html
+        });
+    } catch (error) { console.error('Error envío email publicación reporte:', error); }
 };

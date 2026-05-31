@@ -556,6 +556,10 @@ const ModerateReports = () => {
                 user={selectedUser}
                 isOpen={isUserModalOpen}
                 onClose={() => setIsUserModalOpen(false)}
+                onSanctionUpdate={(updatedUser) => {
+                    setUsersList(prev => prev.map(u => u._id === updatedUser._id ? updatedUser : u));
+                    setSelectedUser(updatedUser);
+                }}
             />
         </div>
     );
