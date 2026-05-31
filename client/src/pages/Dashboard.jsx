@@ -724,7 +724,12 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                     </div>
-                                    {viewMode === 'community' && report.userId?.toString() !== user?._id && (() => {
+                                    {viewMode === 'community' && (() => {
+                                        const reportOwnerId = (report.userId?._id || report.userId)?.toString();
+                                        const myId = (user?._id || user?.id)?.toString();
+                                        if (!reportOwnerId || !myId) return false;
+                                        return reportOwnerId !== myId;
+                                    })() && (() => {
                                         const alreadyFlagged = report.flags?.some(f => (f?._id || f)?.toString() === user?._id);
                                         return (
                                             <button
