@@ -221,29 +221,20 @@ router.post('/login', async (req, res) => {
         }
 
         // --- SANCTIONS CHECK ---
-        const Sanction = require('../models/Sanction');
-        const activeSanctions = await Sanction.find({ userId: user.id, status: 'active' });
-
         let isBlocked = false;
         let blockMessage = '';
         let sanctionExpiresAt = null;
 
-        for (let sanction of activeSanctions) {
-            if (sanction.expiresAt && sanction.expiresAt < new Date()) {
-                // Sanction expired, set to inactive
-                sanction.status = 'inactive';
-                await sanction.save();
-            } else {
-                // Sanction still active
-                isBlocked = true;
-                if (!sanction.expiresAt) {
-                    blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
-                } else {
-                    blockMessage = 'Tu cuenta está suspendida temporalmente.';
-                    sanctionExpiresAt = sanction.expiresAt;
-                }
-                break;
-            }
+        if (user.sanctions >= 3) {
+            isBlocked = true;
+            blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
+        } else if (user.blockedUntil && user.blockedUntil > new Date()) {
+            isBlocked = true;
+            blockMessage = 'Tu cuenta está suspendida temporalmente.';
+            sanctionExpiresAt = user.blockedUntil;
+        } else if (user.blockedUntil && user.blockedUntil <= new Date()) {
+            user.blockedUntil = null;
+            await user.save({ validateBeforeSave: false });
         }
 
         if (isBlocked) {
@@ -322,27 +313,19 @@ router.post('/google', async (req, res) => {
         }
 
         // --- SANCTIONS CHECK ---
-        const Sanction = require('../models/Sanction');
-        const activeSanctions = await Sanction.find({ userId: user.id, status: 'active' });
-
         let isBlocked = false;
         let blockMessage = '';
         let sanctionExpiresAt = null;
 
-        for (let sanction of activeSanctions) {
-            if (sanction.expiresAt && sanction.expiresAt < new Date()) {
-                sanction.status = 'inactive';
-                await sanction.save();
-            } else {
-                isBlocked = true;
-                if (!sanction.expiresAt) {
-                    blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
-                } else {
-                    blockMessage = 'Tu cuenta está suspendida temporalmente.';
-                    sanctionExpiresAt = sanction.expiresAt;
-                }
-                break;
-            }
+        if (user.sanctions >= 3) {
+            isBlocked = true;
+            blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
+        } else if (user.blockedUntil && user.blockedUntil > new Date()) {
+            isBlocked = true;
+            blockMessage = 'Tu cuenta está suspendida temporalmente.';
+            sanctionExpiresAt = user.blockedUntil;
+        } else if (user.blockedUntil && user.blockedUntil <= new Date()) {
+            user.blockedUntil = null;
         }
 
         if (isBlocked) {

@@ -20,6 +20,7 @@ const UserSchema = new mongoose.Schema({
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     sessionToken: { type: String, default: null },
+    blockedUntil: { type: Date, default: null },
     createdAt: { type: Date, default: Date.now }
 }, {
     toJSON: { virtuals: true },

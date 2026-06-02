@@ -77,6 +77,7 @@ const Dashboard = () => {
     const [dateTo, setDateTo] = useState('');
     const [expandedSections, setExpandedSections] = useState({});
     const [cardMenu, setCardMenu] = useState({ anchorEl: null, reportId: null });
+    const [revealedReports, setRevealedReports] = useState(new Set());
     const isModerator = ['moderator', 'admin'].includes(user?.role);
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -87,6 +88,7 @@ const Dashboard = () => {
         setProvinceFilter('all');
         setDateFrom('');
         setDateTo('');
+        setRevealedReports(new Set());
     }, [viewMode]);
 
     const fetchReports = useCallback(async () => {
@@ -682,8 +684,39 @@ const Dashboard = () => {
                                         </Menu>
                                     </>
                                 )}
-                                <div className="report-image-container">
-                                    <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} />
+                                <div className="report-image-container" style={{ position: 'relative' }}>
+                                    <div style={{ filter: report.wasSanctioned && !revealedReports.has(report._id) ? 'blur(12px)' : 'none', transition: 'filter 0.3s', pointerEvents: report.wasSanctioned && !revealedReports.has(report._id) ? 'none' : 'auto', height: '100%', width: '100%' }}>
+                                        <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} />
+                                    </div>
+                                    {report.wasSanctioned && !revealedReports.has(report._id) && (
+                                        <div
+                                            onClick={e => e.stopPropagation()}
+                                            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)', zIndex: 2 }}
+                                        >
+                                            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                                            <span style={{ color: '#fff', fontWeight: '700', fontSize: '0.88rem', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>Contenido sensible</span>
+                                            <button
+                                                onClick={async e => {
+                                                    e.stopPropagation();
+                                                    const result = await Swal.fire({
+                                                        title: '⚠️ Contenido sensible',
+                                                        text: 'Este contenido fue marcado como inapropiado por el sistema. Puede contener imágenes de violencia, gore u otro material no apto. ¿Deseas verlo de todos modos?',
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Sí, ver contenido',
+                                                        cancelButtonText: 'Cancelar',
+                                                        customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                                                    });
+                                                    if (result.isConfirmed) setRevealedReports(prev => new Set([...prev, report._id]));
+                                                }}
+                                                style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: '20px', padding: '0.3rem 0.9rem', color: '#fff', fontSize: '0.78rem', fontWeight: '600', cursor: 'pointer', backdropFilter: 'blur(4px)', transition: 'background 0.15s', marginTop: 0, width: 'auto', boxShadow: 'none' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                            >
+                                                Ver de todos modos
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="report-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '1.25rem', textAlign: 'left' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>

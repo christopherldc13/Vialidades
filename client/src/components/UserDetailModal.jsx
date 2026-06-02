@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle, MinusCircle, Trash2, Plus } from 'lucide-react';
+import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle, MinusCircle, Trash2, Plus, ShieldOff } from 'lucide-react';
 import { FaPhoneAlt } from "react-icons/fa";
 import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
 import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
@@ -21,12 +21,13 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
 
     const handleSanction = async (action) => {
         const labels = {
-            reduce: { title: 'Reducir sanción', text: '¿Quitar 1 sanción y restaurar 25 pts de reputación?', confirm: 'Sí, reducir' },
-            clear:  { title: 'Eliminar todas las sanciones', text: '¿Eliminar todas las sanciones y restaurar reputación a 100?', confirm: 'Sí, limpiar' },
-            add:    { title: 'Añadir sanción manual', text: '¿Aplicar 1 sanción y reducir 25 pts de reputación?', confirm: 'Sí, sancionar' },
+            reduce:  { title: 'Reducir sanción', text: '¿Quitar 1 sanción y restaurar 25 pts de reputación?', confirm: 'Sí, reducir' },
+            clear:   { title: 'Eliminar todas las sanciones', text: '¿Eliminar todas las sanciones, restaurar reputación a 100 y levantar el bloqueo?', confirm: 'Sí, limpiar' },
+            add:     { title: 'Añadir sanción manual', text: '¿Aplicar 1 sanción y reducir 25 pts de reputación?', confirm: 'Sí, sancionar' },
+            unblock: { title: 'Levantar bloqueo', text: 'El usuario podrá iniciar sesión de nuevo. Las sanciones acumuladas se mantienen.', confirm: 'Sí, levantar bloqueo' },
         };
         const { title, text, confirm } = labels[action];
-        const confirmClass = action === 'add' ? 'swal2-lumina-confirm' : action === 'clear' ? 'swal2-lumina-confirm-green' : 'swal2-lumina-confirm-amber';
+        const confirmClass = action === 'add' ? 'swal2-lumina-confirm' : (action === 'clear' || action === 'unblock') ? 'swal2-lumina-confirm-green' : 'swal2-lumina-confirm-amber';
         const result = await Swal.fire({
             title, text, icon: 'warning', showCancelButton: true,
             confirmButtonText: confirm, cancelButtonText: 'Cancelar',
@@ -35,7 +36,8 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
         if (!result.isConfirmed) return;
         setLoading(action);
         try {
-            const { data } = await axios.patch(`/api/users/${user._id}/sanctions/${action}`);
+            const url = action === 'unblock' ? `/api/users/${user._id}/unblock` : `/api/users/${user._id}/sanctions/${action}`;
+            const { data } = await axios.patch(url);
             setUser(data);
             onSanctionUpdate?.(data);
         } catch (err) {
@@ -231,6 +233,18 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
                                         >
                                             <Trash2 size={16} /> {loading === 'clear' ? 'Procesando...' : 'Eliminar todas las sanciones'}
                                         </button>
+
+                                        {user.blockedUntil && new Date(user.blockedUntil) > new Date() && (
+                                            <button
+                                                onClick={() => handleSanction('unblock')}
+                                                disabled={!!loading}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
+                                            >
+                                                <ShieldOff size={16} /> {loading === 'unblock' ? 'Procesando...' : `Levantar bloqueo (hasta ${new Date(user.blockedUntil).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
+                                            </button>
+                                        )}
 
                                         <button
                                             onClick={() => handleSanction('add')}

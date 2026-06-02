@@ -178,6 +178,29 @@ function Login() {
                         <p className="text-muted">Accede a tu cuenta para continuar evaluando las vialidades.</p>
                     </div>
 
+                    {sanctionExpiry ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '1rem 0' }}
+                        >
+                            <div className="login-error-alert" style={{ width: '100%', textAlign: 'center' }}>
+                                Tu cuenta está suspendida temporalmente.
+                            </div>
+                            <div className="login-sanction-alert" style={{ width: '100%' }}>
+                                <strong><Lock size={16} /> Tiempo Restante de Sanción</strong>
+                                <div className="sanction-time">{timeLeft || 'Calculando...'}</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSanctionExpiry(null)}
+                                style={{ background: 'transparent', border: '1.5px solid var(--border-color)', borderRadius: '10px', padding: '0.6rem 1.5rem', color: 'var(--text-muted)', fontSize: '0.88rem', cursor: 'pointer', width: '100%', fontFamily: 'inherit', marginTop: 0 }}
+                            >
+                                Volver al inicio de sesión
+                            </button>
+                        </motion.div>
+                    ) : (
+                        <>
                     {error && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -185,21 +208,6 @@ function Login() {
                             className="login-error-alert"
                         >
                             {error}
-                        </motion.div>
-                    )}
-
-                    {sanctionExpiry && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="login-sanction-alert"
-                        >
-                            <strong>
-                                <Lock size={16} /> Tiempo Restante de Sanción
-                            </strong>
-                            <div className="sanction-time">
-                                {timeLeft || 'Calculando...'}
-                            </div>
                         </motion.div>
                     )}
 
@@ -285,6 +293,8 @@ function Login() {
                             Crear una cuenta
                         </Link>
                     </div>
+                        </>
+                    )}
                 </motion.div>
             </div>
         </div>

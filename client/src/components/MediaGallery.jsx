@@ -147,61 +147,33 @@ const MediaGallery = ({ media, objectFit = 'cover' }) => {
                 })}
             </div>
 
-            {/* Navigation Buttons - Enhanced Visibility */}
             {media.length > 1 && (
                 <>
                     {currentIndex > 0 && (
                         <button
                             onClick={prev}
-                            style={{
-                                position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)',
-                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid var(--border-color)', borderRadius: '50%',
-                                width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', zIndex: 10,
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'}
-                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+                            style={{ position: 'absolute', top: '50%', left: '8px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, transition: 'background 0.15s', padding: 0, marginTop: 0, boxShadow: 'none' }}
+                            onMouseOver={e => e.currentTarget.style.background = 'rgba(0,0,0,0.7)'}
+                            onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}
                         >
-                            <ChevronLeft size={24} />
+                            <ChevronLeft size={15} strokeWidth={2.5} />
                         </button>
                     )}
                     {currentIndex < media.length - 1 && (
                         <button
                             onClick={next}
-                            style={{
-                                position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)',
-                                background: 'rgba(0,0,0,0.7)', color: 'white', border: '2px solid var(--border-color)', borderRadius: '50%',
-                                width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', zIndex: 10,
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'}
-                            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+                            style={{ position: 'absolute', top: '50%', right: '8px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, transition: 'background 0.15s', padding: 0, marginTop: 0, boxShadow: 'none' }}
+                            onMouseOver={e => e.currentTarget.style.background = 'rgba(0,0,0,0.7)'}
+                            onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}
                         >
-                            <ChevronRight size={24} />
+                            <ChevronRight size={15} strokeWidth={2.5} />
                         </button>
                     )}
 
-                    {/* Dots Indicator */}
-                    <div style={{
-                        position: 'absolute', bottom: '15px', left: '0', right: '0',
-                        display: 'flex', justifyContent: 'center', gap: '8px', zIndex: 10,
-                        pointerEvents: 'none'
-                    }}>
+                    {/* Dot indicators */}
+                    <div style={{ position: 'absolute', bottom: '8px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '5px', zIndex: 10, pointerEvents: 'none' }}>
                         {media.map((_, idx) => (
-                            <div
-                                key={idx}
-                                style={{
-                                    width: '10px', height: '10px', borderRadius: '50%',
-                                    background: idx === currentIndex ? 'var(--primary)' : 'var(--border-color)',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                                    transition: 'all 0.3s',
-                                    border: '1px solid rgba(0,0,0,0.1)'
-                                }}
-                            />
+                            <div key={idx} style={{ width: idx === currentIndex ? '16px' : '5px', height: '5px', borderRadius: '99px', background: idx === currentIndex ? '#fff' : 'rgba(255,255,255,0.5)', transition: 'all 0.25s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.4)' }} />
                         ))}
                     </div>
                 </>

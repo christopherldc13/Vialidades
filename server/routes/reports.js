@@ -187,16 +187,15 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                 });
                 const savedReport = await rejectedReport.save();
 
-                // Apply sanction
+                // Apply sanction directly on user
                 const isFirstReport = user.reputation === 0;
                 user.reputation = isFirstReport ? 25 : Math.max(1, user.reputation - 25);
-
-                let expiresAt = null;
-                if (user.sanctions === 0) expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                else if (user.sanctions === 1) expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-                await new Sanction({ userId: user._id, reportId: savedReport._id, status: 'active', expiresAt }).save();
                 user.sanctions += 1;
+
+                if (user.sanctions === 1) user.blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                else if (user.sanctions === 2) user.blockedUntil = new Date(Date.now() + 48 * 60 * 60 * 1000);
+                // sanctions >= 3: permanent ban (blockedUntil stays null, sanctions count blocks)
+
                 await user.save();
 
                 // Send email notification

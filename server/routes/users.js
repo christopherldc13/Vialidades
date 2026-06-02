@@ -170,6 +170,19 @@ router.patch('/:id/sanctions/clear', auth, async (req, res) => {
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
         user.sanctions = 0;
         user.reputation = 100;
+        user.blockedUntil = null;
+        await user.save();
+        res.json(user);
+    } catch (err) { res.status(500).send('Server Error'); }
+});
+
+// Remove login block (keep sanctions count, just lift the block)
+router.patch('/:id/unblock', auth, async (req, res) => {
+    try {
+        if (!isMod(req, res)) return;
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        user.blockedUntil = null;
         await user.save();
         res.json(user);
     } catch (err) { res.status(500).send('Server Error'); }
