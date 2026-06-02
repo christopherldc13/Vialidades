@@ -239,7 +239,7 @@ router.post('/login', async (req, res) => {
                 if (!sanction.expiresAt) {
                     blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
                 } else {
-                    blockMessage = `Tu cuenta está suspendida temporalmente hasta ${sanction.expiresAt.toLocaleString()}.`;
+                    blockMessage = 'Tu cuenta está suspendida temporalmente.';
                     sanctionExpiresAt = sanction.expiresAt;
                 }
                 break;
@@ -338,7 +338,7 @@ router.post('/google', async (req, res) => {
                 if (!sanction.expiresAt) {
                     blockMessage = 'Tu cuenta ha sido suspendida permanentemente debido a múltiples reportes rechazados por violación de normas.';
                 } else {
-                    blockMessage = `Tu cuenta está suspendida temporalmente hasta ${sanction.expiresAt.toLocaleString()}.`;
+                    blockMessage = 'Tu cuenta está suspendida temporalmente.';
                     sanctionExpiresAt = sanction.expiresAt;
                 }
                 break;

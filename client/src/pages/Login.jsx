@@ -78,11 +78,14 @@ function Login() {
             });
         } else {
             setError(res.msg);
+            const expText = res.sanctionExpiresAt
+                ? new Date(res.sanctionExpiresAt).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : null;
             Swal.fire({
                 title: 'Error de Acceso',
-                text: res.msg || 'Las credenciales no coinciden. Por favor busca tus datos e intenta de nuevo.',
+                text: expText ? `Tu cuenta está suspendida temporalmente hasta el ${expText}.` : (res.msg || 'Las credenciales no coinciden.'),
                 icon: 'error',
-                confirmButtonText: 'Volver a intentar',
+                confirmButtonText: 'Entendido',
                 confirmButtonColor: 'var(--primary)'
             });
             if (res.sanctionExpiresAt) {
@@ -113,9 +116,12 @@ function Login() {
             });
         } else {
             setError(res.msg);
+            const expTextG = res.sanctionExpiresAt
+                ? new Date(res.sanctionExpiresAt).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : null;
             Swal.fire({
                 title: 'Error de Acceso',
-                text: res.msg || 'No pudimos validar tu cuenta de Google.',
+                text: expTextG ? `Tu cuenta está suspendida temporalmente hasta el ${expTextG}.` : (res.msg || 'No pudimos validar tu cuenta de Google.'),
                 icon: 'error',
                 confirmButtonText: 'Entendido',
                 confirmButtonColor: 'var(--primary)'
