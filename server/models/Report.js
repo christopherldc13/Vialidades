@@ -31,7 +31,11 @@ const ReportSchema = new mongoose.Schema({
     moderatorInCharge: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     moderatorComment: { type: String },
     wasSanctioned: { type: Boolean, default: false },
-    flags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    flags: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String },
+        createdAt: { type: Date, default: Date.now }
+    }],
     timestamp: { type: Date, default: Date.now }
 });
 

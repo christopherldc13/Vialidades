@@ -291,6 +291,26 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                     </div>
                                 )}
 
+                                {/* Denuncias (moderadores only) */}
+                                {isModerator && report.flags?.length > 0 && (
+                                    <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                        <div style={{ padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
+                                            <strong style={{ color: '#b45309', fontSize: '0.82rem', fontWeight: '800' }}>
+                                                🚩 Denuncias de la comunidad ({report.flags.length})
+                                            </strong>
+                                        </div>
+                                        <div style={{ padding: '0.85rem 1rem', background: 'var(--surface-solid)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            {report.flags.map((flag, i) => (
+                                                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-main)', padding: '0.4rem 0.6rem', background: 'var(--bg-input)', borderRadius: '8px' }}>
+                                                    <span style={{ fontWeight: '700', color: '#f59e0b', flexShrink: 0 }}>#{i + 1}</span>
+                                                    <span>{flag.reason || 'Sin motivo especificado'}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Metadata (moderators only) */}
                                 {isModerator && (
                                     <div>

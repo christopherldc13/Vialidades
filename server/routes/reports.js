@@ -620,11 +620,12 @@ router.post('/:id/flag', auth, async (req, res) => {
         if (report.userId.toString() === req.user.id)
             return res.status(400).json({ msg: 'No puedes denunciar tu propio reporte.' });
 
-        const alreadyFlagged = report.flags.some(f => f.toString() === req.user.id);
+        const alreadyFlagged = report.flags.some(f => (f.userId || f).toString() === req.user.id);
         if (alreadyFlagged)
             return res.status(400).json({ msg: 'Ya denunciaste este reporte.' });
 
-        report.flags.push(req.user.id);
+        const { reason } = req.body;
+        report.flags.push({ userId: req.user.id, reason: reason || 'Sin motivo especificado', createdAt: new Date() });
 
         if (report.flags.length >= 3 && report.status === 'approved') {
             report.status = 'In Process';

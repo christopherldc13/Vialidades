@@ -617,18 +617,60 @@ const Dashboard = () => {
 
                     const handleFlagReport = async (e, reportId) => {
                         e.stopPropagation();
-                        const result = await Swal.fire({
+
+                        const reasons = [
+                            { value: 'Información falsa o engañosa', icon: '🚫' },
+                            { value: 'Ubicación incorrecta',         icon: '📍' },
+                            { value: 'Contenido inapropiado',        icon: '⚠️' },
+                            { value: 'Reporte duplicado',            icon: '📋' },
+                            { value: 'Spam o publicidad',            icon: '🗑️' },
+                            { value: 'Otro',                         icon: '💬' },
+                        ];
+
+                        const { value: selectedReason, isConfirmed } = await Swal.fire({
                             title: 'Denunciar reporte',
-                            text: 'Si consideras que este reporte contiene información falsa o inapropiada, puedes denunciarlo para que un moderador lo revise.',
-                            icon: 'warning',
+                            html: `
+                                <style>
+                                    #flag-reasons label { color: var(--text-main) !important; }
+                                    #flag-reasons label span { color: var(--text-main) !important; }
+                                    #flag-other-input { display:none; margin-top:0.75rem; width:100%; box-sizing:border-box; padding:0.65rem 0.9rem; border-radius:10px; border:1.5px solid rgba(245,158,11,0.4); background:var(--bg-input); color:var(--text-main); font-size:0.88rem; font-family:inherit; resize:none; outline:none; }
+                                    #flag-other-input:focus { border-color:#f59e0b; }
+                                </style>
+                                <p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 1rem 0;">¿Por qué deseas denunciar este reporte?</p>
+                                <div id="flag-reasons" style="display:flex;flex-direction:column;gap:0.5rem;text-align:left;">
+                                    ${reasons.map(r => `
+                                        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.9rem;border-radius:10px;border:1.5px solid rgba(100,100,100,0.18);cursor:pointer;transition:all 0.15s;font-size:0.9rem;font-weight:500;"
+                                               onmouseover="this.style.borderColor='rgba(245,158,11,0.5)';this.style.background='rgba(245,158,11,0.07)'"
+                                               onmouseout="if(!this.querySelector('input').checked){this.style.borderColor='rgba(100,100,100,0.18)';this.style.background='transparent'}">
+                                            <input type="radio" name="flag-reason" value="${r.value}" style="accent-color:#f59e0b;width:16px;height:16px;flex-shrink:0;"
+                                                   onchange="document.querySelectorAll('#flag-reasons label').forEach(l=>{l.style.borderColor='rgba(100,100,100,0.18)';l.style.background='transparent'});this.parentElement.style.borderColor='rgba(245,158,11,0.6)';this.parentElement.style.background='rgba(245,158,11,0.09)';document.getElementById('flag-other-input').style.display=this.value==='Otro'?'block':'none';">
+                                            <span>${r.icon} ${r.value}</span>
+                                        </label>
+                                    `).join('')}
+                                    <textarea id="flag-other-input" rows="3" placeholder="Describe el motivo de tu denuncia..."></textarea>
+                                </div>
+                            `,
                             showCancelButton: true,
-                            confirmButtonText: 'Sí, denunciar',
+                            confirmButtonText: 'Continuar',
                             cancelButtonText: 'Cancelar',
-                            customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                            customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' },
+                            preConfirm: () => {
+                                const checked = document.querySelector('input[name="flag-reason"]:checked');
+                                if (!checked) { Swal.showValidationMessage('Por favor selecciona un motivo'); return false; }
+                                if (checked.value === 'Otro') {
+                                    const text = document.getElementById('flag-other-input')?.value?.trim();
+                                    if (!text) { Swal.showValidationMessage('Por favor describe el motivo'); return false; }
+                                    return text;
+                                }
+                                return checked.value;
+                            }
                         });
-                        if (!result.isConfirmed) return;
+                        if (!isConfirmed) return;
+
+                        const finalReason = selectedReason;
+
                         try {
-                            const { data } = await axios.post(`/api/reports/${reportId}/flag`);
+                            const { data } = await axios.post(`/api/reports/${reportId}/flag`, { reason: finalReason });
                             setReports(prev => prev.map(r => r._id === reportId ? { ...r, flags: Array(data.flagsCount).fill(null), status: data.status } : r));
                             Swal.fire({ icon: 'success', title: 'Denuncia enviada', text: 'Gracias. Nuestro equipo revisará este reporte.', customClass: { popup: 'swal2-lumina-popup' }, timer: 2500, showConfirmButton: false });
                         } catch (err) {
