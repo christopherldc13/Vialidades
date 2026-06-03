@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle, MinusCircle, Trash2, Plus, ShieldOff } from 'lucide-react';
+import { X, User, Mail, Shield, Calendar, AlertTriangle, Star, CheckCircle, MinusCircle, Trash2, Plus, ShieldOff, Ban } from 'lucide-react';
 import { FaPhoneAlt } from "react-icons/fa";
 import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
 import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
@@ -19,6 +19,46 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
         return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
 
+    const handleBlockUser = async () => {
+        const { value: duration, isConfirmed } = await Swal.fire({
+            title: 'Bloquear usuario',
+            html: `
+                <style>#block-opts label { color: var(--text-main) !important; }</style>
+                <p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 1rem 0;">Selecciona la duración del bloqueo:</p>
+                <div id="block-opts" style="display:flex;flex-direction:column;gap:0.5rem;text-align:left;">
+                    ${[['24h','🕐 24 horas'],['48h','🕑 48 horas'],['7d','📅 7 días'],['permanent','⛔ Bloqueo permanente']].map(([v,l]) => `
+                        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.9rem;border-radius:10px;border:1.5px solid rgba(100,100,100,0.18);cursor:pointer;font-size:0.9rem;font-weight:500;transition:all 0.15s;"
+                               onmouseover="this.style.borderColor='rgba(239,68,68,0.5)';this.style.background='rgba(239,68,68,0.07)'"
+                               onmouseout="if(!this.querySelector('input').checked){this.style.borderColor='rgba(100,100,100,0.18)';this.style.background='transparent'}">
+                            <input type="radio" name="block-dur" value="${v}" style="accent-color:#ef4444;width:16px;height:16px;flex-shrink:0;"
+                                   onchange="document.querySelectorAll('#block-opts label').forEach(l=>{l.style.borderColor='rgba(100,100,100,0.18)';l.style.background='transparent'});this.parentElement.style.borderColor='rgba(239,68,68,0.6)';this.parentElement.style.background='rgba(239,68,68,0.09)'">
+                            <span>${l}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Bloquear',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: 'swal2-lumina-confirm', cancelButton: 'swal2-lumina-cancel' },
+            preConfirm: () => {
+                const checked = document.querySelector('input[name="block-dur"]:checked');
+                if (!checked) { Swal.showValidationMessage('Selecciona una duración'); return false; }
+                return checked.value;
+            }
+        });
+        if (!isConfirmed) return;
+        setLoading(duration);
+        try {
+            const { data } = await axios.patch(`/api/users/${user._id}/block`, { duration });
+            setUser(data);
+            onSanctionUpdate?.(data);
+            Swal.fire({ icon: 'success', title: 'Usuario bloqueado', timer: 2000, showConfirmButton: false, customClass: { popup: 'swal2-lumina-popup' } });
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error', text: err?.response?.data?.msg || 'No se pudo bloquear.', customClass: { popup: 'swal2-lumina-popup' } });
+        } finally { setLoading(null); }
+    };
+
     const handleSanction = async (action) => {
         const labels = {
             reduce:  { title: 'Reducir sanción', text: '¿Quitar 1 sanción y restaurar 25 pts de reputación?', confirm: 'Sí, reducir' },
@@ -36,8 +76,10 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
         if (!result.isConfirmed) return;
         setLoading(action);
         try {
-            const url = action === 'unblock' ? `/api/users/${user._id}/unblock` : `/api/users/${user._id}/sanctions/${action}`;
-            const { data } = await axios.patch(url);
+            const url = action === 'unblock' ? `/api/users/${user._id}/unblock`
+                      : action === 'block' ? `/api/users/${user._id}/block`
+                      : `/api/users/${user._id}/sanctions/${action}`;
+            const { data } = await axios.patch(url, action === 'block' ? { duration: loading } : {});
             setUser(data);
             onSanctionUpdate?.(data);
         } catch (err) {
@@ -192,71 +234,98 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
 
                             {/* Sanction Management — only for regular users */}
                             {user.role === 'user' && (
-                                <div style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Shield size={18} color="#f59e0b" /> Gestión de Sanciones
-                                    </h3>
+                                <>
+                                    {/* Sanciones */}
+                                    <div style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Shield size={18} color="#f59e0b" /> Gestión de Sanciones
+                                        </h3>
 
-                                    {/* Progress bar */}
-                                    <div style={{ marginBottom: '1.2rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Sanciones acumuladas</span>
-                                            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : 'var(--text-main)' }}>
-                                                {user.sanctions || 0} / 3
-                                            </span>
+                                        {/* Progress bar */}
+                                        <div style={{ marginBottom: '1.2rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Sanciones acumuladas</span>
+                                                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : 'var(--text-main)' }}>
+                                                    {user.sanctions || 0} / 3
+                                                </span>
+                                            </div>
+                                            <div style={{ height: '8px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${((user.sanctions || 0) / 3) * 100}%`, background: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : '#10b981', borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                                            </div>
+                                            {(user.sanctions || 0) >= 3 && (
+                                                <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '0.4rem', fontWeight: '600' }}>⛔ Cuenta suspendida permanentemente</p>
+                                            )}
                                         </div>
-                                        <div style={{ height: '8px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${((user.sanctions || 0) / 3) * 100}%`, background: (user.sanctions || 0) >= 3 ? '#ef4444' : (user.sanctions || 0) >= 2 ? '#f59e0b' : '#10b981', borderRadius: '99px', transition: 'width 0.4s ease' }} />
-                                        </div>
-                                        {(user.sanctions || 0) >= 3 && (
-                                            <p style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '0.4rem', fontWeight: '600' }}>⛔ Cuenta suspendida permanentemente</p>
-                                        )}
-                                    </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                                        <button
-                                            onClick={() => handleSanction('reduce')}
-                                            disabled={!user.sanctions || loading === 'reduce'}
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
-                                            onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(245,158,11,0.18)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; }}
-                                        >
-                                            <MinusCircle size={16} /> {loading === 'reduce' ? 'Procesando...' : 'Reducir 1 sanción (+25 reputación)'}
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleSanction('clear')}
-                                            disabled={!user.sanctions || loading === 'clear'}
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
-                                            onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
-                                        >
-                                            <Trash2 size={16} /> {loading === 'clear' ? 'Procesando...' : 'Eliminar todas las sanciones'}
-                                        </button>
-
-                                        {user.blockedUntil && new Date(user.blockedUntil) > new Date() && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                                            {/* Reducir */}
                                             <button
-                                                onClick={() => handleSanction('unblock')}
+                                                onClick={() => handleSanction('reduce')}
+                                                disabled={!user.sanctions || loading === 'reduce'}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(245,158,11,0.18)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; }}
+                                            >
+                                                <MinusCircle size={16} /> {loading === 'reduce' ? 'Procesando...' : 'Reducir 1 sanción (+25 reputación)'}
+                                            </button>
+
+                                            {/* Aplicar sanción */}
+                                            <button
+                                                onClick={() => handleSanction('add')}
                                                 disabled={!!loading}
-                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
-                                                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
+                                            >
+                                                <Plus size={16} /> {loading === 'add' ? 'Procesando...' : 'Aplicar sanción manual (-25 reputación)'}
+                                            </button>
+
+                                            {/* Eliminar todas */}
+                                            <button
+                                                onClick={() => handleSanction('clear')}
+                                                disabled={!user.sanctions || loading === 'clear'}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: (!user.sanctions || loading) ? 'not-allowed' : 'pointer', opacity: (!user.sanctions || loading) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                onMouseEnter={e => { if (user.sanctions && !loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
                                                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
                                             >
-                                                <ShieldOff size={16} /> {loading === 'unblock' ? 'Procesando...' : `Levantar bloqueo (hasta ${new Date(user.blockedUntil).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
+                                                <Trash2 size={16} /> {loading === 'clear' ? 'Procesando...' : 'Eliminar todas las sanciones'}
                                             </button>
-                                        )}
-
-                                        <button
-                                            onClick={() => handleSanction('add')}
-                                            disabled={!!loading}
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)', color: '#ef4444', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
-                                            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(239,68,68,0.18)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-                                        >
-                                            <Plus size={16} /> {loading === 'add' ? 'Procesando...' : 'Aplicar sanción manual (-25 reputación)'}
-                                        </button>
+                                        </div>
                                     </div>
-                                </div>
+
+                                    {/* Control de Acceso */}
+                                    <div style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Ban size={18} color="#ef4444" /> Control de Acceso
+                                        </h3>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                                            {/* Levantar bloqueo (si aplica) */}
+                                            {user.blockedUntil && new Date(user.blockedUntil) > new Date() && (
+                                                <button
+                                                    onClick={() => handleSanction('unblock')}
+                                                    disabled={!!loading}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: '600', fontSize: '0.88rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                    onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'rgba(16,185,129,0.18)'; }}
+                                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
+                                                >
+                                                    <ShieldOff size={16} /> {loading === 'unblock' ? 'Procesando...' : `Levantar bloqueo (hasta ${new Date(user.blockedUntil).toLocaleString('es-DO', { timeZone: 'America/Santo_Domingo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})`}
+                                                </button>
+                                            )}
+
+                                            {/* Bloquear */}
+                                            <button
+                                                onClick={handleBlockUser}
+                                                disabled={!!loading || user.sanctions >= 3}
+                                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.7rem 1rem', borderRadius: '10px', border: '1.5px solid rgba(239,68,68,0.6)', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: '700', fontSize: '0.88rem', cursor: (loading || user.sanctions >= 3) ? 'not-allowed' : 'pointer', opacity: (loading || user.sanctions >= 3) ? 0.5 : 1, transition: 'all 0.15s', width: '100%' }}
+                                                onMouseEnter={e => { if (!loading && user.sanctions < 3) e.currentTarget.style.background = 'rgba(239,68,68,0.28)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+                                            >
+                                                <Ban size={16} /> {loading ? 'Procesando...' : 'Bloquear acceso al sistema'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
                             )}
                         </div>
 

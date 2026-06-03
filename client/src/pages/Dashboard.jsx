@@ -42,11 +42,12 @@ const TYPE_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-    pending:      { label: 'Pendiente',    color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
-    approved:     { label: 'Aprobado',     color: '#10b981', bg: 'rgba(16,185,129,0.12)'  },
-    rejected:     { label: 'Rechazado',    color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-    sanctioned:   { label: 'Sancionado',   color: '#b91c1c', bg: 'rgba(185,28,28,0.12)'   },
-    'In Process': { label: 'En revisión',  color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)'  },
+    pending:        { label: 'Pendiente',         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
+    approved:       { label: 'Aprobado',          color: '#10b981', bg: 'rgba(16,185,129,0.12)'  },
+    rejected:       { label: 'Rechazado',         color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+    sanctioned:     { label: 'Sancionado',        color: '#b91c1c', bg: 'rgba(185,28,28,0.12)'   },
+    'In Process':   { label: 'En revisión',       color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)'  },
+    needs_review:   { label: 'Pendiente revisar', color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
 };
 
 const formatDate = (dateStr) => {
@@ -741,13 +742,12 @@ const Dashboard = () => {
                                                 onClick={async e => {
                                                     e.stopPropagation();
                                                     const result = await Swal.fire({
-                                                        title: '⚠️ Contenido sensible',
+                                                        title: 'Contenido sensible',
                                                         text: 'Este contenido fue marcado como inapropiado por el sistema. Puede contener imágenes de violencia, gore u otro material no apto. ¿Deseas verlo de todos modos?',
-                                                        icon: 'warning',
                                                         showCancelButton: true,
                                                         confirmButtonText: 'Sí, ver contenido',
                                                         cancelButtonText: 'Cancelar',
-                                                        customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                                                        customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
                                                     });
                                                     if (result.isConfirmed) setRevealedReports(prev => new Set([...prev, report._id]));
                                                 }}

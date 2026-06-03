@@ -91,7 +91,7 @@ const ModerateReports = () => {
     }, [filter]);
 
     const handleOpenDetails = async (report) => {
-        if (report.status === 'pending' || report.status === 'In Process') {
+        if (report.status === 'pending' || report.status === 'In Process' || report.status === 'needs_review') {
             try {
                 const res = await axios.put(`/api/reports/${report._id}/lock`);
                 setSelectedReport(res.data);
@@ -460,16 +460,22 @@ const ModerateReports = () => {
 
                                     <div style={{
                                         position: 'absolute', top: '1rem', left: '1rem',
-                                        background: report.status === 'pending' ? 'var(--warning)' : report.status === 'approved' ? 'var(--success)' : report.status === 'In Process' ? 'var(--primary)' : report.wasSanctioned ? '#991b1b' : 'var(--error)',
+                                        background: report.wasSanctioned ? '#991b1b' :
+                                            report.status === 'pending' ? 'var(--warning)' :
+                                            report.status === 'approved' ? 'var(--success)' :
+                                            report.status === 'In Process' ? 'var(--primary)' :
+                                            report.status === 'needs_review' ? '#f97316' :
+                                            'var(--error)',
                                         color: 'white', padding: '0.25rem 0.75rem', borderRadius: '999px',
                                         fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em',
                                         zIndex: 20
                                     }}>
                                         {report.wasSanctioned ? 'Sancionado' :
                                             report.status === 'pending' ? 'Pendiente' :
-                                                report.status === 'approved' ? 'Aprobado' :
-                                                    report.status === 'In Process' ? 'En Proceso' :
-                                                        'Rechazado'}
+                                            report.status === 'approved' ? 'Aprobado' :
+                                            report.status === 'In Process' ? 'En Proceso' :
+                                            report.status === 'needs_review' ? 'Pendiente Revisar' :
+                                            'Rechazado'}
                                     </div>
                                 </div>
 
@@ -517,7 +523,8 @@ const ModerateReports = () => {
                                             onClick={() => handleOpenDetails(report)}
                                             disabled={report.status === 'In Process' && report.moderatorInCharge !== user?.id}
                                             style={{
-                                                background: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 'var(--bg-input)' : 'var(--primary)',
+                                                background: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 'var(--bg-input)' :
+                                                    report.status === 'needs_review' ? '#f97316' : 'var(--primary)',
                                                 color: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? 'var(--text-muted)' : 'white',
                                                 border: report.status === 'In Process' && report.moderatorInCharge !== user?.id ? '1px solid var(--border-color)' : 'none',
                                                 padding: '0.85rem 1rem', borderRadius: '12px', cursor: 'pointer',

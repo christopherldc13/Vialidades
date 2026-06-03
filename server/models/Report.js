@@ -25,7 +25,7 @@ const ReportSchema = new mongoose.Schema({
         year: { type: Number },
         color: { type: String }
     },
-    status: { type: String, enum: ['pending', 'approved', 'rejected', 'In Process'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'approved', 'rejected', 'In Process', 'needs_review'], default: 'pending' },
     hiddenByUser: { type: Boolean, default: false },
     moderatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     moderatorInCharge: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -367,7 +367,7 @@ router.get('/', auth, async (req, res) => {
         } else if (['moderator', 'admin'].includes(req.user.role)) {
             // Global vs. Personalized logic
             if (status === 'pending') {
-                query.status = { $in: ['pending', 'In Process'] };
+                query.status = { $in: ['pending', 'In Process', 'needs_review'] };
                 // Global: No moderatorId filter
             } else if (status === 'all') {
                 // Global history: No specific filter
@@ -392,7 +392,7 @@ router.get('/', auth, async (req, res) => {
             }
         } else {
             // Regular users see approved + reports under community review
-            query.status = { $in: ['approved', 'In Process'] };
+            query.status = { $in: ['approved', 'In Process', 'needs_review'] };
             query.hiddenByUser = { $ne: true };
         }
 
@@ -628,9 +628,9 @@ router.post('/:id/flag', auth, async (req, res) => {
         report.flags.push({ userId: req.user.id, reason: reason || 'Sin motivo especificado', createdAt: new Date() });
 
         if (report.flags.length >= 3 && report.status === 'approved') {
-            report.status = 'In Process';
+            report.status = 'needs_review';
             const io = require('../socket').getIo();
-            io.emit('report_flagged', { reportId: report._id, status: 'In Process', flagsCount: report.flags.length });
+            io.emit('report_flagged', { reportId: report._id, status: 'needs_review', flagsCount: report.flags.length });
         }
 
         await report.save();

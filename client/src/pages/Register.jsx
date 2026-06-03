@@ -404,7 +404,7 @@ function Register() {
         if (name === 'cedula') value = formatCedula(value);
 
         if (name === 'firstName' || name === 'lastName') {
-            value = value.replace(/\b\w/g, char => char.toUpperCase());
+            value = value.replace(/(^|[\s-])([a-záéíóúüñA-ZÁÉÍÓÚÜÑ])/g, (_, sep, char) => sep + char.toUpperCase());
         }
 
         setFormData({

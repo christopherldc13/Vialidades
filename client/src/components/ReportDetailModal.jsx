@@ -22,11 +22,12 @@ const TYPE_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-    pending:    { label: 'PENDIENTE',   color: '#f59e0b', bg: 'rgba(245,158,11,0.15)'  },
-    approved:   { label: 'APROBADO',    color: '#10b981', bg: 'rgba(16,185,129,0.15)'  },
-    rejected:   { label: 'RECHAZADO',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)'   },
-    'In Process':{ label: 'EN PROCESO', color: '#6366f1', bg: 'rgba(99,102,241,0.15)'  },
-    sanctioned: { label: 'SANCIONADO',  color: '#b91c1c', bg: 'rgba(185,28,28,0.15)'   },
+    pending:      { label: 'PENDIENTE',         color: '#f59e0b', bg: 'rgba(245,158,11,0.15)'  },
+    approved:     { label: 'APROBADO',          color: '#10b981', bg: 'rgba(16,185,129,0.15)'  },
+    rejected:     { label: 'RECHAZADO',         color: '#ef4444', bg: 'rgba(239,68,68,0.15)'   },
+    'In Process': { label: 'EN PROCESO',        color: '#6366f1', bg: 'rgba(99,102,241,0.15)'  },
+    sanctioned:   { label: 'SANCIONADO',        color: '#b91c1c', bg: 'rgba(185,28,28,0.15)'   },
+    needs_review: { label: 'PENDIENTE REVISAR', color: '#f97316', bg: 'rgba(249,115,22,0.15)'  },
 };
 
 let DefaultIcon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, iconSize: [25, 41], iconAnchor: [12, 41] });
@@ -330,7 +331,7 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
 
                     {/* Footer */}
                     <div className="modal-footer-modern">
-                        {user?.role === 'moderator' && (report.status === 'pending' || report.status === 'In Process') && (
+                        {user?.role === 'moderator' && (report.status === 'pending' || report.status === 'In Process' || report.status === 'needs_review') && (
                             <div className="modal-footer-actions">
                                 <button
                                     onClick={() => Swal.fire({

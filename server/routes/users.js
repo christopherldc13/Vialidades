@@ -155,11 +155,13 @@ router.patch('/:id/sanctions/reduce', auth, async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
         if (user.sanctions <= 0) return res.status(400).json({ msg: 'El usuario no tiene sanciones.' });
-        user.sanctions = Math.max(0, user.sanctions - 1);
-        user.reputation = Math.min(100, (user.reputation || 0) + 25);
-        await user.save();
-        res.json(user);
-    } catch (err) { res.status(500).send('Server Error'); }
+        const updated = await User.findByIdAndUpdate(
+            req.params.id,
+            { $set: { sanctions: Math.max(0, user.sanctions - 1), reputation: Math.min(100, (user.reputation || 0) + 25) } },
+            { new: true, runValidators: false }
+        ).select('-password');
+        res.json(updated);
+    } catch (err) { res.status(500).json({ msg: err.message || 'Error al reducir sanción.' }); }
 });
 
 // Clear all sanctions
@@ -168,12 +170,39 @@ router.patch('/:id/sanctions/clear', auth, async (req, res) => {
         if (!isMod(req, res)) return;
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
-        user.sanctions = 0;
-        user.reputation = 100;
-        user.blockedUntil = null;
-        await user.save();
-        res.json(user);
-    } catch (err) { res.status(500).send('Server Error'); }
+        const updated = await User.findByIdAndUpdate(
+            req.params.id,
+            { $set: { sanctions: 0, reputation: 100, blockedUntil: null } },
+            { new: true, runValidators: false }
+        ).select('-password');
+        res.json(updated);
+    } catch (err) { res.status(500).json({ msg: err.message || 'Error al limpiar sanciones.' }); }
+});
+
+// Block user manually
+router.patch('/:id/block', auth, async (req, res) => {
+    try {
+        if (!isMod(req, res)) return;
+        const { duration } = req.body; // '24h' | '48h' | '7d' | 'permanent'
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        if (user.role !== 'user') return res.status(400).json({ msg: 'Solo se pueden bloquear usuarios regulares.' });
+
+        const durations = { '24h': 24, '48h': 48, '7d': 168 };
+        let updateFields;
+        if (duration === 'permanent') {
+            updateFields = { sanctions: 3, blockedUntil: null };
+        } else {
+            const hours = durations[duration] || 24;
+            updateFields = { blockedUntil: new Date(Date.now() + hours * 60 * 60 * 1000) };
+        }
+        const updated = await User.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateFields },
+            { new: true, runValidators: false }
+        ).select('-password');
+        res.json(updated);
+    } catch (err) { res.status(500).json({ msg: err.message || 'Error al bloquear usuario.' }); }
 });
 
 // Remove login block (keep sanctions count, just lift the block)
@@ -182,10 +211,13 @@ router.patch('/:id/unblock', auth, async (req, res) => {
         if (!isMod(req, res)) return;
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
-        user.blockedUntil = null;
-        await user.save();
-        res.json(user);
-    } catch (err) { res.status(500).send('Server Error'); }
+        const updated = await User.findByIdAndUpdate(
+            req.params.id,
+            { $set: { blockedUntil: null } },
+            { new: true, runValidators: false }
+        ).select('-password');
+        res.json(updated);
+    } catch (err) { res.status(500).json({ msg: err.message || 'Error al levantar bloqueo.' }); }
 });
 
 // Add manual sanction
@@ -194,11 +226,13 @@ router.patch('/:id/sanctions/add', auth, async (req, res) => {
         if (!isMod(req, res)) return;
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
-        user.sanctions = (user.sanctions || 0) + 1;
-        user.reputation = Math.max(0, (user.reputation || 100) - 25);
-        await user.save();
-        res.json(user);
-    } catch (err) { res.status(500).send('Server Error'); }
+        const updated = await User.findByIdAndUpdate(
+            req.params.id,
+            { $set: { sanctions: (user.sanctions || 0) + 1, reputation: Math.max(0, (user.reputation || 100) - 25) } },
+            { new: true, runValidators: false }
+        ).select('-password');
+        res.json(updated);
+    } catch (err) { res.status(500).json({ msg: err.message || 'Error al aplicar sanción.' }); }
 });
 
 module.exports = router;
