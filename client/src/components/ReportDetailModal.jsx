@@ -4,7 +4,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import { X, Calendar, User, Info, Smartphone, Clock, MapPin, ExternalLink } from 'lucide-react';
+import { X, Calendar, User, Info, Smartphone, Clock, MapPin, ExternalLink, Trash2 } from 'lucide-react';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaGallery from './MediaGallery';
 import { FaCar, FaCarCrash } from "react-icons/fa";
@@ -38,8 +39,22 @@ const formatTime = (d) => new Date(d).toLocaleTimeString('es-DO', { hour: '2-dig
 
 const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
     const [showRawMetadata, setShowRawMetadata] = useState({});
+    const [localFlags, setLocalFlags] = useState(report?.flags || []);
+    const [deletingFlag, setDeletingFlag] = useState(null);
     const isModerator = user?.role === 'moderator' || user?.role === 'admin';
     const isModerated = useRef(false);
+
+    const handleClearFlags = async () => {
+        setDeletingFlag('all');
+        try {
+            await axios.delete(`/api/reports/${report._id}/flags`);
+            setLocalFlags([]);
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Error', text: err?.response?.data?.msg || 'No se pudieron eliminar las denuncias.', customClass: { popup: 'swal2-lumina-popup' } });
+        } finally {
+            setDeletingFlag(null);
+        }
+    };
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
@@ -293,16 +308,26 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                 )}
 
                                 {/* Denuncias (moderadores only) */}
-                                {isModerator && report.flags?.length > 0 && (
+                                {isModerator && localFlags.length > 0 && (
                                     <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                        <div style={{ padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', flexShrink: 0 }} />
-                                            <strong style={{ color: '#b45309', fontSize: '0.82rem', fontWeight: '800' }}>
-                                                🚩 Denuncias de la comunidad ({report.flags.length})
+                                        <div style={{ padding: '0.6rem 1rem', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <strong style={{ color: '#b45309', fontSize: '0.82rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block', flexShrink: 0 }} />
+                                                🚩 Denuncias de la comunidad ({localFlags.length})
                                             </strong>
+                                            <button
+                                                onClick={handleClearFlags}
+                                                disabled={deletingFlag !== null}
+                                                title="Desestimar todas las denuncias"
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: '700', cursor: deletingFlag !== null ? 'not-allowed' : 'pointer', opacity: deletingFlag !== null ? 0.5 : 1, transition: 'all 0.15s', whiteSpace: 'nowrap', width: 'fit-content' }}
+                                                onMouseEnter={e => { if (!deletingFlag) e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+                                            >
+                                                <Trash2 size={11} /> {deletingFlag === 'all' ? '...' : 'Desestimar'}
+                                            </button>
                                         </div>
                                         <div style={{ padding: '0.85rem 1rem', background: 'var(--surface-solid)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            {report.flags.map((flag, i) => (
+                                            {localFlags.map((flag, i) => (
                                                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-main)', padding: '0.4rem 0.6rem', background: 'var(--bg-input)', borderRadius: '8px' }}>
                                                     <span style={{ fontWeight: '700', color: '#f59e0b', flexShrink: 0 }}>#{i + 1}</span>
                                                     <span>{flag.reason || 'Sin motivo especificado'}</span>
@@ -333,6 +358,7 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                     <div className="modal-footer-modern">
                         {user?.role === 'moderator' && (report.status === 'pending' || report.status === 'In Process' || report.status === 'needs_review') && (
                             <div className="modal-footer-actions">
+                                {localFlags.length < 3 && (
                                 <button
                                     onClick={() => Swal.fire({
                                         title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div> Aprobar Reporte</h2>',
@@ -347,6 +373,7 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                 >
                                     <Check size={18} /> Aprobar
                                 </button>
+                                )}
                                 <button
                                     onClick={() => Swal.fire({
                                         title: '<h2 style="color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; gap: 10px;"><div style="background: rgba(239, 68, 68, 0.15); color: var(--error); padding: 8px; border-radius: 50%; display: flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div> Rechazar Reporte</h2>',

@@ -334,14 +334,15 @@ router.put('/:id/unlock', auth, async (req, res) => {
         if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
 
         if (report.status === 'In Process' && report.moderatorInCharge?.toString() === req.user.id) {
-            report.status = 'pending';
+            const restoredStatus = report.flags?.length >= 3 ? 'needs_review' : 'pending';
+            report.status = restoredStatus;
             report.moderatorInCharge = null;
             await report.save();
 
             const io = require('../socket').getIo();
             io.emit('report_status_updated', {
                 reportId: report._id,
-                status: 'pending'
+                status: restoredStatus
             });
         }
 
@@ -443,6 +444,7 @@ router.patch('/:id/moderate', auth, async (req, res) => {
             }
         } else if (status === 'approved') {
             report.moderatorComment = moderatorComment;
+            report.flags = []; // clear community flags on approval
 
             // Apply Cloudinary face-blur to all images via URL transformation
             let modified = false;
@@ -598,7 +600,7 @@ router.put('/:id/unlock', auth, async (req, res) => {
         if (!report) return res.status(404).json({ msg: 'Report not found' });
 
         if (report.status === 'In Process' && report.moderatorInCharge && report.moderatorInCharge.toString() === req.user.id) {
-            report.status = 'pending';
+            report.status = report.flags?.length >= 3 ? 'needs_review' : 'pending';
             report.moderatorInCharge = null;
             report.moderatorInChargeName = null;
             await report.save();
@@ -638,6 +640,24 @@ router.post('/:id/flag', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// Clear all flags (moderator/admin only)
+router.delete('/:id/flags', auth, async (req, res) => {
+    try {
+        if (!['moderator', 'admin'].includes(req.user.role))
+            return res.status(403).json({ msg: 'No autorizado' });
+
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
+
+        report.flags = [];
+        await report.save();
+        res.json({ flags: [] });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: err.message });
     }
 });
 
