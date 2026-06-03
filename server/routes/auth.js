@@ -15,50 +15,34 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'AQUI_TU_C
 router.post('/check-duplicates', async (req, res) => {
     const { username, email, cedula, phone, firstName, lastName } = req.body;
     try {
-        // Validate required fields
         if (!username || !email || !firstName || !lastName || !phone || !cedula) {
             return res.status(400).json({ msg: 'Todos los campos son obligatorios.' });
         }
 
-        const normalizedFirstName = firstName.trim().toLowerCase();
-        const normalizedLastName = lastName.trim().toLowerCase();
+        // Check each field independently so every conflict is caught regardless of which user holds it
+        const [byCedula, byPhone, byUsername, byEmail, byName] = await Promise.all([
+            User.findOne({ cedula, role: 'user' }),
+            User.findOne({ phone, role: 'user' }),
+            User.findOne({ username }),
+            User.findOne({ email }),
+            User.findOne({
+                firstName: { $regex: new RegExp(`^${firstName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+                lastName:  { $regex: new RegExp(`^${lastName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+                role: 'user'
+            })
+        ]);
 
-        const existingUser = await User.findOne({
-            $or: [
-                { username },
-                { email },
-                { cedula },
-                { phone }
-            ]
-        });
+        if (byCedula)   return res.status(400).json({ msg: 'Esta cédula ya está registrada en otra cuenta.' });
+        if (byPhone)    return res.status(400).json({ msg: 'Este número de teléfono ya está registrado en otra cuenta.' });
+        if (byUsername) return res.status(400).json({ msg: 'Este nombre de usuario ya está en uso.' });
+        if (byEmail)    return res.status(400).json({ msg: 'Este correo electrónico ya está registrado.' });
+        if (byName)     return res.status(400).json({ msg: 'Ya existe un usuario registrado con ese Nombre y Apellido.' });
 
-        if (existingUser) {
-            // Cedula/phone: if the existing account is a moderator or admin it's the same
-            // person registering a separate user account — allow it.
-            const isSamePerson = existingUser.role === 'moderator' || existingUser.role === 'admin';
-
-            if (existingUser.cedula === cedula && !isSamePerson) return res.status(400).json({ msg: 'Esta cédula ya está registrada.' });
-            if (existingUser.phone === phone && !isSamePerson) return res.status(400).json({ msg: 'Este número de teléfono ya está registrado.' });
-            if (existingUser.username === username) return res.status(400).json({ msg: 'Este nombre de usuario ya está en uso.' });
-            if (existingUser.email === email) return res.status(400).json({ msg: 'Este correo electrónico ya está registrado.' });
-        }
-
-        // Name and Last Name combined check — only block if the match is another regular user
-        const nameMatch = await User.findOne({
-            firstName: { $regex: new RegExp(`^${normalizedFirstName}$`, 'i') },
-            lastName:  { $regex: new RegExp(`^${normalizedLastName}$`, 'i') },
-            role: 'user'
-        });
-
-        if (nameMatch) {
-            return res.status(400).json({ msg: 'Ya existe un usuario con este Nombre y Apellido.' });
-        }
-
-        res.json({ success: true, msg: 'Datos válidos, puede proceder al KYC.' });
+        res.json({ success: true });
 
     } catch (err) {
         console.error('❌ Check Duplicates Error:', err.message);
-        res.status(500).send('Server Error al validar datos: ' + err.message);
+        res.status(500).json({ msg: 'Error al validar los datos.' });
     }
 });
 

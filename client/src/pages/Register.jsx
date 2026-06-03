@@ -16,6 +16,7 @@ import TermsModal from '../components/TermsModal';
 import { TbCameraSelfie } from 'react-icons/tb';
 import { IoMailUnreadOutline } from 'react-icons/io5';
 import { HiOutlineIdentification } from 'react-icons/hi2';
+import Swal from 'sweetalert2';
 
 // Set dayjs locale to Spanish
 dayjs.locale('es');
@@ -448,9 +449,16 @@ function Register() {
         setIsLoading(false);
 
         if (res.success) {
-            setStep(2); // Proceed to Document Capture
+            setStep(2);
         } else {
-            setError(res.msg); // Muestra el mensaje de error específico
+            Swal.fire({
+                icon: 'error',
+                title: 'Datos ya registrados',
+                text: res.msg,
+                confirmButtonText: 'Entendido',
+                customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm' },
+                buttonsStyling: false,
+            });
         }
     };
 
