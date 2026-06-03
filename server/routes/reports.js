@@ -643,7 +643,7 @@ router.post('/:id/flag', auth, async (req, res) => {
     }
 });
 
-// Clear all flags (moderator/admin only)
+// Clear all flags and auto-approve (moderator/admin only)
 router.delete('/:id/flags', auth, async (req, res) => {
     try {
         if (!['moderator', 'admin'].includes(req.user.role))
@@ -653,8 +653,17 @@ router.delete('/:id/flags', auth, async (req, res) => {
         if (!report) return res.status(404).json({ msg: 'Reporte no encontrado' });
 
         report.flags = [];
+        report.status = 'approved';
+        report.moderatorId = req.user.id;
+        report.moderatorInCharge = null;
+        report.moderatorInChargeName = null;
+        report.moderatorComment = report.moderatorComment || 'Denuncias desestimadas — reporte verificado por moderador.';
         await report.save();
-        res.json({ flags: [] });
+
+        const io = require('../socket').getIo();
+        io.emit('report_status_updated', { reportId: report._id, status: 'approved' });
+
+        res.json(report);
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ msg: err.message });

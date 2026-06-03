@@ -45,10 +45,25 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
     const isModerated = useRef(false);
 
     const handleClearFlags = async () => {
+        const { isConfirmed } = await Swal.fire({
+            title: 'Desestimar denuncias',
+            text: 'Las denuncias serán eliminadas y el reporte quedará aprobado automáticamente.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, desestimar y aprobar',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'swal2-lumina-popup', confirmButton: 'swal2-lumina-confirm swal2-confirm-success', cancelButton: 'swal2-lumina-cancel' },
+            buttonsStyling: false,
+        });
+        if (!isConfirmed) return;
+
         setDeletingFlag('all');
         try {
-            await axios.delete(`/api/reports/${report._id}/flags`);
-            setLocalFlags([]);
+            const { data } = await axios.delete(`/api/reports/${report._id}/flags`);
+            isModerated.current = true;
+            onModerate?.(data._id, 'approved', false, data.moderatorComment);
+            Swal.fire({ icon: 'success', title: 'Reporte aprobado', text: 'Las denuncias fueron desestimadas y el reporte fue aprobado.', timer: 2500, showConfirmButton: false, customClass: { popup: 'swal2-lumina-popup' } });
+            onClose();
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Error', text: err?.response?.data?.msg || 'No se pudieron eliminar las denuncias.', customClass: { popup: 'swal2-lumina-popup' } });
         } finally {
