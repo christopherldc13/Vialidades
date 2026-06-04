@@ -91,9 +91,12 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'AQUI_TU_CLIENT_ID.apps.googleusercontent.com';
-  const [showSplash] = useState(
-    () => performance.getEntriesByType('navigation')[0]?.type === 'reload'
-  );
+  const [showSplash] = useState(() => {
+    const isReload = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+    const isLogout = sessionStorage.getItem('showSplash') === 'true';
+    if (isLogout) sessionStorage.removeItem('showSplash');
+    return isReload || isLogout;
+  });
   const [splashDone, setSplashDone] = useState(false);
 
   return (

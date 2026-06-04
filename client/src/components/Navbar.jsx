@@ -70,6 +70,7 @@ const Navbar = () => {
             if (result.isConfirmed) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                sessionStorage.setItem('showSplash', 'true');
                 window.location.href = '/';
             }
         });

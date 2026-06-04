@@ -1,4 +1,4 @@
-import { useState, useContext, useMemo } from 'react';
+import { useState, useContext, useMemo, useEffect } from 'react';
 import { X, UserPlus, Eye, EyeOff, User, Phone, Mail, Lock, MapPin, Calendar, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -25,12 +25,12 @@ const DR_PROVINCES = [
 
 const FIELD_STYLE = {
     width: '100%',
-    padding: '0.7rem 1rem',
-    borderRadius: '12px',
+    padding: '0.72rem 1rem',
+    borderRadius: '10px',
     border: '1.5px solid var(--border-color)',
-    background: 'var(--bg-input)',
+    background: 'var(--surface-solid)',
     color: 'var(--text-main)',
-    fontSize: '0.9rem',
+    fontSize: '0.875rem',
     fontFamily: 'inherit',
     outline: 'none',
     transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -40,19 +40,21 @@ const FIELD_STYLE = {
 const SectionLabel = ({ icon: Icon, label }) => (
     <div style={{
         display: 'flex', alignItems: 'center', gap: '0.5rem',
-        fontSize: '0.72rem', fontWeight: '700', color: 'var(--primary)',
-        textTransform: 'uppercase', letterSpacing: '0.08em',
-        paddingBottom: '0.6rem', borderBottom: '1px solid var(--border-color)',
-        marginBottom: '0.1rem',
+        fontSize: '0.71rem', fontWeight: '800', color: 'var(--primary)',
+        textTransform: 'uppercase', letterSpacing: '0.09em',
+        padding: '0.5rem 0.85rem',
+        background: 'rgba(99,102,241,0.07)',
+        borderRadius: '8px',
+        border: '1px solid rgba(99,102,241,0.15)',
     }}>
-        <Icon size={13} />
+        <Icon size={12} />
         {label}
     </div>
 );
 
 const Field = ({ label, children }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-        <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>{label}</label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.01em' }}>{label}</label>
         {children}
     </div>
 );
@@ -89,6 +91,13 @@ const CreateModeratorModal = ({ isOpen, onClose }) => {
             MuiPickersMonth: { styleOverrides: { monthButton: { backgroundColor: 'transparent !important', boxShadow: 'none !important', color: 'inherit', '&.Mui-selected': { backgroundColor: 'var(--primary) !important', color: 'white !important' }, '&:hover': { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1) !important' : 'rgba(0,0,0,0.05) !important' } } } }
         }
     }), [theme]);
+
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -176,26 +185,26 @@ const CreateModeratorModal = ({ isOpen, onClose }) => {
                     onClick={e => e.stopPropagation()}
                 >
                     {/* ── Header ── */}
-                    <div className="create-mod-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div className="create-mod-header" style={{ background: 'var(--surface-solid)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                             <div style={{
                                 background: 'linear-gradient(135deg, var(--primary), #818cf8)',
-                                color: 'white', padding: '10px', borderRadius: '14px',
-                                display: 'flex', boxShadow: '0 4px 14px rgba(99,102,241,0.35)', flexShrink: 0,
+                                color: 'white', padding: '11px', borderRadius: '14px',
+                                display: 'flex', boxShadow: '0 6px 20px rgba(99,102,241,0.4)', flexShrink: 0,
                             }}>
-                                <UserPlus size={20} />
+                                <UserPlus size={22} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                                <div style={{ fontSize: '1.15rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.4px', lineHeight: 1.2 }}>
                                     Registrar Moderador
                                 </div>
-                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '1px' }}>
+                                <div style={{ fontSize: '0.77rem', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>
                                     Completa todos los campos para crear el acceso
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="modal-close-btn" disabled={isLoading} style={{ flexShrink: 0 }}>
-                            <X size={20} />
+                        <button onClick={onClose} className="modal-close-btn" disabled={isLoading} style={{ flexShrink: 0, background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                            <X size={17} />
                         </button>
                     </div>
 
@@ -303,7 +312,8 @@ const CreateModeratorModal = ({ isOpen, onClose }) => {
                             <button type="button" onClick={onClose} disabled={isLoading} className="create-mod-btn-cancel">
                                 Cancelar
                             </button>
-                            <button type="submit" disabled={isLoading} className="create-mod-btn-submit">
+                            <button type="submit" disabled={isLoading} className="create-mod-btn-submit" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <UserPlus size={16} />
                                 {isLoading ? 'Creando...' : 'Crear Moderador'}
                             </button>
                         </div>
