@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema({
     birthProvince: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
     verificationCode: { type: String },
-    role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
+    role: { type: String, enum: ['user', 'moderator', 'supermoderador', 'admin'], default: 'user' },
     reputation: { type: Number, default: 0 },
     sanctions: { type: Number, default: 0 },
     avatar: { type: String, default: '' },

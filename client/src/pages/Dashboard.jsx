@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import { Plus, TrendingUp, MapPin, Calendar, MessageSquare, Mail, Trash2, MoreVertical, Eye, Flag } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, Navigate } from 'react-router-dom';
 import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
@@ -60,6 +60,7 @@ const getIncidentIcon = (type) => TYPE_CONFIG[type]?.icon || <IoMdHelpCircle />;
 const getIncidentLabel = (type) => TYPE_CONFIG[type]?.label || type;
 const getIncidentColor = (type) => TYPE_CONFIG[type]?.color || 'var(--primary)';
 const getIncidentBg = (type) => TYPE_CONFIG[type]?.bg || 'rgba(99,102,241,0.12)';
+
 
 const Dashboard = () => {
     const [reports, setReports] = useState([]);
@@ -207,6 +208,8 @@ const Dashboard = () => {
             </div>
         );
     }
+
+    if (user?.role === 'supermoderador') return <Navigate to="/supermoderador" replace />;
 
     return (
         <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>

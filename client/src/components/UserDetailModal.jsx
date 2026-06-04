@@ -71,7 +71,14 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
         const result = await Swal.fire({
             title, text, icon: 'warning', showCancelButton: true,
             confirmButtonText: confirm, cancelButtonText: 'Cancelar',
-            customClass: { popup: 'swal2-lumina-popup', confirmButton: confirmClass, cancelButton: 'swal2-lumina-cancel' }
+            buttonsStyling: false, reverseButtons: true,
+            customClass: {
+                popup: 'swal2-lumina-popup',
+                title: 'swal2-lumina-title',
+                htmlContainer: 'swal2-lumina-html',
+                confirmButton: confirmClass,
+                cancelButton: 'swal2-lumina-cancel',
+            }
         });
         if (!result.isConfirmed) return;
         setLoading(action);

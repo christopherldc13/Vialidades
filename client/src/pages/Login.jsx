@@ -65,6 +65,7 @@ function Login() {
         setIsLoading(false);
 
         if (res.success) {
+            const dest = res.role === 'supermoderador' ? '/supermoderador' : '/dashboard';
             Swal.fire({
                 title: '¡Ingreso Exitoso!',
                 text: 'Redirigiendo al panel principal...',
@@ -72,9 +73,7 @@ function Login() {
                 timer: 1500,
                 timerProgressBar: true,
                 showConfirmButton: false,
-                willClose: () => {
-                    navigate('/dashboard');
-                }
+                willClose: () => { navigate(dest); }
             });
         } else {
             setError(res.msg);
@@ -103,6 +102,7 @@ function Login() {
         setIsLoading(false);
 
         if (res.success) {
+            const dest = res.role === 'supermoderador' ? '/supermoderador' : '/dashboard';
             Swal.fire({
                 title: '¡Ingreso Exitoso!',
                 text: 'Redirigiendo al panel principal...',
@@ -110,9 +110,7 @@ function Login() {
                 timer: 1500,
                 timerProgressBar: true,
                 showConfirmButton: false,
-                willClose: () => {
-                    navigate('/dashboard');
-                }
+                willClose: () => { navigate(dest); }
             });
         } else {
             setError(res.msg);

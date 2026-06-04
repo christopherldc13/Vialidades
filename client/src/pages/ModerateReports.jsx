@@ -52,6 +52,8 @@ const ModerateReports = () => {
 
     const [reports, setReports] = useState([]);
     const [usersList, setUsersList] = useState([]);
+    const [userSearch, setUserSearch] = useState('');
+    const [userRoleFilter, setUserRoleFilter] = useState('all');
     const [revealedMedia, setRevealedMedia] = useState(new Set());
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
     const [typeFilter, setTypeFilter] = useState('all');
@@ -324,8 +326,57 @@ const ModerateReports = () => {
                             <h3 style={{ color: 'var(--text-main)' }}>No hay usuarios registrados</h3>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-                            {usersList.map((usr) => (
+                        <>
+                        {/* Barra de búsqueda y filtro de rol */}
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', margin: '1.5rem 0 1rem' }}>
+                            <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                                <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none', display: 'flex' }}>
+                                    🔍
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nombre, usuario o correo..."
+                                    value={userSearch}
+                                    onChange={e => setUserSearch(e.target.value)}
+                                    style={{
+                                        width: '100%', paddingLeft: '2.25rem', paddingRight: '0.75rem',
+                                        height: '38px', borderRadius: '10px', fontSize: '0.875rem',
+                                        border: '1px solid var(--border-color)', background: 'var(--surface-solid)',
+                                        color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box',
+                                    }}
+                                />
+                            </div>
+                            <select
+                                value={userRoleFilter}
+                                onChange={e => setUserRoleFilter(e.target.value)}
+                                style={{
+                                    height: '38px', borderRadius: '10px', padding: '0 0.85rem',
+                                    fontSize: '0.875rem', border: '1px solid var(--border-color)',
+                                    background: 'var(--surface-solid)', color: 'var(--text-main)',
+                                    outline: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                                }}
+                            >
+                                <option value="all">Todos los roles</option>
+                                <option value="user">Usuario</option>
+                                <option value="moderator">Moderador</option>
+                                <option value="supermoderador">Supermoderador</option>
+                            </select>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                {usersList.filter(u => {
+                                    const q = userSearch.toLowerCase();
+                                    const matchSearch = !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+                                    const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+                                    return matchSearch && matchRole;
+                                }).length} resultado(s)
+                            </span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            {usersList.filter(u => {
+                                const q = userSearch.toLowerCase();
+                                const matchSearch = !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+                                const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
+                                return matchSearch && matchRole;
+                            }).map((usr) => (
                                 <div key={usr._id} style={{
                                     display: 'flex', flexDirection: 'column',
                                     background: 'var(--surface-solid)', borderRadius: '20px',
@@ -428,6 +479,7 @@ const ModerateReports = () => {
                                 </div>
                             ))}
                         </div>
+                        </>
                     )
                 ) : filteredReports.length === 0 ? (
                     <div style={{ padding: '3rem 1.5rem', textAlign: 'center', background: 'var(--surface-solid)', borderRadius: '24px', marginTop: '1.5rem', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-lg)' }}>

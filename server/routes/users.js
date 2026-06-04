@@ -42,8 +42,7 @@ router.get('/:id', auth, async (req, res) => {
 // @access  Private (Admin/Moderator only)
 router.put('/promote', auth, async (req, res) => {
     try {
-        // Check if requester is admin or moderator
-        if (!['admin', 'moderator'].includes(req.user.role)) {
+        if (!['admin', 'supermoderador'].includes(req.user.role)) {
             return res.status(403).json({ msg: 'No tienes permisos para realizar esta acción' });
         }
 
@@ -83,8 +82,8 @@ router.put('/promote', auth, async (req, res) => {
 // @access  Private (Admin/Moderator only)
 router.post('/moderator', auth, async (req, res) => {
     try {
-        if (!['admin', 'moderator'].includes(req.user.role)) {
-            return res.status(403).json({ msg: 'No tienes permisos para crear moderadores' });
+        if (!['admin', 'supermoderador'].includes(req.user.role)) {
+            return res.status(403).json({ msg: 'Solo un supermoderador o administrador puede crear moderadores' });
         }
 
         const { username, email, password, firstName, lastName, birthDate, gender, phone, cedula, birthProvince } = req.body;

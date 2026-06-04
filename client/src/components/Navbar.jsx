@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { User, LogOut, Moon, Sun, UserPlus, Menu, X } from 'lucide-react';
+import { User, LogOut, Moon, Sun, UserPlus, Menu, X, ShieldCheck } from 'lucide-react';
 import { TbReportSearch } from "react-icons/tb";
 import { CiLocationOn } from "react-icons/ci";
 import NotificationList from './NotificationList';
@@ -95,9 +95,9 @@ const Navbar = () => {
 
                         {/* Desktop only */}
                         <div className="nav-desktop-btns">
-                            {['admin', 'moderator'].includes(user.role) && (
-                                <button onClick={() => setIsCreateModOpen(true)} className="modern-nav-btn" title="Añadir Moderador">
-                                    <UserPlus size={20} />
+                            {['admin', 'supermoderador'].includes(user.role) && (
+                                <button onClick={() => navigate('/supermoderador/moderadores')} className="modern-nav-btn" title="Ver Moderadores">
+                                    <ShieldCheck size={20} />
                                 </button>
                             )}
                             <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
@@ -122,9 +122,9 @@ const Navbar = () => {
                             </button>
                             {mobileMenuOpen && (
                                 <div className="mobile-dropdown">
-                                    {['admin', 'moderator'].includes(user.role) && (
-                                        <button className="mobile-dropdown-item" onClick={() => { setIsCreateModOpen(true); closeMobileMenu(); }}>
-                                            <UserPlus size={16} /> Añadir Moderador
+                                    {['admin', 'supermoderador'].includes(user.role) && (
+                                        <button className="mobile-dropdown-item" onClick={() => { navigate('/supermoderador/moderadores'); closeMobileMenu(); }}>
+                                            <ShieldCheck size={16} /> Ver Moderadores
                                         </button>
                                     )}
                                     <button className="mobile-dropdown-item" onClick={() => { navigate('/dashboard?view=my'); closeMobileMenu(); }}>

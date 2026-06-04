@@ -118,7 +118,8 @@ const Profile = () => {
         try {
             setSaving(true);
             const token = localStorage.getItem('token');
-            const res = await axios.patch('/api/auth/profile', editForm, {
+            const { firstName, lastName, ...editableFields } = editForm;
+            const res = await axios.patch('/api/auth/profile', editableFields, {
                 headers: {
                     'x-auth-token': token
                 }
@@ -214,31 +215,84 @@ const Profile = () => {
             const { default: autoTable } = await import('jspdf-autotable');
 
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const PRIMARY = [99, 102, 241];
-            const DARK    = [30, 32, 37];
-            const MUTED   = [100, 116, 139];
+            const NAVY     = [15, 23, 42];      // #0f1722 — header fondo
+            const ACCENT   = [30, 64, 175];     // #1e40af — azul marino acento
+            const DARK     = [15, 23, 42];
+            const MUTED    = [100, 116, 139];
+            const ROW_ALT  = [247, 248, 250];
+            const HEAD_BG  = [241, 245, 249];
             const W = doc.internal.pageSize.getWidth();
 
-            // ── HEADER ──────────────────────────────────────────────────
-            doc.setFillColor(...PRIMARY);
-            doc.rect(0, 0, W, 28, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.text('VIALIDADES DE TRÁNSITO', 14, 12);
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.text('Informe de datos del usuario', 14, 19);
-            doc.text(`Generado: ${new Date().toLocaleDateString('es-DO', { day:'2-digit', month:'long', year:'numeric' })}`, W - 14, 19, { align: 'right' });
+            // ── Cargar Icono Sistema.png via canvas ──────────────────────
+            let logoData = null;
+            try {
+                logoData = await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = reject;
+                    img.src = '/Icono Sistema.png';
+                });
+            } catch { /* fallback */ }
 
-            let y = 36;
+            // ── HEADER ──────────────────────────────────────────────────
+            // Fondo oscuro principal
+            doc.setFillColor(...NAVY);
+            doc.rect(0, 0, W, 32, 'F');
+            // Franja de acento azul abajo del header
+            doc.setFillColor(...ACCENT);
+            doc.rect(0, 32, W, 3, 'F');
+
+            // Logo
+            if (logoData) {
+                doc.addImage(logoData, 'PNG', 10, 6, 16, 16);
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('VIALIDADES DE TRÁNSITO', 30, 14);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(148, 163, 184);  // slate-400
+                doc.text('Informe oficial de datos del usuario', 30, 21);
+            } else {
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('VIALIDADES DE TRÁNSITO', 14, 14);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(148, 163, 184);
+                doc.text('Informe oficial de datos del usuario', 14, 21);
+            }
+
+            // Fecha + usuario (derecha)
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(148, 163, 184);
+            doc.text(
+                `Generado: ${new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+                W - 10, 13, { align: 'right' }
+            );
+            doc.text(`@${user.username}`, W - 10, 21, { align: 'right' });
+
+            let y = 42;
 
             // ── SECTION HELPER ──────────────────────────────────────────
             const section = (title) => {
-                doc.setFillColor(...PRIMARY);
+                if (y > doc.internal.pageSize.getHeight() - 30) {
+                    doc.addPage();
+                    y = 16;
+                }
+                doc.setFillColor(...NAVY);
                 doc.rect(14, y, W - 28, 7, 'F');
                 doc.setTextColor(255, 255, 255);
-                doc.setFontSize(10);
+                doc.setFontSize(9);
                 doc.setFont('helvetica', 'bold');
                 doc.text(title, 17, y + 5);
                 y += 10;
@@ -253,8 +307,8 @@ const Profile = () => {
                 margin: { left: 14, right: 14 },
                 theme: 'grid',
                 styles: { fontSize: 9, cellPadding: 3, textColor: DARK },
-                headStyles: { fillColor: [241, 245, 249], textColor: MUTED, fontStyle: 'bold', fontSize: 8 },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
+                headStyles: { fillColor: HEAD_BG, textColor: MUTED, fontStyle: 'bold', fontSize: 8 },
+                alternateRowStyles: { fillColor: ROW_ALT },
                 columns: [{ dataKey: 'campo', header: 'CAMPO' }, { dataKey: 'valor', header: 'VALOR' }],
                 body: [
                     { campo: 'Nombre completo', valor: p.nombre },
@@ -267,7 +321,6 @@ const Profile = () => {
                     { campo: 'Provincia',        valor: p.provincia },
                     { campo: 'Miembro desde',    valor: p.miembroDesde ? new Date(p.miembroDesde).toLocaleDateString('es-DO') : '-' },
                     { campo: 'Cuenta verificada',valor: p.cuentaVerificada ? 'Sí' : 'No' },
-                    { campo: 'Rol',              valor: p.rol },
                 ],
                 columnStyles: { campo: { fontStyle: 'bold', cellWidth: 50 } }
             });
@@ -281,8 +334,8 @@ const Profile = () => {
                 margin: { left: 14, right: 14 },
                 theme: 'grid',
                 styles: { fontSize: 9, cellPadding: 3, textColor: DARK, halign: 'center' },
-                headStyles: { fillColor: [241, 245, 249], textColor: MUTED, fontStyle: 'bold', fontSize: 8, halign: 'center' },
-                alternateRowStyles: { fillColor: [248, 250, 252] },
+                headStyles: { fillColor: HEAD_BG, textColor: MUTED, fontStyle: 'bold', fontSize: 8, halign: 'center' },
+                alternateRowStyles: { fillColor: ROW_ALT },
                 head: [['REPUTACIÓN', 'SANCIONES', 'TOTAL REP.', 'APROBADOS', 'RECHAZADOS', 'PENDIENTES']],
                 body: [[p.reputacion, p.sanciones, r.totalReportes, r.aprobados, r.rechazados, r.pendientes]],
             });
@@ -302,7 +355,7 @@ const Profile = () => {
                     margin: { left: 14, right: 14 },
                     theme: 'striped',
                     styles: { fontSize: 8, cellPadding: 3, textColor: DARK, overflow: 'linebreak' },
-                    headStyles: { fillColor: PRIMARY, textColor: [255,255,255], fontStyle: 'bold', fontSize: 8 },
+                    headStyles: { fillColor: NAVY, textColor: [255,255,255], fontStyle: 'bold', fontSize: 8 },
                     columns: [
                         { dataKey: 'tipo',    header: 'TIPO' },
                         { dataKey: 'desc',    header: 'DESCRIPCIÓN' },
@@ -334,12 +387,17 @@ const Profile = () => {
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
                 const H = doc.internal.pageSize.getHeight();
-                doc.setFillColor(241, 245, 249);
-                doc.rect(0, H - 10, W, 10, 'F');
+                // Línea separadora
+                doc.setDrawColor(...ACCENT);
+                doc.setLineWidth(0.5);
+                doc.line(14, H - 12, W - 14, H - 12);
+                doc.setFillColor(248, 249, 250);
+                doc.rect(0, H - 11, W, 11, 'F');
                 doc.setFontSize(7);
                 doc.setTextColor(...MUTED);
-                doc.text('© 2026 Vialidades de Tránsito · Documento generado automáticamente · Información confidencial', W / 2, H - 4, { align: 'center' });
-                doc.text(`Página ${i} de ${totalPages}`, W - 14, H - 4, { align: 'right' });
+                doc.text('© 2026 Vialidades de Tránsito · Documento oficial · Información confidencial', 14, H - 5);
+                doc.setTextColor(...ACCENT);
+                doc.text(`Pág. ${i} / ${totalPages}`, W - 14, H - 5, { align: 'right' });
             }
 
             doc.save(`vialidades_${user.username}_informe.pdf`);
@@ -564,15 +622,11 @@ const Profile = () => {
                             </div>
                         ) : (
                             <div className="pf-edit-name-block">
-                                <input type="text" name="firstName" placeholder="Nombre(s)" value={editForm.firstName} onChange={handleEditChange} style={{ textAlign: 'center' }} />
-                                <input type="text" name="lastName" placeholder="Apellido(s)" value={editForm.lastName} onChange={handleEditChange} style={{ textAlign: 'center' }} />
-                                <div className="pf-edit-actions">
-                                    <button onClick={handleSaveProfile} disabled={saving} className="pf-btn-save">
-                                        <Check size={15} /> {saving ? 'Guardando...' : 'Guardar'}
-                                    </button>
-                                    <button onClick={() => setIsEditing(false)} disabled={saving} className="pf-btn-cancel">
-                                        <X size={15} /> Cancelar
-                                    </button>
+                                <div style={{ textAlign: 'center', padding: '0.5rem 0.75rem', background: 'var(--bg-input)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.95rem', border: '1px solid var(--border-color)', cursor: 'not-allowed' }}>
+                                    {editForm.firstName}
+                                </div>
+                                <div style={{ textAlign: 'center', padding: '0.5rem 0.75rem', background: 'var(--bg-input)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.95rem', border: '1px solid var(--border-color)', cursor: 'not-allowed' }}>
+                                    {editForm.lastName}
                                 </div>
                             </div>
                         )}

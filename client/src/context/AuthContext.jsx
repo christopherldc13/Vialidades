@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(res.data.user));
             axios.defaults.headers.common['x-auth-token'] = res.data.token;
             setUser(res.data.user);
-            return { success: true };
+            return { success: true, role: res.data.user.role };
         } catch (err) {
             console.error("Login Error:", err);
             return {

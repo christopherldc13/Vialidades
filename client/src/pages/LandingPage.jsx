@@ -180,9 +180,9 @@ const LandingPage = () => {
         return () => socket.disconnect();
     }, []);
 
-    // If user is already logged in, redirect to dashboard
+    // Redirigir según el rol
     if (!loading && user) {
-        return <Navigate to="/dashboard" />;
+        return <Navigate to={user.role === 'supermoderador' ? '/supermoderador' : '/dashboard'} />;
     }
 
     return (
