@@ -239,6 +239,17 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
         const io = require('../socket').getIo();
         io.emit('new_report', report);
 
+        // Notificación en el sistema
+        const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', Other: 'Otro' };
+        const typeLabel = typeLabels[report.type] || report.type;
+        await new Notification({
+            userId: user._id,
+            type: 'success',
+            message: `✅ Tu reporte de "${typeLabel}" fue publicado exitosamente y ya es visible en el mapa.`,
+            relatedReportId: report._id
+        }).save();
+        io.emit('new_notification', { userId: user._id.toString() });
+
         // Send published email (fire-and-forget)
         sendReportPublishedEmail(user.email, user.firstName, {
             type: report.type,
@@ -259,10 +270,14 @@ router.get('/public', async (req, res) => {
     try {
         // Only return approved reports.
         // Select only the absolutely necessary fields (plus title/desc for popups) to keep the payload safe.
-        const reports = await Report.find({ status: 'approved' })
-            .select('location.lat location.lng type title description -_id')
+        const reports = await Report.find({
+            status: { $in: ['approved', 'In Process', 'needs_review'] },
+            hiddenByUser: { $ne: true }
+        })
+            .select('location type description -_id')
             .lean();
 
+        console.log(`[PUBLIC MAP] Retornando ${reports.length} reportes. Sin location: ${reports.filter(r => !r.location?.lat).length}`);
         res.json(reports);
     } catch (err) {
         console.error('Error fetching public reports:', err.message);
@@ -629,13 +644,39 @@ router.post('/:id/flag', auth, async (req, res) => {
         const { reason } = req.body;
         report.flags.push({ userId: req.user.id, reason: reason || 'Sin motivo especificado', createdAt: new Date() });
 
+        const justReachedThreshold = report.flags.length === 3 && report.status === 'approved';
+
         if (report.flags.length >= 3 && report.status === 'approved') {
             report.status = 'needs_review';
-            const io = require('../socket').getIo();
-            io.emit('report_flagged', { reportId: report._id, status: 'needs_review', flagsCount: report.flags.length });
         }
 
         await report.save();
+
+        const io = require('../socket').getIo();
+
+        if (justReachedThreshold) {
+            io.emit('report_flagged', { reportId: report._id, status: 'needs_review', flagsCount: report.flags.length });
+
+            // Notificar a todos los moderadores y admins
+            const moderators = await User.find({ role: { $in: ['moderator', 'admin'] }, isActive: { $ne: false } }).select('_id').lean();
+            const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', Other: 'Otro' };
+            const typeLabel = typeLabels[report.type] || report.type;
+
+            const notifications = moderators.map(mod => ({
+                userId: mod._id,
+                type: 'warning',
+                message: `🚨 El reporte de "${typeLabel}" ha recibido 3 denuncias de la comunidad y requiere revisión.`,
+                relatedReportId: report._id
+            }));
+
+            await Notification.insertMany(notifications);
+
+            // Emitir evento de notificación a cada moderador para actualizar el badge en tiempo real
+            moderators.forEach(mod => {
+                io.emit('new_notification', { userId: mod._id.toString() });
+            });
+        }
+
         res.json({ flagsCount: report.flags.length, status: report.status });
     } catch (err) {
         console.error(err.message);

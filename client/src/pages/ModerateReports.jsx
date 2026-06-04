@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import AuthContext from '../context/AuthContext';
@@ -51,6 +52,7 @@ const ModerateReports = () => {
 
     const [reports, setReports] = useState([]);
     const [usersList, setUsersList] = useState([]);
+    const [revealedMedia, setRevealedMedia] = useState(new Set());
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
     const [typeFilter, setTypeFilter] = useState('all');
     const [provinceFilter, setProvinceFilter] = useState('all');
@@ -456,7 +458,38 @@ const ModerateReports = () => {
                             <div key={report._id} className="moderation-card moderation-card-responsive">
                                 {/* Media Side */}
                                 <div className="moderation-card-media">
-                                    <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
+                                    <div style={{ filter: report.wasSanctioned && !revealedMedia.has(report._id) ? 'blur(12px)' : 'none', transition: 'filter 0.3s', pointerEvents: report.wasSanctioned && !revealedMedia.has(report._id) ? 'none' : 'auto', height: '100%', width: '100%' }}>
+                                        <MediaGallery media={report.media && report.media.length > 0 ? report.media : (report.photos || [])} />
+                                    </div>
+                                    {/* Overlay para contenido sancionado/inapropiado */}
+                                    {report.wasSanctioned && !revealedMedia.has(report._id) && (
+                                        <div
+                                            onClick={e => e.stopPropagation()}
+                                            style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', background: 'rgba(0,0,0,0.35)', zIndex: 15 }}
+                                        >
+                                            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                                            <span style={{ color: '#fff', fontWeight: '700', fontSize: '0.88rem', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>Contenido sensible</span>
+                                            <button
+                                                onClick={async e => {
+                                                    e.stopPropagation();
+                                                    const result = await Swal.fire({
+                                                        title: 'Contenido sensible',
+                                                        text: 'Este contenido fue marcado como inapropiado por el sistema. Puede contener imágenes de violencia, gore u otro material no apto. ¿Deseas verlo de todos modos?',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Sí, ver contenido',
+                                                        cancelButtonText: 'Cancelar',
+                                                        customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                                                    });
+                                                    if (result.isConfirmed) setRevealedMedia(prev => new Set([...prev, report._id]));
+                                                }}
+                                                style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: '20px', padding: '0.3rem 0.9rem', color: '#fff', fontSize: '0.78rem', fontWeight: '600', cursor: 'pointer', backdropFilter: 'blur(4px)', transition: 'background 0.15s', marginTop: 0, width: 'auto', boxShadow: 'none' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                            >
+                                                Ver de todos modos
+                                            </button>
+                                        </div>
+                                    )}
 
                                     <div style={{
                                         position: 'absolute', top: '1rem', left: '1rem',

@@ -939,32 +939,6 @@ button.danger:hover {
   }
 }
 
-/* Custom Map Marker Pulse Animation */
-.pulse-marker {
-  width: 20px;
-  height: 20px;
-  background: rgba(255, 0, 0, 0.8);
-  border-radius: 50%;
-  box-shadow: 0 0 15px rgba(255, 0, 0, 1);
-  animation: pulse-ring 2s infinite;
-}
-
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.8);
-    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-  }
-
-  70% {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 15px rgba(255, 0, 0, 0);
-  }
-
-  100% {
-    transform: scale(0.8);
-    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
-  }
-}
 
 /* Custom CSS Heatmap Generator class */
 .heatmap-blob {

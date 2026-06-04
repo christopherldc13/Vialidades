@@ -56,6 +56,10 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
     const [zoom, setZoom] = useState(8);
     const [loadingLocation, setLoadingLocation] = useState(false);
 
+    // True cuando el usuario ya tocó el mapa manualmente (click, drag, búsqueda)
+    // Impide que el GPS async sobreescriba su selección
+    const userMovedRef = useRef(false);
+
     // Reverse Geocoding Function
     const fetchAddress = async (lat, lng) => {
         if (!setAddress) return;
@@ -79,7 +83,12 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
         }
     };
 
-    const updateLocation = (coords) => {
+    const updateLocation = (coords, force = false) => {
+        // Si el usuario ya movió el pin manualmente y no es forzado (botón Ubícame), ignorar
+        if (userMovedRef.current && !force) {
+            setLoadingLocation(false);
+            return;
+        }
         const newPos = { lat: coords.latitude || coords.lat, lng: coords.longitude || coords.lng };
         setCenter(newPos);
         setLocation(newPos);
@@ -88,7 +97,8 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
         fetchAddress(newPos.lat, newPos.lng);
     };
 
-    const fetchIpLocation = async () => {
+    const fetchIpLocation = async (force = false) => {
+        if (userMovedRef.current && !force) { setLoadingLocation(false); return; }
         try {
             const response = await fetch('https://ipapi.co/json/');
             const data = await response.json();
@@ -97,8 +107,7 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
                 setCenter(newPos);
                 setLocation(newPos);
                 setZoom(13);
-                fetchAddress(newPos.lat, newPos.lng); // Fetch address for IP location too
-                // Inform the user that this is just an approximation
+                fetchAddress(newPos.lat, newPos.lng);
                 toast("⚠️ Sin señal GPS. Mostrando zona aproximada por internet. Por favor arrastra el marcador a tu ubicación exacta.", { icon: '⚠️' });
             }
         } catch (ipError) {
@@ -108,21 +117,19 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
         setLoadingLocation(false);
     };
 
-    const getLocation = () => {
+    const getLocation = (force = false) => {
+        if (force) userMovedRef.current = false; // Ubícame siempre puede sobreescribir
         setLoadingLocation(true);
         if (navigator.geolocation) {
-            // 1. Try High Accuracy (GPS)
             navigator.geolocation.getCurrentPosition(
-                (position) => updateLocation(position.coords),
+                (position) => updateLocation(position.coords, force),
                 (error) => {
                     console.warn("High accuracy GPS failed, trying low accuracy...", error);
-                    // 2. Try Low Accuracy (Wifi/Cells) - Better than IP, works indoors
                     navigator.geolocation.getCurrentPosition(
-                        (position) => updateLocation(position.coords),
+                        (position) => updateLocation(position.coords, force),
                         (errorLow) => {
                             console.warn("Low accuracy GPS failed, trying IP...", errorLow);
-                            // 3. Fallback to IP
-                            fetchIpLocation();
+                            fetchIpLocation(force);
                         },
                         { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
                     );
@@ -131,17 +138,23 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
             );
         } else {
             toast.error("Tu navegador no soporta geolocalización.");
-            fetchIpLocation();
+            fetchIpLocation(force);
         }
     };
 
-    // Initial location fetch + External trigger
+    // Solo en el montaje inicial (auto-ubicación de bienvenida)
     useEffect(() => {
-        getLocation();
-    }, [refreshLocation]); // Run on mount AND when refreshLocation changes
+        getLocation(false);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Update address when manual pin drop happens
+    // Cuando el padre fuerza re-ubicación mediante refreshLocation
+    useEffect(() => {
+        if (refreshLocation) getLocation(true);
+    }, [refreshLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Update address cuando el usuario mueve el pin manualmente
     const handleSetLocation = (newPos) => {
+        userMovedRef.current = true; // Marcar que el usuario tomó control
         setLocation(newPos);
         fetchAddress(newPos.lat, newPos.lng);
     };
@@ -183,6 +196,7 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
     };
 
     const handleSelectResult = (result) => {
+        userMovedRef.current = true; // Marcar que el usuario tomó control
         const newPos = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
         setCenter(newPos);
         setLocation(newPos);
@@ -273,7 +287,7 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
 
                 <button
                     type="button"
-                    onClick={getLocation}
+                    onClick={() => getLocation(true)}
                     style={{
                         position: 'absolute',
                         top: '10px',

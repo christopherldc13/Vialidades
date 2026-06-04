@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Report = require('../models/Report');
 const PendingUser = require('../models/PendingUser');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const Tesseract = require('tesseract.js');
@@ -190,7 +191,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         let user = await User.findOne({ email });
-        if (!user) {
+        if (!user || user.isActive === false) {
             return res.status(400).json({ msg: 'Correo o contraseña incorrectos' });
         }
 
@@ -604,6 +605,78 @@ router.post('/reset-password/:token', async (req, res) => {
         console.log(`✅ Contraseña restablecida con éxito para el usuario: ${user.email}. Token invalidado.`);
 
         res.status(200).json({ success: true, data: 'Contraseña actualizada' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Export all user data as JSON
+router.get('/export', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .select('-password -sessionToken -resetPasswordToken -resetPasswordExpire -verificationCode')
+            .lean();
+
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+
+        const reports = await Report.find({ userId: req.user.id })
+            .select('type description location status timestamp moderatorComment carInfo media')
+            .lean();
+
+        const exportData = {
+            exportDate: new Date().toISOString(),
+            perfil: {
+                nombre: `${user.firstName} ${user.lastName}`,
+                username: user.username,
+                email: user.email,
+                telefono: user.phone,
+                cedula: user.cedula,
+                genero: user.gender,
+                fechaNacimiento: user.birthDate,
+                provincia: user.birthProvince,
+                cuentaVerificada: user.isVerified,
+                reputacion: user.reputation,
+                sanciones: user.sanctions,
+                rol: user.role,
+                miembroDesde: user.createdAt,
+                avatar: user.avatar || null,
+            },
+            reportes: reports.map(r => ({
+                tipo: r.type,
+                descripcion: r.description,
+                ubicacion: r.location,
+                estado: r.status,
+                vehiculo: r.carInfo || null,
+                comentarioModerador: r.moderatorComment || null,
+                archivos: (r.media || []).map(m => ({ tipo: m.type, url: m.url })),
+                fecha: r.timestamp,
+            })),
+            resumen: {
+                totalReportes: reports.length,
+                aprobados: reports.filter(r => r.status === 'approved').length,
+                rechazados: reports.filter(r => r.status === 'rejected').length,
+                pendientes: reports.filter(r => r.status === 'pending').length,
+            }
+        };
+
+        res.setHeader('Content-Disposition', `attachment; filename="vialidades_${user.username}_${Date.now()}.json"`);
+        res.setHeader('Content-Type', 'application/json');
+        res.json(exportData);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Deactivate account (user believes it's deleted)
+router.delete('/account', auth, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user.id, {
+            isActive: false,
+            sessionToken: null
+        });
+        res.json({ msg: 'Cuenta eliminada exitosamente' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

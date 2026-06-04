@@ -2,28 +2,18 @@ import { Link, Navigate } from 'react-router-dom';
 import { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { io } from 'socket.io-client';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
 import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, Fingerprint, ShieldCheck, Gavel, FileText } from 'lucide-react';
 import { CiLocationOn } from "react-icons/ci";
 import { LiaSatelliteSolid } from "react-icons/lia";
 import { motion } from 'framer-motion';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import HeatMapLayer from '../components/HeatMapLayer';
 import ModerationTimeline from '../components/ModerationTimeline';
 import Navbar from '../components/Navbar';
-
-// Create a custom pulsing icon for the map
-const createPulseIcon = () => {
-    return L.divIcon({
-        className: 'custom-pulse-icon',
-        html: '<div class="pulse-marker"></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-    });
-};
 
 const LANDING_RULES = [
     {
@@ -157,15 +147,18 @@ const LandingPage = () => {
         const fetchPublicReports = async () => {
             try {
                 const res = await axios.get('/api/reports/public');
-                // Map the full public payload including the popup info
-                const points = res.data.map(report => ({
-                    lat: report.location.lat,
-                    lng: report.location.lng,
-                    type: report.type,
-                    description: report.description,
-                    intensity: 1
-                }));
-                console.log("[DEBUG] Processed Heat Points on Landing Page:", points);
+                console.log("[DEBUG] Raw API response:", res.data.length, "reportes:", res.data);
+                const points = res.data
+                    .filter(r => r.location?.lat != null && r.location?.lng != null)
+                    .map(report => ({
+                        lat: parseFloat(report.location.lat),
+                        lng: parseFloat(report.location.lng),
+                        type: report.type,
+                        description: report.description,
+                        intensity: 1
+                    }))
+                    .filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+                console.log("[DEBUG] Puntos válidos en mapa:", points.length, points);
                 setHeatPoints(points);
             } catch (err) {
                 console.error("Error fetching heat map points:", err);
@@ -173,6 +166,18 @@ const LandingPage = () => {
         };
 
         fetchPublicReports();
+
+        const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''));
+
+        socket.on('new_report', (report) => {
+            if (!report?.location?.lat || !report?.location?.lng) return;
+            const lat = parseFloat(report.location.lat);
+            const lng = parseFloat(report.location.lng);
+            if (isNaN(lat) || isNaN(lng)) return;
+            setHeatPoints(prev => [...prev, { lat, lng, type: report.type, description: report.description, intensity: 1 }]);
+        });
+
+        return () => socket.disconnect();
     }, []);
 
     // If user is already logged in, redirect to dashboard
@@ -257,7 +262,7 @@ const LandingPage = () => {
                                     />
                                 ) : (
                                     <TileLayer
-                                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                                     />
                                 )}
 

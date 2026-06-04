@@ -16,7 +16,7 @@ module.exports = async function (req, res, next) {
         
         // Single Device Session Check
         const user = await User.findById(decoded.user.id);
-        if (!user) {
+        if (!user || user.isActive === false) {
             return res.status(401).json({ msg: 'User no longer exists' });
         }
 

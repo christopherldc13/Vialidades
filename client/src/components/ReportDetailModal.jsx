@@ -41,6 +41,7 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
     const [showRawMetadata, setShowRawMetadata] = useState({});
     const [localFlags, setLocalFlags] = useState(report?.flags || []);
     const [deletingFlag, setDeletingFlag] = useState(null);
+    const [mediaRevealed, setMediaRevealed] = useState(false);
     const isModerator = user?.role === 'moderator' || user?.role === 'admin';
     const isModerated = useRef(false);
 
@@ -200,8 +201,38 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                                 {/* Media */}
-                                <div className="modal-media-wrapper" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                                    <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} objectFit="contain" />
+                                <div className="modal-media-wrapper" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-light)', position: 'relative' }}>
+                                    <div style={{ filter: report.wasSanctioned && !mediaRevealed ? 'blur(12px)' : 'none', transition: 'filter 0.3s', pointerEvents: report.wasSanctioned && !mediaRevealed ? 'none' : 'auto', height: '100%', width: '100%' }}>
+                                        <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} objectFit="contain" />
+                                    </div>
+                                    {report.wasSanctioned && !mediaRevealed && (
+                                        <div
+                                            onClick={e => e.stopPropagation()}
+                                            style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', background: 'rgba(0,0,0,0.35)', borderRadius: '16px' }}
+                                        >
+                                            <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                                            <span style={{ color: '#fff', fontWeight: '700', fontSize: '0.88rem', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>Contenido sensible</span>
+                                            <button
+                                                onClick={async e => {
+                                                    e.stopPropagation();
+                                                    const result = await Swal.fire({
+                                                        title: 'Contenido sensible',
+                                                        text: 'Este contenido fue marcado como inapropiado por el sistema. Puede contener imágenes de violencia, gore u otro material no apto. ¿Deseas verlo de todos modos?',
+                                                        showCancelButton: true,
+                                                        confirmButtonText: 'Sí, ver contenido',
+                                                        cancelButtonText: 'Cancelar',
+                                                        customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: 'swal2-lumina-confirm-amber', cancelButton: 'swal2-lumina-cancel' }
+                                                    });
+                                                    if (result.isConfirmed) setMediaRevealed(true);
+                                                }}
+                                                style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.5)', borderRadius: '20px', padding: '0.3rem 0.9rem', color: '#fff', fontSize: '0.78rem', fontWeight: '600', cursor: 'pointer', backdropFilter: 'blur(4px)', transition: 'background 0.15s', marginTop: 0, width: 'auto', boxShadow: 'none' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                            >
+                                                Ver de todos modos
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Reporter info pills */}
