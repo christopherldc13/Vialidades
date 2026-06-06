@@ -732,7 +732,10 @@ const Dashboard = () => {
                                 )}
                                 <div className="report-image-container" style={{ position: 'relative' }}>
                                     <div style={{ filter: report.wasSanctioned && !revealedReports.has(report._id) ? 'blur(12px)' : 'none', transition: 'filter 0.3s', pointerEvents: report.wasSanctioned && !revealedReports.has(report._id) ? 'none' : 'auto', height: '100%', width: '100%' }}>
-                                        <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} />
+                                        <MediaGallery
+                                            media={report.media?.length > 0 ? report.media : (report.photos || [])}
+                                            faceBlur={!report.wasSanctioned}
+                                        />
                                     </div>
                                     {report.wasSanctioned && !revealedReports.has(report._id) && (
                                         <div

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import FaceBlurImage from './FaceBlurImage';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const VideoPlayer = ({ src }) => {
@@ -42,7 +43,7 @@ const VideoPlayer = ({ src }) => {
     );
 };
 
-const MediaGallery = ({ media, objectFit = 'cover' }) => {
+const MediaGallery = ({ media, objectFit = 'cover', faceBlur = false }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollContainerRef = useRef(null);
 
@@ -103,7 +104,7 @@ const MediaGallery = ({ media, objectFit = 'cover' }) => {
                     const url = typeof item === 'string' ? item : item.url;
                     const type = typeof item === 'string' ? 'image' : (item.type || 'image');
                     let fullUrl = url.startsWith('http') ? url : (import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`);
-                    
+
                     // HEIC Support: If URL ends in .heic, request it as .jpg from Cloudinary (on-the-fly conversion)
                     if (fullUrl.toLowerCase().endsWith('.heic')) {
                         fullUrl = fullUrl.replace(/\.heic$/i, '.jpg');
@@ -125,21 +126,28 @@ const MediaGallery = ({ media, objectFit = 'cover' }) => {
                             ) : (
                                 <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)' }}>
                                     {objectFit === 'contain' && (
-                                        <img 
-                                            src={fullUrl} 
-                                            alt="" 
-                                            style={{ 
-                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+                                        <img
+                                            src={fullUrl}
+                                            alt=""
+                                            style={{
+                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                                                 objectFit: 'cover', filter: 'blur(20px) brightness(0.7)', opacity: 0.5,
-                                                transform: 'scale(1.1)' 
-                                            }} 
+                                                transform: 'scale(1.1)'
+                                            }}
                                         />
                                     )}
-                                    <img
-                                        src={fullUrl}
-                                        alt={`Media ${index}`}
-                                        style={{ width: '100%', height: '100%', objectFit, position: 'relative', zIndex: 1 }}
-                                    />
+                                    {faceBlur ? (
+                                        <FaceBlurImage
+                                            src={fullUrl}
+                                            alt={`Media ${index}`}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={fullUrl}
+                                            alt={`Media ${index}`}
+                                            style={{ width: '100%', height: '100%', objectFit, position: 'relative', zIndex: 1 }}
+                                        />
+                                    )}
                                 </div>
                             )}
                         </div>
