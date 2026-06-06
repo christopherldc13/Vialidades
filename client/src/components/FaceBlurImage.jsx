@@ -1,43 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import * as faceapi from '@vladmandic/face-api';
+import { initFaceApi, faceapi, modelsLoaded } from '../utils/faceApiInit';
 
-let tfReady = false;
-let modelsLoaded = false;
-let initPromise = null;
-
-const initFaceApi = () => {
-    if (initPromise) return initPromise;
-    initPromise = (async () => {
-        // Force CPU backend — avoid WebGL/WASM availability issues in dev & mobile
-        await faceapi.tf.setBackend('cpu');
-        await faceapi.tf.ready();
-        tfReady = true;
-        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-        modelsLoaded = true;
-    })().catch((err) => {
-        console.error('[FaceBlur] Init failed:', err);
-        initPromise = null; // allow retry
-    });
-    return initPromise;
-};
-
-const fetchAsObjectUrl = async (src) => {
+const fetchBlob = async (src) => {
     const res = await fetch(src, { mode: 'cors', credentials: 'omit' });
     if (!res.ok) throw new Error(`fetch ${res.status}`);
-    const blob = await res.blob();
-    return URL.createObjectURL(blob);
+    return URL.createObjectURL(await res.blob());
 };
 
 const loadImage = (src) =>
-    new Promise((resolve, reject) => {
+    new Promise((res, rej) => {
         const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
+        img.onload = () => res(img);
+        img.onerror = rej;
         img.src = src;
     });
 
 const FaceBlurImage = ({ src, alt }) => {
-    const canvasRef = useRef(null);
+    const wrapperRef = useRef(null);
+    const canvasRef  = useRef(null);
     const [facesHidden, setFacesHidden] = useState(false);
 
     useEffect(() => {
@@ -50,7 +30,7 @@ const FaceBlurImage = ({ src, alt }) => {
             if (cancelled || !modelsLoaded) return;
 
             try {
-                objectUrl = await fetchAsObjectUrl(src);
+                objectUrl = await fetchBlob(src);
                 if (cancelled) { URL.revokeObjectURL(objectUrl); return; }
 
                 const img = await loadImage(objectUrl);
@@ -58,7 +38,7 @@ const FaceBlurImage = ({ src, alt }) => {
 
                 const detections = await faceapi.detectAllFaces(
                     img,
-                    new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.25 })
+                    new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 })
                 );
 
                 if (cancelled || detections.length === 0) {
@@ -73,7 +53,6 @@ const FaceBlurImage = ({ src, alt }) => {
                 canvas.height = img.naturalHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-
                 URL.revokeObjectURL(objectUrl);
                 objectUrl = null;
 
@@ -85,11 +64,11 @@ const FaceBlurImage = ({ src, alt }) => {
                     const bw = Math.min(canvas.width  - bx, width  + pad * 2);
                     const bh = Math.min(canvas.height - by, height + pad * 2);
 
-                    const block = Math.max(6, Math.round(bw / 10));
+                    const block = Math.max(8, Math.round(bw / 8));
                     for (let px = bx; px < bx + bw; px += block) {
                         for (let py = by; py < by + bh; py += block) {
-                            const pw = Math.min(block, bx + bw - px);
-                            const ph = Math.min(block, by + bh - py);
+                            const pw  = Math.min(block, bx + bw - px);
+                            const ph  = Math.min(block, by + bh - py);
                             const mid = ctx.getImageData(
                                 px + Math.floor(pw / 2),
                                 py + Math.floor(ph / 2),
@@ -99,7 +78,6 @@ const FaceBlurImage = ({ src, alt }) => {
                             ctx.fillRect(px, py, pw, ph);
                         }
                     }
-
                 });
 
                 if (!cancelled) setFacesHidden(true);
@@ -109,17 +87,22 @@ const FaceBlurImage = ({ src, alt }) => {
             }
         };
 
-        setFacesHidden(false);
-        detect();
+        // Only detect when the card enters the viewport
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { observer.disconnect(); detect(); } },
+            { threshold: 0.1 }
+        );
+        if (wrapperRef.current) observer.observe(wrapperRef.current);
 
         return () => {
             cancelled = true;
+            observer.disconnect();
             if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
         };
     }, [src]);
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <div ref={wrapperRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
             <img
                 src={src}
                 alt={alt}

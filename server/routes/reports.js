@@ -118,15 +118,17 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                 const isVideo = file.mimetype.startsWith('video/');
                 let metadata = {};
 
+                let faceRegions = [];
+
                 try {
-                    // Manually fetch metadata from Cloudinary since multer-storage-cloudinary might not provide it in 'file'
+                    // Fetch metadata + face coordinates from Cloudinary in one call
                     const result = await cloudinary.api.resource(file.filename, {
                         image_metadata: true,
                         exif: true,
+                        faces: true,
                         resource_type: isVideo ? 'video' : 'image'
                     });
 
-                    // Pick relevant fields to keep DB clean but informative
                     metadata = {
                         image_metadata: result.image_metadata,
                         exif: result.exif,
@@ -140,6 +142,12 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                             created_at: result.created_at
                         }
                     };
+
+                    // Cloudinary faces format: [[x, y, width, height], ...]
+                    if (!isVideo && result.faces?.length) {
+                        faceRegions = result.faces.map(([left, top, width, height]) => ({ left, top, width, height }));
+                        console.log(`[FaceDetect] Cloudinary → ${faceRegions.length} face(s) in ${file.filename}`);
+                    }
                 } catch (metaErr) {
                     console.error("Error fetching Cloudinary metadata:", metaErr);
                 }
@@ -148,7 +156,8 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                     url: file.path,
                     type: isVideo ? 'video' : 'image',
                     public_id: file.filename,
-                    metadata: metadata
+                    metadata: metadata,
+                    faceRegions
                 });
             }
         }
@@ -725,6 +734,45 @@ router.patch('/:id/hide', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// One-time migration: run Face++ on all existing image media without faceRegions
+router.post('/migrate-face-regions', auth, async (req, res) => {
+    try {
+        const reports = await Report.find({
+            'media': { $elemMatch: { type: 'image', faceRegions: { $exists: false } } }
+        });
+
+        let updated = 0;
+        let processed = 0;
+
+        for (const report of reports) {
+            let changed = false;
+            for (const item of report.media) {
+                if (item.type !== 'image') continue;
+                if (!item.public_id) continue;
+
+                try {
+                    const result = await cloudinary.api.resource(item.public_id, { faces: true });
+                    item.faceRegions = (result.faces || []).map(([left, top, width, height]) => ({ left, top, width, height }));
+                    changed = true;
+                    processed++;
+                    console.log(`[Migrate] ${item.public_id} → ${item.faceRegions.length} face(s)`);
+                } catch (e) {
+                    console.error(`[Migrate] ${item.public_id}:`, e.message);
+                }
+            }
+            if (changed) {
+                await report.save();
+                updated++;
+            }
+        }
+
+        res.json({ msg: 'Migration complete', reportsUpdated: updated, imagesProcessed: processed });
+    } catch (err) {
+        console.error('[migrate-face-regions]', err.message);
+        res.status(500).json({ msg: err.message });
     }
 });
 

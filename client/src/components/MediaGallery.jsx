@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import FaceBlurImage from './FaceBlurImage';
+import FaceBlurVideo from './FaceBlurVideo';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const blurFacesUrl = (url) => {
+    if (!url?.includes('res.cloudinary.com')) return url;
+    return url.replace('/upload/', '/upload/e_pixelate_faces:20/');
+};
 
 const VideoPlayer = ({ src }) => {
     const videoRef = useRef(null);
@@ -101,7 +106,7 @@ const MediaGallery = ({ media, objectFit = 'cover', faceBlur = false }) => {
             >
                 {media.map((item, index) => {
                     // Handle legacy string URLs vs object {url, type}
-                    const url = typeof item === 'string' ? item : item.url;
+                    const url  = typeof item === 'string' ? item : item.url;
                     const type = typeof item === 'string' ? 'image' : (item.type || 'image');
                     let fullUrl = url.startsWith('http') ? url : (import.meta.env.PROD ? `/${url}` : `http://localhost:5000/${url}`);
 
@@ -122,12 +127,14 @@ const MediaGallery = ({ media, objectFit = 'cover', faceBlur = false }) => {
                             }}
                         >
                             {type === 'video' ? (
-                                <VideoPlayer src={fullUrl} />
+                                faceBlur
+                                    ? <FaceBlurVideo src={fullUrl} />
+                                    : <VideoPlayer src={fullUrl} />
                             ) : (
                                 <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-input)' }}>
                                     {objectFit === 'contain' && (
                                         <img
-                                            src={fullUrl}
+                                            src={faceBlur ? blurFacesUrl(fullUrl) : fullUrl}
                                             alt=""
                                             style={{
                                                 position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -136,18 +143,11 @@ const MediaGallery = ({ media, objectFit = 'cover', faceBlur = false }) => {
                                             }}
                                         />
                                     )}
-                                    {faceBlur ? (
-                                        <FaceBlurImage
-                                            src={fullUrl}
-                                            alt={`Media ${index}`}
-                                        />
-                                    ) : (
-                                        <img
-                                            src={fullUrl}
-                                            alt={`Media ${index}`}
-                                            style={{ width: '100%', height: '100%', objectFit, position: 'relative', zIndex: 1 }}
-                                        />
-                                    )}
+                                    <img
+                                        src={faceBlur ? blurFacesUrl(fullUrl) : fullUrl}
+                                        alt={`Media ${index}`}
+                                        style={{ width: '100%', height: '100%', objectFit, position: 'relative', zIndex: 1 }}
+                                    />
                                 </div>
                             )}
                         </div>

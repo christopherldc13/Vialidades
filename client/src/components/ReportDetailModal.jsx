@@ -203,7 +203,7 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                                 {/* Media */}
                                 <div className="modal-media-wrapper" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-light)', position: 'relative' }}>
                                     <div style={{ filter: report.wasSanctioned && !mediaRevealed ? 'blur(12px)' : 'none', transition: 'filter 0.3s', pointerEvents: report.wasSanctioned && !mediaRevealed ? 'none' : 'auto', height: '100%', width: '100%' }}>
-                                        <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} objectFit="contain" />
+                                        <MediaGallery media={report.media?.length > 0 ? report.media : (report.photos || [])} objectFit="contain" faceBlur={!report.wasSanctioned} />
                                     </div>
                                     {report.wasSanctioned && !mediaRevealed && (
                                         <div

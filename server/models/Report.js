@@ -17,7 +17,8 @@ const ReportSchema = new mongoose.Schema({
         url: { type: String, required: true },
         type: { type: String, enum: ['image', 'video'], default: 'image' },
         public_id: { type: String },
-        metadata: { type: Object } // Added metadata storage
+        metadata: { type: Object },
+        faceRegions: [{ top: Number, left: Number, width: Number, height: Number }]
     }],
     carInfo: {
         brand: { type: String },
