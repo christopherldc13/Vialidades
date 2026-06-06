@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, ScrollText, Database, PenLine, BadgeCheck,
-    Fingerprint, ShieldCheck, Gavel, CheckCheck
+    Fingerprint, ShieldCheck, Gavel, CheckCheck, Camera
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -51,10 +51,35 @@ const SECTIONS = [
         ),
     },
     {
+        icon: Camera,
+        color: '#dc2626',
+        bg: 'rgba(220,38,38,0.07)',
+        title: '3. Imágenes de Personas — Ley 192-19',
+        content: (
+            <>
+                <p style={{ margin: '0 0 0.75rem 0' }}>
+                    De conformidad con la <strong>Ley 192-19 de la República Dominicana</strong> sobre Protección de la Imagen, Honor e Intimidad Familiar de Personas Fallecidas o Accidentadas, queda <strong>expresamente prohibido</strong> publicar en Vialidades:
+                </p>
+                <Bullets items={[
+                    'Fotografías o videos en los que aparezcan personas fallecidas, gravemente lesionadas o en situaciones que vulneren su dignidad.',
+                    'Imágenes que permitan identificar a víctimas de accidentes sin contar con autorización de la persona o sus familiares.',
+                    'Contenido que exponga circunstancias íntimas o traumáticas de personas accidentadas sin su consentimiento.',
+                    'Material que afecte el honor o la intimidad familiar de personas involucradas en incidentes viales.',
+                ]} />
+                <p style={{ margin: '0.75rem 0 0.5rem 0' }}>
+                    <strong>El usuario asume total responsabilidad civil y penal</strong> por el contenido que suba a la plataforma. Vialidades queda eximida de toda responsabilidad derivada de publicaciones realizadas sin la autorización correspondiente.
+                </p>
+                <p style={{ margin: '0.5rem 0 0 0', padding: '0.65rem 0.85rem', background: 'rgba(220,38,38,0.1)', borderRadius: '0.5rem', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.82rem' }}>
+                    Vialidades se reserva el derecho de <strong>eliminar sin previo aviso</strong> cualquier contenido que infrinja esta cláusula o la Ley 192-19, y de reportar el caso a las autoridades competentes cuando corresponda.
+                </p>
+            </>
+        ),
+    },
+    {
         icon: BadgeCheck,
         color: '#10b981',
         bg: 'rgba(16,185,129,0.1)',
-        title: '3. Veracidad de la Información',
+        title: '4. Veracidad de la Información',
         content: (
             <Bullets items={[
                 'Los reportes falsos o maliciosos serán eliminados y podrán notificarse a las autoridades.',
@@ -68,7 +93,7 @@ const SECTIONS = [
         icon: Fingerprint,
         color: '#6366f1',
         bg: 'rgba(99,102,241,0.1)',
-        title: '4. Verificación de Identidad (KYC)',
+        title: '5. Verificación de Identidad (KYC)',
         content: (
             <>
                 <p style={{ margin: '0 0 0.6rem 0' }}>
@@ -90,7 +115,7 @@ const SECTIONS = [
         icon: ShieldCheck,
         color: '#0ea5e9',
         bg: 'rgba(14,165,233,0.1)',
-        title: '5. Seguridad y Privacidad',
+        title: '6. Seguridad y Privacidad',
         content: (
             <Bullets items={[
                 'Tu contraseña se almacena cifrada con bcrypt y nunca es accesible en texto plano.',
@@ -105,7 +130,7 @@ const SECTIONS = [
         icon: Gavel,
         color: '#f43f5e',
         bg: 'rgba(244,63,94,0.1)',
-        title: '6. Suspensiones y Sanciones',
+        title: '7. Suspensiones y Sanciones',
         content: (
             <>
                 <p style={{ margin: '0 0 0.6rem 0' }}>
@@ -259,7 +284,7 @@ export default function TermsModal({ isOpen, onClose, onAccept, theme }) {
                                         Términos y Condiciones
                                     </h2>
                                     <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.77rem', color: textMuted }}>
-                                        Vialidades · Versión Abril 2025
+                                        Vialidades · Versión Junio 2026
                                     </p>
                                 </div>
                             </div>

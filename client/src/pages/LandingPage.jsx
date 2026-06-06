@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, Fingerprint, ShieldCheck, Gavel, FileText } from 'lucide-react';
+import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, Fingerprint, ShieldCheck, Gavel, FileText, Camera } from 'lucide-react';
 import { CiLocationOn } from "react-icons/ci";
 import { LiaSatelliteSolid } from "react-icons/lia";
 import { motion } from 'framer-motion';
@@ -38,6 +38,18 @@ const LANDING_RULES = [
             'Eres el único responsable de los reportes e imágenes que publiques.',
             'La información debe ser veraz y corresponder a situaciones reales.',
             'El contenido falso puede resultar en suspensión permanente de la cuenta.',
+        ],
+    },
+    {
+        Icon: Camera,
+        color: '#dc2626',
+        gradient: 'linear-gradient(135deg, #dc2626, #ef4444)',
+        title: 'Imágenes de Personas',
+        subtitle: 'Ley 192-19',
+        points: [
+            'Está prohibido publicar imágenes de personas fallecidas o gravemente lesionadas sin autorización.',
+            'El usuario asume responsabilidad civil y penal por el contenido que sube.',
+            'Vialidades puede eliminar sin previo aviso contenido que viole la Ley 192-19.',
         ],
     },
     {
