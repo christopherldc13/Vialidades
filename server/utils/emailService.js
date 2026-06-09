@@ -376,6 +376,208 @@ exports.sendReportStatusEmail = async (email, firstName, reportType, status, mod
     } catch (error) { console.error("Error envío estado reporte:", error); }
 };
 
+exports.sendSupportStatusUpdate = async (email, data) => {
+    try {
+        const { requesterName, caseNumber, type, status, resolution } = data;
+
+        const typeLabel = type === 'familiar'
+            ? 'Solicitud de Familiar — Ley 192-19'
+            : 'Contenido No Autorizado — Ley 172-13';
+
+        const STATUS_META = {
+            in_review: {
+                subject: `🔍 Tu caso ${caseNumber} está siendo revisado`,
+                titleEs: 'Tu solicitud está En Revisión',
+                titleEn: 'Your request is under review',
+                color: '#f59e0b',
+                bgColor: '#fffbeb',
+                borderColor: '#fde68a',
+                badgeText: 'En Revisión',
+                msgEs: `Nuestro equipo de moderación ha comenzado a revisar tu caso. Te notificaremos por este correo cuando haya una respuesta final.`,
+                msgEn: `Our moderation team has started reviewing your case. We will notify you by email when there is a final response.`,
+            },
+            resolved: {
+                subject: `✅ Tu caso ${caseNumber} ha sido resuelto`,
+                titleEs: 'Tu solicitud fue Resuelta',
+                titleEn: 'Your request has been resolved',
+                color: '#10b981',
+                bgColor: '#f0fdf4',
+                borderColor: '#bbf7d0',
+                badgeText: 'Resuelta',
+                msgEs: `Nos complace informarte que tu solicitud ha sido procesada y resuelta por nuestro equipo de moderación.`,
+                msgEn: `We are pleased to inform you that your request has been processed and resolved by our moderation team.`,
+            },
+            rejected: {
+                subject: `❌ Tu caso ${caseNumber} no pudo ser procesado`,
+                titleEs: 'Tu solicitud fue Rechazada',
+                titleEn: 'Your request could not be processed',
+                color: '#ef4444',
+                bgColor: '#fef2f2',
+                borderColor: '#fecaca',
+                badgeText: 'Rechazada',
+                msgEs: `Lamentamos informarte que tu solicitud ha sido revisada y no pudo ser procesada en esta instancia.`,
+                msgEn: `We regret to inform you that your request has been reviewed and could not be processed at this time.`,
+            },
+        };
+
+        const meta = STATUS_META[status];
+        if (!meta) return;
+
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+
+        const contenidoEs = `
+            <p>Hola <strong>${requesterName}</strong>,</p>
+            <p>${meta.msgEs}</p>
+
+            <div style="background:${meta.bgColor};border:1px solid ${meta.borderColor};border-radius:12px;padding:20px 24px;margin:20px 0;">
+                <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;width:130px;">Número de caso</td>
+                        <td style="padding:6px 0;font-weight:700;font-family:monospace;color:${meta.color};font-size:15px;">${caseNumber}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;">Tipo</td>
+                        <td style="padding:6px 0;font-weight:600;">${typeLabel}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;">Estado</td>
+                        <td style="padding:6px 0;">
+                            <span style="display:inline-block;background:${meta.color}20;color:${meta.color};font-weight:700;font-size:12px;padding:3px 12px;border-radius:99px;">${meta.badgeText}</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            ${resolution ? `
+            <div style="background:#f8f9fc;border-left:3px solid ${meta.color};border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 16px 0;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">Respuesta del equipo</p>
+                <p style="margin:0;font-size:14px;color:#374151;font-style:italic;">"${resolution}"</p>
+            </div>` : ''}
+
+            <p style="font-size:13px;color:#9ca3af;">
+                Puedes consultar el estado de tu caso en cualquier momento en
+                <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">vialidades.com/soporte</a>
+                usando tu número de caso <strong>${caseNumber}</strong>.
+            </p>
+        `;
+
+        const contenidoEn = `
+            <p>Hello <strong>${requesterName}</strong>,</p>
+            <p>${meta.msgEn} Case number: <strong style="font-family:monospace;color:${meta.color};">${caseNumber}</strong> — Status: <strong>${meta.badgeText}</strong>.</p>
+            ${resolution ? `<p><em>Team response: "${resolution}"</em></p>` : ''}
+        `;
+
+        const html = obtenerPlantillaBase(meta.titleEs, meta.titleEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({
+            from: `"Vialidades Soporte" <${CORREO_REMITENTE}>`,
+            to: email,
+            subject: meta.subject,
+            html,
+        });
+    } catch (error) {
+        console.error('Error envío email actualización soporte:', error);
+    }
+};
+
+exports.sendSupportRequestConfirmation = async (email, data) => {
+    try {
+        const {
+            requesterName, type, victimName, relationship,
+            reportId, reportDescription, reason, caseNumber, createdAt
+        } = data;
+
+        const typeLabel = type === 'familiar'
+            ? 'Solicitud de Familiar — Ley 192-19'
+            : 'Contenido No Autorizado — Ley 172-13';
+
+        const fecha = new Date(createdAt).toLocaleDateString('es-DO', {
+            day: '2-digit', month: 'long', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        const truncate = (text, max = 180) =>
+            text && text.length > max ? text.substring(0, max) + '…' : (text || '—');
+
+        const tituloEs = 'Solicitud recibida correctamente ✓';
+        const tituloEn = 'Support request received ✓';
+
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+
+        const contenidoEs = `
+            <p>Hola <strong>${requesterName}</strong>,</p>
+            <p>Tu solicitud de eliminación de contenido ha sido <strong>recibida exitosamente</strong> y será revisada por nuestro equipo de moderación.</p>
+
+            <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:16px;padding:24px;margin:24px 0;text-align:center;">
+                <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fca5a5;">Número de Caso</p>
+                <p style="margin:0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:4px;font-family:'Courier New',Courier,monospace;">${caseNumber}</p>
+                <p style="margin:8px 0 0 0;font-size:12px;color:#fca5a5;">Guarda este número para consultar el estado de tu solicitud</p>
+            </div>
+
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px 24px;margin:20px 0;">
+                <p style="margin:0 0 12px 0;font-size:13px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Resumen de tu solicitud</p>
+                <table style="width:100%;border-collapse:collapse;font-size:14px;color:#374151;">
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;width:130px;">Tipo</td>
+                        <td style="padding:6px 0;font-weight:600;color:#dc2626;">${typeLabel}</td>
+                    </tr>
+                    ${victimName ? `<tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">${type === 'familiar' ? 'Familiar' : 'Persona afectada'}</td>
+                        <td style="padding:6px 0;font-weight:600;">${victimName}</td>
+                    </tr>` : ''}
+                    ${relationship ? `<tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">Parentesco</td>
+                        <td style="padding:6px 0;">${relationship}</td>
+                    </tr>` : ''}
+                    ${reportId ? `<tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">Nº Reporte</td>
+                        <td style="padding:6px 0;font-family:monospace;color:#4f46e5;">#${reportId}</td>
+                    </tr>` : ''}
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">Descripción</td>
+                        <td style="padding:6px 0;">${truncate(reportDescription)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">Motivo</td>
+                        <td style="padding:6px 0;">${truncate(reason)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 0;color:#6b7280;vertical-align:top;">Fecha</td>
+                        <td style="padding:6px 0;">${fecha}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin:0 0 16px 0;">
+                <p style="margin:0;font-size:14px;color:#065f46;">
+                    ⏱ Tiempo estimado de respuesta: <strong>72 horas hábiles</strong>. Recibirás una notificación cuando tu solicitud sea procesada.
+                </p>
+            </div>
+
+            <p style="font-size:13px;color:#9ca3af;">
+                Puedes consultar el estado de tu caso en cualquier momento en <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">vialidades.com/soporte</a> usando tu número de caso. Guarda este correo como comprobante.
+            </p>
+        `;
+
+        const contenidoEn = `
+            <p>Hello <strong>${requesterName}</strong>,</p>
+            <p>Your content removal request has been received. Case number: <strong style="font-family:monospace;color:#dc2626;">${caseNumber}</strong>.</p>
+            <p>Type: <strong>${typeLabel}</strong>.${victimName ? ` Person: <strong>${victimName}</strong>.` : ''}
+            We will review it within <strong>72 business hours</strong>.</p>
+            <p style="font-size:13px;color:#9ca3af;">Keep this email and your case number to track the status of your request.</p>
+        `;
+
+        const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, '');
+        await enviarEmailViaAPI({
+            from: `"Vialidades Soporte" <${CORREO_REMITENTE}>`,
+            to: email,
+            subject: '✓ Solicitud de eliminación recibida | Removal request received',
+            html
+        });
+    } catch (error) {
+        console.error('Error envío email soporte:', error);
+    }
+};
+
 exports.sendReportPublishedEmail = async (email, firstName, { type, description, address, timestamp }) => {
     try {
         const reportTypeEs = REPORT_TYPE_ES[type] || type;

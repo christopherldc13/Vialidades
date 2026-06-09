@@ -10,9 +10,10 @@ import Swal from 'sweetalert2';
 import { Box, LinearProgress, Typography } from '@mui/material';
 import { CiLocationOn } from "react-icons/ci";
 import { GrGallery } from "react-icons/gr";
-import { FaCar, FaCarCrash } from "react-icons/fa";
+import { FaCar, FaCarCrash, FaWater, FaRoad } from "react-icons/fa";
 import { BsSignStopFill } from "react-icons/bs";
 import { LuTriangleAlert } from "react-icons/lu";
+import { MdConstruction } from "react-icons/md";
 import { IoIosSend } from "react-icons/io";
 import { IoMdHelpCircle } from "react-icons/io";
 
@@ -62,6 +63,7 @@ const CreateReport = () => {
     const [refreshLocationTrigger, setRefreshLocationTrigger] = useState(0); // Trigger for map refresh
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [accepted, setAccepted] = useState(false);
 
     // New Car Fields
     const [carBrand, setCarBrand] = useState('');
@@ -333,11 +335,14 @@ const CreateReport = () => {
     }
 
     const incidentTypes = [
-        { id: 'Traffic', label: 'Tráfico Pesado', icon: <FaCar />, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-        { id: 'Accident', label: 'Accidente', icon: <FaCarCrash />, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-        { id: 'Violation', label: 'Infracción', icon: <BsSignStopFill />, color: '#6366f1', bg: 'rgba(99,102,241,0.1)' },
-        { id: 'Hazard', label: 'Peligro en la vía', icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-        { id: 'Other', label: 'Otro', icon: <IoMdHelpCircle />, color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+        { id: 'Traffic',  label: 'Tráfico Pesado',  icon: <FaCar />,           color: '#f59e0b', bg: 'rgba(245,158,11,0.1)'   },
+        { id: 'Accident', label: 'Accidente',        icon: <FaCarCrash />,      color: '#ef4444', bg: 'rgba(239,68,68,0.1)'    },
+        { id: 'Violation',label: 'Infracción',       icon: <BsSignStopFill />,  color: '#6366f1', bg: 'rgba(99,102,241,0.1)'   },
+        { id: 'Hazard',   label: 'Peligro en la vía',icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.1)'   },
+        { id: 'RoadWork', label: 'Obra en la vía',   icon: <MdConstruction />,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.1)'   },
+        { id: 'Pothole',  label: 'Bache peligroso',  icon: <FaRoad />,          color: '#78716c', bg: 'rgba(120,113,108,0.1)'  },
+        { id: 'Flood',    label: 'Inundación',       icon: <FaWater />,         color: '#0284c7', bg: 'rgba(2,132,199,0.1)'    },
+        { id: 'Other',    label: 'Otro',             icon: <IoMdHelpCircle />,  color: '#64748b', bg: 'rgba(100,116,139,0.1)'  },
     ];
 
     const SectionLabel = ({ number, text }) => (
@@ -643,16 +648,51 @@ const CreateReport = () => {
                     </div>
 
                     {/* Submit area */}
-                    <div className="cr-submit-bar">
-                        <p className="cr-submit-disclaimer">
-                            Al enviar este reporte confirmas que la información es veraz y corresponde a un incidente real.
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: '280px' }}>
-                            {loading && <LinearProgressWithLabel value={uploadProgress} />}
-                            <button type="submit" disabled={loading} className="cr-submit-btn">
-                                <IoIosSend size={20} />
-                                {loading ? (uploadProgress < 100 ? 'Subiendo...' : 'Procesando...') : 'Enviar Reporte'}
-                            </button>
+                    <div className="cr-submit-bar" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '1rem' }}>
+                        {/* Responsibility checkbox */}
+                        <label style={{
+                            display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                            cursor: 'pointer', padding: '0.875rem 1rem',
+                            background: accepted ? 'rgba(99,102,241,0.06)' : 'var(--surface)',
+                            border: `1px solid ${accepted ? 'rgba(99,102,241,0.3)' : 'var(--border-color)'}`,
+                            borderRadius: '12px',
+                            transition: 'background 0.2s, border-color 0.2s',
+                        }}>
+                            <input
+                                type="checkbox"
+                                checked={accepted}
+                                onChange={e => setAccepted(e.target.checked)}
+                                style={{ display: 'none' }}
+                            />
+                            <div style={{
+                                width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0, marginTop: '1px',
+                                border: `2px solid ${accepted ? '#6366f1' : 'var(--border-color)'}`,
+                                background: accepted ? '#6366f1' : 'transparent',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.15s',
+                            }}>
+                                {accepted && (
+                                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                        <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                )}
+                            </div>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
+                                Me hago <strong style={{ color: 'var(--text-main)' }}>responsable civil y penalmente</strong> del contenido que publico. Confirmo que la información es veraz y que <strong style={{ color: 'var(--text-main)' }}>Vialidades queda eximida</strong> de toda responsabilidad derivada de este reporte.
+                            </span>
+                        </label>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                            <p className="cr-submit-disclaimer" style={{ margin: 0 }}>
+                                Al enviar este reporte confirmas que la información es veraz y corresponde a un incidente real.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: '280px' }}>
+                                {loading && <LinearProgressWithLabel value={uploadProgress} />}
+                                <button type="submit" disabled={loading || !accepted} className="cr-submit-btn" style={{ opacity: !accepted ? 0.5 : 1, cursor: !accepted ? 'not-allowed' : 'pointer' }}>
+                                    <IoIosSend size={20} />
+                                    {loading ? (uploadProgress < 100 ? 'Subiendo...' : 'Procesando...') : 'Enviar Reporte'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>

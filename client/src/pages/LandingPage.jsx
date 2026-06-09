@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, Fingerprint, ShieldCheck, Gavel, FileText, Camera } from 'lucide-react';
+import { Shield, Users, ArrowRight, Sun, Moon, Layers, MessageSquare, Send, Mail, User as UserIcon, Database, PenLine, BadgeCheck, ShieldCheck, Gavel, FileText, Camera, UserX, LifeBuoy, ChevronRight, Lightbulb, Wrench, Bug, Sparkles, Lock } from 'lucide-react';
 import { CiLocationOn } from "react-icons/ci";
 import { LiaSatelliteSolid } from "react-icons/lia";
 import { motion } from 'framer-motion';
@@ -43,13 +43,28 @@ const LANDING_RULES = [
     {
         Icon: Camera,
         color: '#dc2626',
-        gradient: 'linear-gradient(135deg, #dc2626, #ef4444)',
-        title: 'Imágenes de Personas',
-        subtitle: 'Ley 192-19',
-        points: [
-            'Está prohibido publicar imágenes de personas fallecidas o gravemente lesionadas sin autorización.',
-            'El usuario asume responsabilidad civil y penal por el contenido que sube.',
-            'Vialidades puede eliminar sin previo aviso contenido que viole la Ley 192-19.',
+        gradient: 'linear-gradient(135deg, #dc2626, #6366f1)',
+        title: 'Derecho a la Imagen',
+        subtitle: 'Protección de imagen y datos',
+        sections: [
+            {
+                law: 'Ley 192-19',
+                color: '#dc2626',
+                label: 'Protección de imagen',
+                points: [
+                    'Prohibido publicar imágenes de fallecidos o heridos sin autorización.',
+                    'Vialidades elimina sin aviso contenido que viole esta ley.',
+                ],
+            },
+            {
+                law: 'Ley 172-13',
+                color: '#6366f1',
+                label: 'Protección de datos',
+                points: [
+                    'Puedes solicitar la eliminación de tu imagen o datos personales.',
+                    'Tienes derecho al olvido en cualquier momento.',
+                ],
+            },
         ],
     },
     {
@@ -62,18 +77,6 @@ const LANDING_RULES = [
             'Solo reporta incidentes que hayas presenciado directamente.',
             'Los reportes falsos serán eliminados y notificados a las autoridades.',
             'Está prohibida la suplantación de identidad y uso de documentos falsos.',
-        ],
-    },
-    {
-        Icon: Fingerprint,
-        color: '#6366f1',
-        gradient: 'linear-gradient(135deg, #6366f1, #818cf8)',
-        title: 'Verificación KYC',
-        subtitle: 'Identidad Obligatoria',
-        points: [
-            'Debes verificar tu identidad con cédula y selfie.',
-            'El sistema aplica detección de vida para evitar imágenes estáticas.',
-            'Los datos faciales se transmiten cifrados y no se ceden a terceros.',
         ],
     },
     {
@@ -112,9 +115,11 @@ const LandingPage = () => {
     const [suggestionForm, setSuggestionForm] = useState({
         name: '',
         email: '',
-        message: ''
+        message: '',
+        category: 'idea'
     });
     const [sendingSuggestion, setSendingSuggestion] = useState(false);
+    const [focusedField, setFocusedField] = useState(null);
 
     const handleSuggestionChange = (e) => {
         setSuggestionForm({ ...suggestionForm, [e.target.name]: e.target.value });
@@ -167,6 +172,9 @@ const LandingPage = () => {
                         lng: parseFloat(report.location.lng),
                         type: report.type,
                         description: report.description,
+                        address: report.location?.address || null,
+                        timestamp: report.timestamp || null,
+                        reportNumber: report.reportNumber || null,
                         intensity: 1
                     }))
                     .filter(p => !isNaN(p.lat) && !isNaN(p.lng));
@@ -186,7 +194,7 @@ const LandingPage = () => {
             const lat = parseFloat(report.location.lat);
             const lng = parseFloat(report.location.lng);
             if (isNaN(lat) || isNaN(lng)) return;
-            setHeatPoints(prev => [...prev, { lat, lng, type: report.type, description: report.description, intensity: 1 }]);
+            setHeatPoints(prev => [...prev, { lat, lng, type: report.type, description: report.description, address: report.location?.address || null, timestamp: report.timestamp || null, reportNumber: report.reportNumber || null, intensity: 1 }]);
         });
 
         return () => socket.disconnect();
@@ -388,64 +396,17 @@ const LandingPage = () => {
                 <ModerationTimeline />
             </section>
 
-            {/* Features (Optional but adds to the "Web Page" feel) */}
-            <section className="features-section">
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10, scale: 1.02 }}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <div className="icon-bg"><CiLocationOn size={24} /></div>
-                    <h3>Reporta Incidentes</h3>
-                    <p>Notifica accidentes, tráfico o peligros en la vía al instante.</p>
-                </motion.div>
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10, scale: 1.02 }}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                >
-                    <div className="icon-bg"><Shield size={24} /></div>
-                    <h3>Gana Reputación</h3>
-                    <p>Contribuye con reportes veraces y sube de nivel en la comunidad.</p>
-                </motion.div>
-            </section>
 
             {/* Suggestions Section - Premium Refinement */}
             <section style={{ padding: '8rem 1.5rem', position: 'relative', overflow: 'hidden', background: 'transparent' }}>
-                {/* Dynamic Background Glows */}
-                <div style={{
-                    position: 'absolute',
-                    top: '20%',
-                    left: '-10%',
-                    width: '600px',
-                    height: '600px',
-                    background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
-                    filter: 'blur(80px)',
-                    zIndex: -1,
-                    pointerEvents: 'none'
-                }}></div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '10%',
-                    right: '-5%',
-                    width: '500px',
-                    height: '500px',
-                    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%)',
-                    filter: 'blur(80px)',
-                    zIndex: -1,
-                    pointerEvents: 'none'
-                }}></div>
+                {/* Background glows */}
+                <div style={{ position: 'absolute', top: '20%', left: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
 
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                     <div className="form-split-grid">
 
-                        {/* Left Side: Branding & Copy */}
+                        {/* ── Left Side ── */}
                         <motion.div
                             className="form-split-left"
                             initial={{ opacity: 0, x: -30 }}
@@ -453,204 +414,442 @@ const LandingPage = () => {
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
                         >
+                            {/* Badge */}
                             <div style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.75rem',
-                                padding: '0.6rem 1.2rem',
-                                background: 'rgba(99, 102, 241, 0.1)',
-                                border: '1px solid rgba(99, 102, 241, 0.2)',
-                                borderRadius: '99px',
-                                color: 'var(--primary)',
-                                fontWeight: '700',
-                                fontSize: '0.9rem',
-                                marginBottom: '2.5rem'
+                                display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
+                                padding: '0.5rem 1.1rem',
+                                background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)',
+                                borderRadius: '99px', color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem',
+                                marginBottom: '2rem'
                             }}>
-                                <MessageSquare size={18} /> Feedback Comunitario
+                                <MessageSquare size={15} /> Feedback Comunitario
                             </div>
 
+                            {/* Headline */}
                             <h2 style={{
-                                fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-                                fontWeight: '900',
-                                lineHeight: '1.1',
-                                marginBottom: '1.5rem',
-                                color: 'var(--text-main)',
-                                letterSpacing: '-0.02em'
+                                fontSize: 'clamp(2.2rem, 5vw, 3.2rem)', fontWeight: '900',
+                                lineHeight: '1.1', marginBottom: '1.25rem',
+                                color: 'var(--text-main)', letterSpacing: '-0.02em'
                             }}>
-                                Construyamos un mejor <span style={{ color: 'var(--primary)' }}>tránsito</span> juntos.
+                                Construyamos un mejor{' '}
+                                <span style={{
+                                    background: 'linear-gradient(135deg, var(--primary), #818cf8)',
+                                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                                    backgroundClip: 'text'
+                                }}>tránsito</span>{' '}juntos.
                             </h2>
 
-                            <p style={{
-                                fontSize: '1.25rem',
-                                color: 'var(--text-light)',
-                                lineHeight: '1.6',
-                                marginBottom: '3rem',
-                                maxWidth: '480px'
-                            }}>
-                                Tu experiencia diaria es la clave para identificar problemas y proponer soluciones innovadoras. Envíanos tu sugerencia ahora.
+                            <p style={{ fontSize: '1.05rem', color: 'var(--text-light)', lineHeight: '1.7', marginBottom: '2.5rem', maxWidth: '440px' }}>
+                                Tu experiencia diaria es la clave para identificar problemas y proponer soluciones innovadoras. Cada sugerencia es revisada por nuestro equipo.
                             </p>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            {/* Stats row */}
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
                                 {[
-                                    { label: 'Identifica Mejores Vías', icon: <CiLocationOn /> },
-                                    { label: 'Propón Nuevas Reglas', icon: <Shield /> },
-                                    { label: 'Sintoniza la Comunidad', icon: <Users /> }
-                                ].map((item, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-main)', fontWeight: '600' }}>
-                                        <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '12px',
-                                            background: 'var(--surface)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'var(--primary)',
-                                            border: '1px solid var(--border-color)'
-                                        }}>
-                                            {item.icon}
-                                        </div>
-                                        {item.label}
+                                    { value: '100%', label: 'Revisadas' },
+                                    { value: '0',    label: 'Costo' },
+                                ].map((stat, i) => (
+                                    <div key={i} style={{
+                                        background: 'var(--surface)', border: '1px solid var(--border-color)',
+                                        borderRadius: '14px', padding: '0.75rem 1.1rem',
+                                        display: 'flex', flexDirection: 'column', gap: '2px',
+                                    }}>
+                                        <span style={{ fontSize: '1.3rem', fontWeight: '900', color: 'var(--primary)', lineHeight: 1 }}>{stat.value}</span>
+                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '500' }}>{stat.label}</span>
                                     </div>
+                                ))}
+                            </div>
+
+                            {/* Steps */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {[
+                                    { num: '01', label: 'Elige el tipo de feedback', desc: 'Bug, mejora, nueva idea u otro', color: '#6366f1', icon: <Lightbulb size={16} /> },
+                                    { num: '02', label: 'Describe tu experiencia', desc: 'Sé específico para que podamos actuar', color: '#0ea5e9', icon: <PenLine size={16} /> },
+                                    { num: '03', label: 'El equipo lo recibe', desc: 'Analizamos cada mensaje enviado', color: '#10b981', icon: <BadgeCheck size={16} /> },
+                                ].map((step, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 0.5, delay: 0.1 + i * 0.1 }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '1rem',
+                                            background: 'var(--surface)', border: '1px solid var(--border-color)',
+                                            borderRadius: '16px', padding: '0.9rem 1.1rem',
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                                            background: `${step.color}18`, border: `1.5px solid ${step.color}35`,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            color: step.color,
+                                        }}>
+                                            {step.icon}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)' }}>{step.label}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1px' }}>{step.desc}</div>
+                                        </div>
+                                        <span style={{ fontSize: '0.72rem', fontWeight: '800', color: step.color, opacity: 0.5, flexShrink: 0 }}>{step.num}</span>
+                                    </motion.div>
                                 ))}
                             </div>
                         </motion.div>
 
-                        {/* Right Side: The Form Card */}
+                        {/* ── Right Side: Form Card ── */}
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            whileInView={{ opacity: 1, scale: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.6, delay: 0.2 }}
                         >
-                            <div className="card" style={{
-                                padding: 'clamp(2rem, 5vw, 4rem)',
-                                borderRadius: '40px',
+                            <div style={{
+                                borderRadius: '28px',
                                 background: 'var(--surface)',
                                 border: '1px solid var(--border-color)',
-                                boxShadow: '0 40px 100px -20px rgba(0,0,0,0.15)',
-                                backdropFilter: 'blur(20px)',
-                                position: 'relative'
+                                boxShadow: '0 24px 60px -12px rgba(0,0,0,0.12)',
+                                position: 'relative', overflow: 'hidden',
                             }}>
-                                {/* Decorative Gradient Border effect */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '4px',
-                                    background: 'linear-gradient(90deg, var(--primary), var(--secondary))',
-                                    borderRadius: '40px 40px 0 0'
-                                }}></div>
+                                {/* Gradient top bar */}
+                                <div style={{ height: '4px', background: 'linear-gradient(90deg, var(--primary), #818cf8, #0ea5e9)', borderRadius: '28px 28px 0 0' }} />
 
-                                <form onSubmit={handleSuggestionSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-                                        <div className="input-group" style={{ marginBottom: 0 }}>
-                                            <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Nombre Completo</label>
-                                            <div className="input-icon-wrapper" style={{ position: 'relative' }}>
-                                                <UserIcon size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                {/* Card Header */}
+                                <div style={{ padding: '1.75rem 2rem 0' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+                                        <div style={{
+                                            width: '38px', height: '38px', borderRadius: '12px',
+                                            background: 'linear-gradient(135deg, var(--primary), #818cf8)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+                                        }}>
+                                            <Send size={17} color="white" />
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>Envía tu Feedback</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1px' }}>Anónimo · Gratuito · Sin registro</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleSuggestionSubmit} style={{ padding: '1.5rem 2rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                                    {/* Category chips */}
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            Tipo de feedback
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            {[
+                                                { value: 'idea',   label: 'Nueva Idea',  icon: <Lightbulb size={13} />, color: '#6366f1' },
+                                                { value: 'mejora', label: 'Mejora',       icon: <Sparkles size={13} />, color: '#0ea5e9' },
+                                                { value: 'bug',    label: 'Problema',     icon: <Bug size={13} />,      color: '#ef4444' },
+                                                { value: 'otro',   label: 'Otro',         icon: <MessageSquare size={13} />, color: '#64748b' },
+                                            ].map(cat => {
+                                                const active = suggestionForm.category === cat.value;
+                                                return (
+                                                    <button
+                                                        key={cat.value}
+                                                        type="button"
+                                                        onClick={() => setSuggestionForm(f => ({ ...f, category: cat.value }))}
+                                                        style={{
+                                                            display: 'flex', alignItems: 'center', gap: '5px',
+                                                            padding: '6px 12px', borderRadius: '10px', cursor: 'pointer',
+                                                            border: `1.5px solid ${active ? cat.color : 'var(--border-color)'}`,
+                                                            background: active ? `${cat.color}14` : 'var(--bg-input)',
+                                                            color: active ? cat.color : 'var(--text-muted)',
+                                                            fontWeight: active ? '700' : '500',
+                                                            fontSize: '0.8rem', transition: 'all 0.15s',
+                                                            fontFamily: 'inherit',
+                                                        }}
+                                                    >
+                                                        {cat.icon} {cat.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Name + Email row */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        {/* Name */}
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <UserIcon size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: focusedField === 'name' ? 'var(--primary)' : 'var(--text-muted)', transition: 'color 0.15s' }} />
                                                 <input
-                                                    type="text"
-                                                    name="name"
+                                                    type="text" name="name"
                                                     value={suggestionForm.name}
                                                     onChange={handleSuggestionChange}
-                                                    required
-                                                    placeholder="Ej: Juan Pérez"
+                                                    onFocus={() => setFocusedField('name')}
+                                                    onBlur={() => setFocusedField(null)}
+                                                    required placeholder="Juan Pérez"
                                                     style={{
-                                                        height: '58px',
-                                                        paddingLeft: '3.5rem',
+                                                        height: '46px', paddingLeft: '2.75rem',
                                                         background: 'var(--bg-input)',
-                                                        border: '1px solid var(--border-color)',
-                                                        borderRadius: '16px',
-                                                        fontSize: '1rem',
-                                                        width: '100%',
-                                                        boxSizing: 'border-box'
+                                                        border: `1.5px solid ${focusedField === 'name' ? 'var(--primary)' : 'var(--border-color)'}`,
+                                                        borderRadius: '12px', fontSize: '0.9rem',
+                                                        width: '100%', boxSizing: 'border-box',
+                                                        color: 'var(--text-main)',
+                                                        outline: 'none', transition: 'border-color 0.15s',
                                                     }}
                                                 />
                                             </div>
                                         </div>
-                                        <div className="input-group" style={{ marginBottom: 0 }}>
-                                            <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Correo Electrónico</label>
-                                            <div className="input-icon-wrapper" style={{ position: 'relative' }}>
-                                                <Mail size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                        {/* Email */}
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Correo</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <Mail size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: focusedField === 'email' ? 'var(--primary)' : 'var(--text-muted)', transition: 'color 0.15s' }} />
                                                 <input
-                                                    type="email"
-                                                    name="email"
+                                                    type="email" name="email"
                                                     value={suggestionForm.email}
                                                     onChange={handleSuggestionChange}
-                                                    required
-                                                    placeholder="ejemplo@correo.com"
+                                                    onFocus={() => setFocusedField('email')}
+                                                    onBlur={() => setFocusedField(null)}
+                                                    required placeholder="ejemplo@correo.com"
                                                     style={{
-                                                        height: '58px',
-                                                        paddingLeft: '3.5rem',
+                                                        height: '46px', paddingLeft: '2.75rem',
                                                         background: 'var(--bg-input)',
-                                                        border: '1px solid var(--border-color)',
-                                                        borderRadius: '16px',
-                                                        fontSize: '1rem',
-                                                        width: '100%',
-                                                        boxSizing: 'border-box'
+                                                        border: `1.5px solid ${focusedField === 'email' ? 'var(--primary)' : 'var(--border-color)'}`,
+                                                        borderRadius: '12px', fontSize: '0.9rem',
+                                                        width: '100%', boxSizing: 'border-box',
+                                                        color: 'var(--text-main)',
+                                                        outline: 'none', transition: 'border-color 0.15s',
                                                     }}
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="input-group" style={{ marginBottom: 0 }}>
-                                        <label style={{ fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.75rem', display: 'block' }}>Tu Sugerencia</label>
+                                    {/* Message */}
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tu Mensaje</label>
+                                            <span style={{
+                                                fontSize: '0.72rem', fontWeight: '600',
+                                                color: suggestionForm.message.length > 450 ? '#ef4444' : 'var(--text-muted)',
+                                            }}>
+                                                {suggestionForm.message.length}/500
+                                            </span>
+                                        </div>
                                         <textarea
                                             name="message"
                                             value={suggestionForm.message}
-                                            onChange={handleSuggestionChange}
+                                            onChange={e => {
+                                                if (e.target.value.length <= 500) handleSuggestionChange(e);
+                                            }}
+                                            onFocus={() => setFocusedField('message')}
+                                            onBlur={() => setFocusedField(null)}
                                             required
                                             placeholder="Descríbenos tu idea para mejorar Vialidades..."
                                             style={{
-                                                minHeight: '180px',
-                                                padding: '1.5rem',
-                                                borderRadius: '20px',
-                                                background: 'var(--bg-input)',
-                                                border: '1px solid var(--border-color)',
-                                                color: 'var(--text-main)',
-                                                fontFamily: 'inherit',
-                                                fontSize: '1.05rem',
-                                                width: '100%',
-                                                boxSizing: 'border-box',
-                                                resize: 'vertical',
-                                                lineHeight: '1.6'
+                                                minHeight: '140px', padding: '1rem 1.1rem',
+                                                borderRadius: '14px', background: 'var(--bg-input)',
+                                                border: `1.5px solid ${focusedField === 'message' ? 'var(--primary)' : 'var(--border-color)'}`,
+                                                color: 'var(--text-main)', fontFamily: 'inherit',
+                                                fontSize: '0.9rem', width: '100%', boxSizing: 'border-box',
+                                                resize: 'vertical', lineHeight: '1.6',
+                                                outline: 'none', transition: 'border-color 0.15s',
                                             }}
                                         />
                                     </div>
 
+                                    {/* Submit */}
                                     <button
                                         type="submit"
                                         disabled={sendingSuggestion}
                                         style={{
-                                            height: '64px',
-                                            borderRadius: '20px',
-                                            background: 'linear-gradient(135deg, var(--primary) 0%, #4338ca 100%)',
-                                            color: 'white',
-                                            fontWeight: '800',
-                                            fontSize: '1.1rem',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '1rem',
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            boxShadow: '0 12px 30px -10px rgba(99, 102, 241, 0.5)'
+                                            height: '52px', borderRadius: '14px',
+                                            background: sendingSuggestion
+                                                ? 'rgba(99,102,241,0.5)'
+                                                : 'linear-gradient(135deg, var(--primary) 0%, #4338ca 100%)',
+                                            color: 'white', fontWeight: '800', fontSize: '0.95rem',
+                                            border: 'none', cursor: sendingSuggestion ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                                            transition: 'all 0.2s', boxShadow: sendingSuggestion ? 'none' : '0 8px 20px -6px rgba(99,102,241,0.5)',
+                                            fontFamily: 'inherit',
                                         }}
-                                        className="cta-button"
                                     >
-                                        {sendingSuggestion ? 'Enviando...' : (
+                                        {sendingSuggestion ? (
                                             <>
-                                                Enviar Sugerencia <Send size={22} />
+                                                <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                                Enviando...
                                             </>
+                                        ) : (
+                                            <><Send size={17} /> Enviar Feedback</>
                                         )}
                                     </button>
+
+                                    {/* Privacy note */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                                        <Lock size={12} color="var(--text-muted)" />
+                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                            Tu información es confidencial y no se comparte con terceros.
+                                        </span>
+                                    </div>
                                 </form>
                             </div>
                         </motion.div>
                     </div>
+                </div>
+            </section>
+
+            {/* ─── Soporte / Solicitudes Legales ─── */}
+            <section style={{ padding: '5rem 1.5rem 7rem', position: 'relative', overflow: 'hidden' }}>
+                {/* Background glows */}
+                <div style={{ position: 'absolute', top: '15%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(220,38,38,0.07) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: -1, pointerEvents: 'none' }} />
+
+                <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                    {/* Header */}
+                    <motion.div
+                        style={{ textAlign: 'center', marginBottom: '3.5rem' }}
+                        initial={{ opacity: 0, y: 24 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.7 }}
+                    >
+                        <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.75rem',
+                            padding: '0.6rem 1.2rem',
+                            background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
+                            borderRadius: '99px', color: '#dc2626', fontWeight: '700', fontSize: '0.9rem',
+                            marginBottom: '1.75rem',
+                        }}>
+                            <LifeBuoy size={18} /> Centro de Soporte
+                        </div>
+                        <h2 style={{
+                            fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '900',
+                            color: 'var(--text-main)', letterSpacing: '-0.02em',
+                            lineHeight: 1.15, marginBottom: '1rem',
+                        }}>
+                            ¿Apareces en un reporte <span style={{ color: '#dc2626' }}>sin tu permiso</span>?
+                        </h2>
+                        <p style={{ fontSize: '1.1rem', color: 'var(--text-light)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>
+                            Si tú o un familiar aparece en un reporte vial sin haber autorizado el contenido, tienes derecho a solicitar su eliminación inmediata amparado en la <strong style={{ color: 'var(--text-main)' }}>Ley 192-19</strong> y la <strong style={{ color: 'var(--text-main)' }}>Ley 172-13</strong>.
+                        </p>
+                    </motion.div>
+
+                    {/* Cards */}
+                    <div style={{ marginBottom: '2.5rem' }}>
+                        {/* Card — Imágenes de Personas */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 28 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.55 }}
+                            style={{
+                                background: 'var(--surface)',
+                                border: '1px solid rgba(220,38,38,0.2)',
+                                borderRadius: '24px',
+                                padding: '2rem',
+                                display: 'flex', flexDirection: 'column', gap: '1.25rem',
+                                position: 'relative', overflow: 'hidden',
+                                maxWidth: '720px', margin: '0 auto',
+                            }}
+                        >
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #dc2626, #6366f1)', borderRadius: '24px 24px 0 0' }} />
+
+                            {/* Icon + title */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
+                                    background: 'linear-gradient(135deg, #dc2626, #6366f1)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
+                                }}>
+                                    <UserX size={24} color="white" strokeWidth={2} />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                                        Imágenes de Personas
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '700', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', padding: '2px 10px', borderRadius: '99px' }}>
+                                            Ley 192-19
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: '700', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 10px', borderRadius: '99px' }}>
+                                            Ley 172-13
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-light)', lineHeight: 1.7, margin: 0 }}>
+                                Si tú, un familiar fallecido o cualquier persona identificable aparece en un reporte sin su consentimiento, puedes solicitar la eliminación inmediata del contenido. La Ley 192-19 protege la imagen de las personas, abarcando también el derecho al olvido y la protección de datos personales establecido en la Ley 172-13.
+                            </p>
+
+                            <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                                {[
+                                    'Familiar directo o representante legal',
+                                    'Fallecidos o gravemente lesionados',
+                                    'Cualquier persona identificable',
+                                    'Imágenes, vídeos o datos personales',
+                                    'Derecho al olvido y eliminación de datos',
+                                    'Revisión prioritaria por el equipo',
+                                ].map((pt, i) => (
+                                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.83rem', color: 'var(--text-light)' }}>
+                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'linear-gradient(135deg, #dc2626, #6366f1)', flexShrink: 0, marginTop: '6px' }} />
+                                        {pt}
+                                    </li>
+                                ))}
+                            </ul>
+                        </motion.div>
+                    </div>
+
+                    {/* CTA Banner */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        style={{
+                            background: 'var(--surface)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '24px',
+                            padding: '2rem 2.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '1.5rem',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                            <div style={{
+                                width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
+                                background: 'linear-gradient(135deg, #dc2626, #6366f1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 6px 20px rgba(220,38,38,0.25)',
+                            }}>
+                                <LifeBuoy size={24} color="white" />
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)', marginBottom: '0.2rem' }}>
+                                    Formulario de Solicitud de Eliminación
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                    Sin necesidad de crear una cuenta — proceso gratuito y confidencial
+                                </div>
+                            </div>
+                        </div>
+                        <Link
+                            to="/soporte"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
+                                padding: '0.9rem 2rem',
+                                background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+                                color: 'white', fontWeight: '700', fontSize: '0.95rem',
+                                borderRadius: '14px', textDecoration: 'none',
+                                boxShadow: '0 8px 20px rgba(220,38,38,0.3)',
+                                whiteSpace: 'nowrap',
+                                transition: 'opacity 0.2s',
+                            }}
+                        >
+                            Ir al Centro de Soporte <ChevronRight size={18} />
+                        </Link>
+                    </motion.div>
                 </div>
             </section>
 
@@ -730,15 +929,38 @@ const LandingPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Bullet points */}
-                                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                                    {rule.points.map((pt, j) => (
-                                        <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
-                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: rule.color, flexShrink: 0, marginTop: '7px', opacity: 0.8 }} />
-                                            {pt}
-                                        </li>
-                                    ))}
-                                </ul>
+                                {/* Bullet points / sections */}
+                                {rule.sections ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                                        {rule.sections.map((section, k) => (
+                                            <div key={k}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
+                                                    <span style={{ fontSize: '0.72rem', fontWeight: '800', color: section.color, background: `${section.color}12`, border: `1px solid ${section.color}30`, padding: '2px 9px', borderRadius: '99px' }}>
+                                                        {section.law}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: '500' }}>{section.label}</span>
+                                                </div>
+                                                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                                    {section.points.map((pt, j) => (
+                                                        <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.84rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
+                                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: section.color, flexShrink: 0, marginTop: '7px', opacity: 0.8 }} />
+                                                            {pt}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                                        {rule.points.map((pt, j) => (
+                                            <li key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-light)', lineHeight: 1.6 }}>
+                                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: rule.color, flexShrink: 0, marginTop: '7px', opacity: 0.8 }} />
+                                                {pt}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </motion.div>
                         ))}
                     </div>

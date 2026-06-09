@@ -9,16 +9,17 @@ import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Toolt
 import AuthContext from '../context/AuthContext';
 import ReportDetailModal from '../components/ReportDetailModal';
 import { Clock, CheckCircle, XCircle, AlertCircle, PieChart as PieChartIcon, Activity, BarChart2 } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Label, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Label, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area } from 'recharts';
 import { MdWavingHand } from "react-icons/md";
 import { RxDashboard } from "react-icons/rx";
 import { RiUserCommunityLine } from "react-icons/ri";
 import { TbReportSearch } from "react-icons/tb";
 import './DashboardExtras.css';
-import { FaCar, FaCarCrash } from "react-icons/fa";
+import { FaCar, FaCarCrash, FaWater, FaRoad } from "react-icons/fa";
 import { BsSignStopFill } from "react-icons/bs";
 import { LuTriangleAlert } from "react-icons/lu";
 import { IoMdHelpCircle } from "react-icons/io";
+import { MdConstruction } from "react-icons/md";
 import { io } from 'socket.io-client';
 
 const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''));
@@ -35,10 +36,13 @@ const DR_PROVINCES = [
 
 
 const TYPE_CONFIG = {
-    Traffic:   { label: 'Tráfico',    icon: <FaCar />,           color: '#3b82f6', bg: 'rgba(59,130,246,0.12)'  },
-    Accident:  { label: 'Accidente',  icon: <FaCarCrash />,      color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
-    Violation: { label: 'Infracción', icon: <BsSignStopFill />,  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
-    Hazard:    { label: 'Peligro',    icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
+    Traffic:   { label: 'Tráfico',         icon: <FaCar />,           color: '#3b82f6', bg: 'rgba(59,130,246,0.12)'  },
+    Accident:  { label: 'Accidente',        icon: <FaCarCrash />,      color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+    Violation: { label: 'Infracción',       icon: <BsSignStopFill />,  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
+    Hazard:    { label: 'Peligro',          icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
+    RoadWork:  { label: 'Obra en la vía',   icon: <MdConstruction />,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)'  },
+    Pothole:   { label: 'Bache peligroso',  icon: <FaRoad />,          color: '#78716c', bg: 'rgba(120,113,108,0.12)' },
+    Flood:     { label: 'Inundación',       icon: <FaWater />,         color: '#0284c7', bg: 'rgba(2,132,199,0.12)'   },
 };
 
 const STATUS_CONFIG = {
@@ -65,7 +69,7 @@ const getIncidentBg = (type) => TYPE_CONFIG[type]?.bg || 'rgba(99,102,241,0.12)'
 const Dashboard = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0 });
+    const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0, published: 0 });
     const [suggestions, setSuggestions] = useState([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
@@ -360,10 +364,11 @@ const Dashboard = () => {
                     {isModerator && (
                         <div className="stat-grid">
                             {[
-                                { key: 'pending',    label: 'Pendientes',  desc: 'Esperando revisión', icon: <Clock size={22} />,        color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  filter: 'pending'    },
-                                { key: 'approved',   label: 'Aprobados',   desc: 'Verificados',        icon: <CheckCircle size={22} />,   color: '#10b981', bg: 'rgba(16,185,129,0.1)',  filter: 'approved'   },
-                                { key: 'rejected',   label: 'Rechazados',  desc: 'No aprobados',       icon: <XCircle size={22} />,       color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   filter: 'rejected'   },
-                                { key: 'sanctioned', label: 'Sancionados', desc: 'Con infracción',     icon: <AlertCircle size={22} />,   color: '#b91c1c', bg: 'rgba(185,28,28,0.1)',   filter: 'sanctioned' },
+                                { key: 'pending',    label: 'Pendientes',          desc: 'Esperando revisión',       icon: <Clock size={22} />,        color: '#f59e0b', bg: 'rgba(245,158,11,0.1)',  filter: 'pending'    },
+                                { key: 'approved',   label: 'Aprobados',           desc: 'Verificados por ti',       icon: <CheckCircle size={22} />,   color: '#10b981', bg: 'rgba(16,185,129,0.1)',  filter: 'approved'   },
+                                { key: 'rejected',   label: 'Rechazados',          desc: 'No aprobados',             icon: <XCircle size={22} />,       color: '#ef4444', bg: 'rgba(239,68,68,0.1)',   filter: 'rejected'   },
+                                { key: 'sanctioned', label: 'Sancionados',         desc: 'Con infracción',           icon: <AlertCircle size={22} />,   color: '#b91c1c', bg: 'rgba(185,28,28,0.1)',   filter: 'sanctioned' },
+                                { key: 'published',  label: 'Reportes Publicados', desc: 'Sistema y moderadores',    icon: <CheckCircle size={22} />,   color: '#6366f1', bg: 'rgba(99,102,241,0.1)',  filter: 'all'  },
                             ].map(s => (
                                 <Tooltip key={s.key} title="Click para gestionar" arrow placement="top">
                                     <Link to={`/moderate?filter=${s.filter}`} className="stat-card" style={{
@@ -400,104 +405,111 @@ const Dashboard = () => {
 
                     {/* Analytics for moderators */}
                     {isModerator && (() => {
-                        const chartData = [
-                            { name: 'Pendientes', value: stats.pending || 0, color: '#f59e0b' },
-                            { name: 'Aprobados',  value: stats.approved || 0,  color: '#10b981' },
+                        const statusData = [
+                            { name: 'Pendientes', value: stats.pending || 0,   color: '#f59e0b' },
+                            { name: 'Aprobados',  value: stats.approved || 0,  color: '#6366f1' },
                             { name: 'Rechazados', value: stats.rejected || 0,  color: '#ef4444' },
                             { name: 'Sancionados',value: stats.sanctioned || 0,color: '#b91c1c' },
                         ].filter(i => i.value > 0);
 
-                        if (chartData.length === 0) return null;
-                        const total = chartData.reduce((a, c) => a + c.value, 0);
+                        const typeLabels = { Traffic: 'Tráfico', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro', RoadWork: 'Obra', Pothole: 'Bache', Flood: 'Inundación', Other: 'Otro' };
+                        const typeData = (stats.byType || []).map(t => ({ name: typeLabels[t._id] || t._id, value: t.count }));
+                        const dayData  = stats.byDay || [];
+
+                        const total = statusData.reduce((a, c) => a + c.value, 0);
                         const processed = (stats.approved || 0) + (stats.rejected || 0) + (stats.sanctioned || 0);
                         const resRate = total > 0 ? Math.round((processed / total) * 100) : 0;
 
-                        const CustomTooltip = ({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                    <div style={{
-                                        background: 'var(--surface-solid)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '12px',
-                                        padding: '0.75rem 1rem',
-                                        boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                                        color: 'var(--text-main)'
-                                    }}>
-                                        <div style={{ fontWeight: '700', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
-                                            {data.name || label}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: data.color || payload[0].color || 'var(--primary)' }}></div>
-                                            <span style={{ color: 'var(--text-muted)' }}>Total:</span>
-                                            <span style={{ fontWeight: '700', color: 'var(--text-main)' }}>{payload[0].value}</span>
-                                        </div>
-                                    </div>
-                                );
-                            }
-                            return null;
+                        const Tip = ({ active, payload, label }) => {
+                            if (!active || !payload?.length) return null;
+                            const d = payload[0].payload;
+                            return (
+                                <div style={{ background: 'var(--surface-solid)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '0.65rem 0.9rem', boxShadow: '0 4px 15px rgba(0,0,0,0.15)', fontSize: '0.82rem' }}>
+                                    <div style={{ fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.25rem' }}>{d.name || label}</div>
+                                    <div style={{ color: 'var(--text-muted)' }}>Total: <strong style={{ color: 'var(--text-main)' }}>{payload[0].value}</strong></div>
+                                </div>
+                            );
                         };
+
+                        const Card = ({ title, subtitle, icon, children, height = 200 }) => (
+                            <div style={{ background: 'var(--surface-solid)', borderRadius: '16px', border: '1px solid var(--border-color)', padding: '1.1rem 1.25rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
+                                    <div>
+                                        <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)' }}>{title}</div>
+                                        <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '1px' }}>{subtitle}</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary)', padding: '6px', borderRadius: '9px', flexShrink: 0 }}>{icon}</div>
+                                </div>
+                                <div style={{ height }}>{children}</div>
+                            </div>
+                        );
 
                         return (
                             <div style={{ marginBottom: '2.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <div style={{ background: 'linear-gradient(135deg, var(--primary), #818cf8)', padding: '8px', borderRadius: '10px', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+                                        <div style={{ background: 'linear-gradient(135deg, var(--primary), #818cf8)', padding: '8px', borderRadius: '10px', color: 'white' }}>
                                             <Activity size={20} />
                                         </div>
                                         <div>
-                                            <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.2 }}>Métricas Generales</h3>
-                                            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '500' }}>Distribución y flujo de todos los reportes</p>
+                                            <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: '800', color: 'var(--text-main)' }}>Analítica</h3>
+                                            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>Actividad y distribución de reportes</p>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', padding: '0.4rem 0.85rem' }}>
-                                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 8px #10b981' }} />
-                                        <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: '700' }}>Tasa de resolución: {resRate}%</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px', padding: '0.4rem 0.85rem' }}>
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: '700' }}>Tasa de resolución: {resRate}%</span>
                                     </div>
                                 </div>
-                                <div className="chart-grid">
-                                    <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                            <div>
-                                                <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>Distribución de Estados</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Total: {total} incidentes</div>
-                                            </div>
-                                            <div style={{ background: 'rgba(99,102,241,0.1)', color: 'var(--primary)', padding: '8px', borderRadius: '12px' }}><PieChartIcon size={20} /></div>
-                                        </div>
-                                        <div style={{ flex: 1, minHeight: 0 }}>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                                    {/* Área — 7 días */}
+                                    <Card title="Últimos 7 días" subtitle="Actividad diaria" icon={<Activity size={16} />} height={180}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={dayData} margin={{ top: 4, right: 8, left: -22, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.18} />
+                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                                                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: '0.68rem', fill: 'var(--text-muted)' }} dy={6} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: '0.68rem', fill: 'var(--text-muted)' }} allowDecimals={false} />
+                                                <RechartsTooltip content={<Tip />} cursor={{ stroke: 'var(--border-color)', strokeWidth: 1 }} />
+                                                <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fill="url(#areaGrad)" dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }} activeDot={{ r: 4 }} name="Reportes" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </Card>
+
+                                    {/* Donut — estados */}
+                                    {statusData.length > 0 && (
+                                        <Card title="Estados" subtitle={`${total} reportes`} icon={<PieChartIcon size={16} />} height={180}>
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart style={{ outline: 'none' }}>
-                                                    <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none" strokeWidth={0} activeShape={false}>
-                                                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                                                        <Label value={total} position="center" style={{ fontSize: '2rem', fontWeight: '800', fill: 'var(--text-main)' }} />
+                                                <PieChart>
+                                                    <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={62} paddingAngle={3} dataKey="value" stroke="none">
+                                                        {statusData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                                        <Label value={total} position="center" style={{ fontSize: '1.4rem', fontWeight: '800', fill: 'var(--text-main)' }} />
                                                     </Pie>
-                                                    <RechartsTooltip content={<CustomTooltip />} cursor={false} />
+                                                    <RechartsTooltip content={<Tip />} />
                                                 </PieChart>
                                             </ResponsiveContainer>
-                                        </div>
-                                    </div>
-                                    <div className="stat-card" style={{ background: 'var(--surface-solid)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                            <div>
-                                                <div style={{ fontWeight: '700', color: 'var(--text-main)' }}>Flujo de Rendimiento</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Comparativa por estado</div>
-                                            </div>
-                                            <div style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', padding: '8px', borderRadius: '12px' }}><BarChart2 size={20} /></div>
-                                        </div>
-                                        <div style={{ flex: 1, minHeight: 0 }}>
+                                        </Card>
+                                    )}
+
+                                    {/* Barras horizontales — tipos */}
+                                    {typeData.length > 0 && (
+                                        <Card title="Tipos de incidente" subtitle="Por categoría" icon={<BarChart2 size={16} />} height={180}>
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: '0.8rem', fill: 'var(--text-muted)', fontWeight: '600' }} dy={10} />
-                                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: '0.8rem', fill: 'var(--text-muted)', fontWeight: '600' }} />
-                                                    <RechartsTooltip content={<CustomTooltip />} cursor={false} />
-                                                    <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                                                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                                                    </Bar>
+                                                <BarChart data={typeData} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
+                                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: '0.68rem', fill: 'var(--text-muted)' }} allowDecimals={false} />
+                                                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: '0.68rem', fill: 'var(--text-muted)' }} width={60} />
+                                                    <RechartsTooltip content={<Tip />} cursor={{ fill: 'rgba(99,102,241,0.06)' }} />
+                                                    <Bar dataKey="value" fill="#6366f1" radius={[0, 5, 5, 0]} maxBarSize={14} />
                                                 </BarChart>
                                             </ResponsiveContainer>
-                                        </div>
-                                    </div>
+                                        </Card>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -577,6 +589,28 @@ const Dashboard = () => {
 
                                         {/* Divider */}
                                         <div style={{ height: '1px', background: 'var(--border-color)' }} />
+
+                                        {/* Category badge */}
+                                        {s.category && (() => {
+                                            const CAT = {
+                                                idea:   { label: 'Nueva Idea', color: '#6366f1', bg: 'rgba(99,102,241,0.1)'  },
+                                                mejora: { label: 'Mejora',     color: '#0ea5e9', bg: 'rgba(14,165,233,0.1)'  },
+                                                bug:    { label: 'Problema',   color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
+                                                otro:   { label: 'Otro',       color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
+                                            };
+                                            const cat = CAT[s.category] || CAT.otro;
+                                            return (
+                                                <span style={{
+                                                    display: 'inline-flex', alignSelf: 'flex-start',
+                                                    padding: '3px 10px', borderRadius: '99px',
+                                                    fontSize: '0.72rem', fontWeight: '700',
+                                                    color: cat.color, background: cat.bg,
+                                                    border: `1px solid ${cat.color}30`,
+                                                }}>
+                                                    {cat.label}
+                                                </span>
+                                            );
+                                        })()}
 
                                         {/* Message */}
                                         <p style={{
@@ -789,6 +823,13 @@ const Dashboard = () => {
                                             <span style={{ color: '#475569' }}>{report.moderatorComment}</span>
                                         </div>
                                     )}
+                                    {report.reportNumber && (
+                                        <div style={{ marginTop: '0.55rem' }}>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                                N° de reporte: <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--text-main)' }}>VTI{String(report.reportNumber).padStart(4, '0')}</span>
+                                            </span>
+                                        </div>
+                                    )}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.9rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-color)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flex: 1, minWidth: 0 }}>
                                             <MapPin size={13} color="var(--primary)" style={{ flexShrink: 0 }} />
@@ -914,6 +955,9 @@ const Dashboard = () => {
                                     <option value="Accident">Accidente</option>
                                     <option value="Violation">Infracción</option>
                                     <option value="Hazard">Peligro</option>
+                                    <option value="RoadWork">Obra en la vía</option>
+                                    <option value="Pothole">Bache peligroso</option>
+                                    <option value="Flood">Inundación</option>
                                 </select>
                                 <div className="filter-bar-sep" />
                                 <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} className="filter-select">

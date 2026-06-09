@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 // @access  Public
 router.post('/', async (req, res) => {
     try {
-        const { name, email, message } = req.body;
+        const { name, email, message, category } = req.body;
 
         // Basic validation
         if (!name || !email || !message) {
@@ -18,7 +18,8 @@ router.post('/', async (req, res) => {
         const newSuggestion = new Suggestion({
             name,
             email,
-            message
+            message,
+            category: category || 'idea'
         });
 
         const suggestion = await newSuggestion.save();

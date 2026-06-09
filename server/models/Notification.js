@@ -11,9 +11,26 @@ const NotificationSchema = new mongoose.Schema({
         enum: ['info', 'success', 'error', 'warning'],
         default: 'info'
     },
+    priority: {
+        type: String,
+        enum: ['normal', 'urgent'],
+        default: 'normal'
+    },
+    category: {
+        type: String,
+        default: null
+    },
     message: {
         type: String,
         required: true
+    },
+    link: {
+        type: String,
+        default: null
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     },
     read: {
         type: Boolean,

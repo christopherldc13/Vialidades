@@ -54,24 +54,51 @@ const SECTIONS = [
         icon: Camera,
         color: '#dc2626',
         bg: 'rgba(220,38,38,0.07)',
-        title: '3. Imágenes de Personas — Ley 192-19',
+        title: '3. Derecho a la Imagen',
         content: (
             <>
-                <p style={{ margin: '0 0 0.75rem 0' }}>
-                    De conformidad con la <strong>Ley 192-19 de la República Dominicana</strong> sobre Protección de la Imagen, Honor e Intimidad Familiar de Personas Fallecidas o Accidentadas, queda <strong>expresamente prohibido</strong> publicar en Vialidades:
-                </p>
-                <Bullets items={[
-                    'Fotografías o videos en los que aparezcan personas fallecidas, gravemente lesionadas o en situaciones que vulneren su dignidad.',
-                    'Imágenes que permitan identificar a víctimas de accidentes sin contar con autorización de la persona o sus familiares.',
-                    'Contenido que exponga circunstancias íntimas o traumáticas de personas accidentadas sin su consentimiento.',
-                    'Material que afecte el honor o la intimidad familiar de personas involucradas en incidentes viales.',
-                ]} />
-                <p style={{ margin: '0.75rem 0 0.5rem 0' }}>
-                    <strong>El usuario asume total responsabilidad civil y penal</strong> por el contenido que suba a la plataforma. Vialidades queda eximida de toda responsabilidad derivada de publicaciones realizadas sin la autorización correspondiente.
-                </p>
-                <p style={{ margin: '0.5rem 0 0 0', padding: '0.65rem 0.85rem', background: 'rgba(220,38,38,0.1)', borderRadius: '0.5rem', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.82rem' }}>
-                    Vialidades se reserva el derecho de <strong>eliminar sin previo aviso</strong> cualquier contenido que infrinja esta cláusula o la Ley 192-19, y de reportar el caso a las autoridades competentes cuando corresponda.
-                </p>
+                {/* Ley 192-19 */}
+                <div style={{ marginBottom: '0.9rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.55rem' }}>
+                        <span style={{ fontSize: '0.71rem', fontWeight: '800', color: '#dc2626', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', padding: '2px 9px', borderRadius: '99px' }}>
+                            Ley 192-19
+                        </span>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '600' }}>Protección de imagen</span>
+                    </div>
+                    <p style={{ margin: '0 0 0.55rem 0' }}>
+                        De conformidad con la <strong>Ley 192-19</strong> sobre Protección de la Imagen, Honor e Intimidad Familiar de Personas Fallecidas o Accidentadas, queda <strong>expresamente prohibido</strong> publicar en Vialidades:
+                    </p>
+                    <Bullets items={[
+                        'Fotografías o videos en los que aparezcan personas fallecidas, gravemente lesionadas o en situaciones que vulneren su dignidad.',
+                        'Imágenes que permitan identificar a víctimas de accidentes sin autorización de la persona o sus familiares.',
+                        'Contenido que exponga circunstancias íntimas o traumáticas de personas accidentadas sin su consentimiento.',
+                        'Material que afecte el honor o la intimidad familiar de personas involucradas en incidentes viales.',
+                    ]} />
+                    <p style={{ margin: '0.6rem 0 0 0', padding: '0.6rem 0.85rem', background: 'rgba(220,38,38,0.08)', borderRadius: '0.5rem', border: '1px solid rgba(220,38,38,0.18)', fontSize: '0.82rem' }}>
+                        <strong>El usuario asume total responsabilidad civil y penal</strong> por el contenido que suba. Vialidades puede <strong>eliminar sin previo aviso</strong> cualquier contenido que infrinja esta ley y reportar el caso a las autoridades competentes.
+                    </p>
+                </div>
+
+                <div style={{ height: '1px', background: 'rgba(128,128,128,0.15)', margin: '0.75rem 0' }} />
+
+                {/* Ley 172-13 */}
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.55rem' }}>
+                        <span style={{ fontSize: '0.71rem', fontWeight: '800', color: '#6366f1', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', padding: '2px 9px', borderRadius: '99px' }}>
+                            Ley 172-13
+                        </span>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '600' }}>Protección de datos personales</span>
+                    </div>
+                    <p style={{ margin: '0 0 0.55rem 0' }}>
+                        La <strong>Ley 172-13</strong> de Protección de Datos Personales reconoce el derecho de toda persona a controlar la información que le concierne:
+                    </p>
+                    <Bullets items={[
+                        'Cualquier persona identificable en un reporte tiene derecho a solicitar la eliminación de su imagen o datos personales.',
+                        'Las imágenes y vídeos donde seas identificable están protegidos aunque no hayas dado consentimiento explícito.',
+                        'Puedes ejercer el derecho al olvido contactando al equipo desde el Centro de Soporte.',
+                        'Vialidades procesará las solicitudes de eliminación de forma prioritaria conforme a lo establecido en esta ley.',
+                    ]} />
+                </div>
             </>
         ),
     },

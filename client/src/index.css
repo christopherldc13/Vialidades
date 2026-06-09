@@ -1,3 +1,19 @@
+/* ── Leaflet popup overrides ── */
+.landing-map-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.landing-map-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: 1;
+}
+.landing-map-popup .leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
 :root {
   font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

@@ -8,10 +8,11 @@ import { X, Calendar, User, Info, Smartphone, Clock, MapPin, ExternalLink, Trash
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaGallery from './MediaGallery';
-import { FaCar, FaCarCrash } from "react-icons/fa";
+import { FaCar, FaCarCrash, FaWater, FaRoad } from "react-icons/fa";
 import { BsSignStopFill } from "react-icons/bs";
 import { LuTriangleAlert } from "react-icons/lu";
 import { IoMdHelpCircle } from "react-icons/io";
+import { MdConstruction } from "react-icons/md";
 import { AlertTriangle, Check } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -20,6 +21,9 @@ const TYPE_CONFIG = {
     Accident:  { label: 'Accidente',         icon: <FaCarCrash />,      color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
     Violation: { label: 'Infracción',        icon: <BsSignStopFill />,  color: '#f59e0b', bg: 'rgba(245,158,11,0.12)'  },
     Hazard:    { label: 'Peligro en la vía', icon: <LuTriangleAlert />, color: '#f97316', bg: 'rgba(249,115,22,0.12)'  },
+    RoadWork:  { label: 'Obra en la vía',    icon: <MdConstruction />,  color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)'  },
+    Pothole:   { label: 'Bache peligroso',   icon: <FaRoad />,          color: '#78716c', bg: 'rgba(120,113,108,0.12)' },
+    Flood:     { label: 'Inundación',        icon: <FaWater />,         color: '#0284c7', bg: 'rgba(2,132,199,0.12)'   },
 };
 
 const STATUS_CONFIG = {
@@ -159,6 +163,11 @@ const ReportDetailModal = ({ report, onClose, onModerate, user }) => {
                             <h2 style={{ fontSize: 'clamp(1.15rem, 3.5vw, 1.6rem)', fontWeight: '900', margin: 0, color: 'var(--text-main)', lineHeight: '1.2' }}>
                                 Detalles del Reporte
                             </h2>
+                            {report.reportNumber && (
+                                <span style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                    N° de reporte: <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--text-main)' }}>VTI{String(report.reportNumber).padStart(4, '0')}</span>
+                                </span>
+                            )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                 {/* Status badge */}
                                 <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.2rem 0.75rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: '800', background: statusCfg.bg, color: statusCfg.color, letterSpacing: '0.04em' }}>

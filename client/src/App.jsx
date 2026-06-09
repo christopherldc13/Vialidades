@@ -12,6 +12,9 @@ import Profile from './pages/Profile';
 import ModerateReports from './pages/ModerateReports';
 import SuperModDashboard from './pages/SuperModDashboard';
 import SuperModModerators from './pages/SuperModModerators';
+import SuperModSupport from './pages/SuperModSupport';
+import SuperModReports from './pages/SuperModReports';
+import SupportPage from './pages/SupportPage';
 import LandingPage from './pages/LandingPage';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -140,6 +143,17 @@ function App() {
                   <SuperModModerators />
                 </PrivateRoute>
               } />
+              <Route path="/supermoderador/soporte" element={
+                <PrivateRoute>
+                  <SuperModSupport />
+                </PrivateRoute>
+              } />
+              <Route path="/supermoderador/reportes" element={
+                <PrivateRoute>
+                  <SuperModReports />
+                </PrivateRoute>
+              } />
+              <Route path="/soporte" element={<SupportPage />} />
             </Routes>
           </div>
           <div className="fixed-footer">

@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import AuthContext from '../context/AuthContext';
-import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle, Inbox } from 'lucide-react';
+import { ArrowLeft, Check, X, AlertTriangle, Info, Users, CheckCircle, Inbox, Search } from 'lucide-react';
 import { AiOutlineHistory } from "react-icons/ai";
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -18,10 +18,13 @@ const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http:/
 
 const getIncidentLabel = (type) => {
     switch (type) {
-        case 'Traffic': return 'Tráfico Pesado';
+        case 'Traffic':  return 'Tráfico Pesado';
         case 'Accident': return 'Accidente';
         case 'Violation': return 'Infracción';
-        case 'Hazard': return 'Peligro en la vía';
+        case 'Hazard':   return 'Peligro en la vía';
+        case 'RoadWork': return 'Obra en la vía';
+        case 'Pothole':  return 'Bache peligroso';
+        case 'Flood':    return 'Inundación';
         default: return type;
     }
 };
@@ -53,13 +56,14 @@ const ModerateReports = () => {
     const [reports, setReports] = useState([]);
     const [usersList, setUsersList] = useState([]);
     const [userSearch, setUserSearch] = useState('');
-    const [userRoleFilter, setUserRoleFilter] = useState('all');
+
     const [revealedMedia, setRevealedMedia] = useState(new Set());
     const [filter, setFilter] = useState(initialFilter); // pending, approved, rejected, sanctioned, all, users
     const [typeFilter, setTypeFilter] = useState('all');
     const [provinceFilter, setProvinceFilter] = useState('all');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const [reportSearch, setReportSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const { user } = useContext(AuthContext);
     const [selectedReport, setSelectedReport] = useState(null);
@@ -206,6 +210,12 @@ const ModerateReports = () => {
     const filteredReports = filter === 'users'
         ? reports
         : reports.filter(r => {
+            if (reportSearch.trim()) {
+                const q = reportSearch.trim().replace(/^vti/i, '');
+                const num = parseInt(q, 10);
+                if (!isNaN(num)) { if (r.reportNumber !== num) return false; }
+                else return false;
+            }
             if (filter === 'all' && r.status === 'pending') return false;
             if (typeFilter !== 'all' && r.type !== typeFilter) return false;
             if (provinceFilter !== 'all') {
@@ -246,6 +256,27 @@ const ModerateReports = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Search by report number */}
+                {filter !== 'users' && <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', margin: '1.5rem 0 1rem' }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                        <span style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none', display: 'flex' }}>
+                            🔍
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Buscar por N° de reporte (ej: VTI0001 o solo 1)..."
+                            value={reportSearch}
+                            onChange={e => setReportSearch(e.target.value)}
+                            style={{
+                                width: '100%', paddingLeft: '2.25rem', paddingRight: '0.75rem',
+                                height: '38px', borderRadius: '10px', fontSize: '0.875rem',
+                                border: '1px solid var(--border-color)', background: 'var(--surface-solid)',
+                                color: 'var(--text-main)', outline: 'none', boxSizing: 'border-box',
+                            }}
+                        />
+                    </div>
+                </div>}
 
                 {/* Tab bar */}
                 <div className="mod-tabs-scroll">
@@ -290,6 +321,9 @@ const ModerateReports = () => {
                             <option value="Accident">Accidente</option>
                             <option value="Violation">Infracción</option>
                             <option value="Hazard">Peligro</option>
+                            <option value="RoadWork">Obra en la vía</option>
+                            <option value="Pothole">Bache peligroso</option>
+                            <option value="Flood">Inundación</option>
                         </select>
                         <div className="filter-bar-sep" />
                         <select value={provinceFilter} onChange={e => setProvinceFilter(e.target.value)} className="filter-select">
@@ -346,36 +380,19 @@ const ModerateReports = () => {
                                     }}
                                 />
                             </div>
-                            <select
-                                value={userRoleFilter}
-                                onChange={e => setUserRoleFilter(e.target.value)}
-                                style={{
-                                    height: '38px', borderRadius: '10px', padding: '0 0.85rem',
-                                    fontSize: '0.875rem', border: '1px solid var(--border-color)',
-                                    background: 'var(--surface-solid)', color: 'var(--text-main)',
-                                    outline: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                                }}
-                            >
-                                <option value="all">Todos los roles</option>
-                                <option value="user">Usuario</option>
-                                <option value="moderator">Moderador</option>
-                                <option value="supermoderador">Supermoderador</option>
-                            </select>
                             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                                 {usersList.filter(u => {
+                                    if (user?.role === 'moderator' && u.role !== 'user') return false;
                                     const q = userSearch.toLowerCase();
-                                    const matchSearch = !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
-                                    const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
-                                    return matchSearch && matchRole;
+                                    return !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
                                 }).length} resultado(s)
                             </span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                             {usersList.filter(u => {
+                                if (user?.role === 'moderator' && u.role !== 'user') return false;
                                 const q = userSearch.toLowerCase();
-                                const matchSearch = !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
-                                const matchRole = userRoleFilter === 'all' || u.role === userRoleFilter;
-                                return matchSearch && matchRole;
+                                return !q || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
                             }).map((usr) => (
                                 <div key={usr._id} style={{
                                     display: 'flex', flexDirection: 'column',
@@ -572,6 +589,11 @@ const ModerateReports = () => {
                                             <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
                                                 Por <strong>{report.userId?.username || 'Usuario Desconocido'}</strong> • {new Date(report.timestamp).toLocaleDateString()}
                                             </div>
+                                            {report.reportNumber && (
+                                                <div style={{ marginTop: '0.35rem', fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-muted)' }}>
+                                                    N° de reporte: <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--text-main)' }}>VTI{String(report.reportNumber).padStart(4, '0')}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

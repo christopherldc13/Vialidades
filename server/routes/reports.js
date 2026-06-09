@@ -226,6 +226,8 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
             }
         }
 
+        const reportNumber = (await Report.countDocuments()) + 1;
+
         const newReport = new Report({
             userId,
             type,
@@ -239,7 +241,8 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                 year: carYear,
                 color: carColor
             },
-            status: 'approved'
+            status: 'approved',
+            reportNumber
         });
 
         const report = await newReport.save();
@@ -249,7 +252,7 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
         io.emit('new_report', report);
 
         // Notificación en el sistema
-        const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', Other: 'Otro' };
+        const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', RoadWork: 'Obra en la vía', Pothole: 'Bache peligroso', Flood: 'Inundación', Other: 'Otro' };
         const typeLabel = typeLabels[report.type] || report.type;
         await new Notification({
             userId: user._id,
@@ -283,7 +286,7 @@ router.get('/public', async (req, res) => {
             status: { $in: ['approved', 'In Process', 'needs_review'] },
             hiddenByUser: { $ne: true }
         })
-            .select('location type description -_id')
+            .select('location type description timestamp reportNumber -_id')
             .lean();
 
         console.log(`[PUBLIC MAP] Retornando ${reports.length} reportes. Sin location: ${reports.filter(r => !r.location?.lat).length}`);
@@ -303,14 +306,41 @@ router.get('/stats', auth, async (req, res) => {
 
         const moderatorId = req.user.id;
 
-        const [pending, approved, rejected, sanctioned] = await Promise.all([
+        const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const [pending, approved, rejected, sanctioned, published, byType, byDay] = await Promise.all([
             Report.countDocuments({ status: 'pending' }),
-            Report.countDocuments({ status: 'approved', moderatorId }),
+            Report.countDocuments({ status: 'approved', moderatorId, hiddenByUser: { $ne: true } }),
             Report.countDocuments({ status: 'rejected', wasSanctioned: { $ne: true }, moderatorId }),
-            Report.countDocuments({ wasSanctioned: true, moderatorId })
+            Report.countDocuments({ wasSanctioned: true, moderatorId }),
+            Report.countDocuments({ status: 'approved', hiddenByUser: { $ne: true } }),
+            Report.aggregate([
+                { $match: { hiddenByUser: { $ne: true } } },
+                { $group: { _id: '$type', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]),
+            Report.aggregate([
+                { $match: { timestamp: { $gte: sevenDaysAgo }, hiddenByUser: { $ne: true } } },
+                { $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+                    count: { $sum: 1 }
+                }},
+                { $sort: { _id: 1 } }
+            ])
         ]);
 
-        res.json({ pending, approved, rejected, sanctioned });
+        // Fill in missing days with 0
+        const dayMap = {};
+        byDay.forEach(d => { dayMap[d._id] = d.count; });
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            const key = d.toISOString().split('T')[0];
+            const label = d.toLocaleDateString('es-DO', { weekday: 'short', day: 'numeric' });
+            days.push({ date: key, label, count: dayMap[key] || 0 });
+        }
+
+        res.json({ pending, approved, rejected, sanctioned, published, byType, byDay: days });
     } catch (err) {
         console.error('Error fetching stats:', err.message);
         res.status(500).send('Server Error');
@@ -390,12 +420,11 @@ router.get('/', auth, async (req, res) => {
             query.userId = req.user.id;
             query.hiddenByUser = { $ne: true };
         } else if (['moderator', 'admin'].includes(req.user.role)) {
-            // Global vs. Personalized logic
+            query.hiddenByUser = { $ne: true };
             if (status === 'pending') {
                 query.status = { $in: ['pending', 'In Process', 'needs_review'] };
-                // Global: No moderatorId filter
             } else if (status === 'all') {
-                // Global history: No specific filter
+                // Global history — no status filter, but hidden reports still excluded
             } else if (status === 'sanctioned') {
                 query.wasSanctioned = true;
                 query.moderatorId = req.user.id;
@@ -408,10 +437,8 @@ router.get('/', auth, async (req, res) => {
                 query.moderatorId = req.user.id;
             } else if (status) {
                 query.status = status;
-                // For any other specific status, filter by self for security
                 query.moderatorId = req.user.id;
             } else {
-                // Default: Moderated approved reports for this user
                 query.status = 'approved';
                 query.moderatorId = req.user.id;
             }
@@ -668,7 +695,7 @@ router.post('/:id/flag', auth, async (req, res) => {
 
             // Notificar a todos los moderadores y admins
             const moderators = await User.find({ role: { $in: ['moderator', 'admin'] }, isActive: { $ne: false } }).select('_id').lean();
-            const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', Other: 'Otro' };
+            const typeLabels = { Traffic: 'Tráfico Pesado', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro en la vía', RoadWork: 'Obra en la vía', Pothole: 'Bache peligroso', Flood: 'Inundación', Other: 'Otro' };
             const typeLabel = typeLabels[report.type] || report.type;
 
             const notifications = moderators.map(mod => ({
@@ -772,6 +799,25 @@ router.post('/migrate-face-regions', auth, async (req, res) => {
         res.json({ msg: 'Migration complete', reportsUpdated: updated, imagesProcessed: processed });
     } catch (err) {
         console.error('[migrate-face-regions]', err.message);
+        res.status(500).json({ msg: err.message });
+    }
+});
+
+// Backfill reportNumber for all reports (reassigns 1..N by creation order)
+router.post('/migrate-report-numbers', auth, async (req, res) => {
+    try {
+        const reports = await Report.find({}).sort({ timestamp: 1 }).select('_id');
+        if (reports.length === 0) return res.json({ msg: 'Nothing to migrate', updated: 0 });
+
+        let updated = 0;
+        for (let i = 0; i < reports.length; i++) {
+            await Report.updateOne({ _id: reports[i]._id }, { $set: { reportNumber: i + 1 } });
+            updated++;
+        }
+
+        res.json({ msg: 'Migration complete', updated });
+    } catch (err) {
+        console.error('[migrate-report-numbers]', err.message);
         res.status(500).json({ msg: err.message });
     }
 });

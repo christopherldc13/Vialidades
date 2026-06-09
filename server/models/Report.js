@@ -37,6 +37,7 @@ const ReportSchema = new mongoose.Schema({
         reason: { type: String },
         createdAt: { type: Date, default: Date.now }
     }],
+    reportNumber: { type: Number, unique: true, sparse: true },
     timestamp: { type: Date, default: Date.now }
 });
 

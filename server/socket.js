@@ -21,6 +21,11 @@ const init = (server) => {
             console.log(`[Socket] Client joined moderation room`);
         });
 
+        socket.on('join_supermod', () => {
+            socket.join('supermod_room');
+            console.log(`[Socket] Client joined supermod_room`);
+        });
+
         // Register that this socket is locking a report
         socket.on('lock_report', (reportId) => {
             activeLocks.set(socket.id, reportId);

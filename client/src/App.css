@@ -637,6 +637,10 @@ button.danger:hover {
   }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .rep-good {
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
   color: #0369a1;

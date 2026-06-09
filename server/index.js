@@ -38,6 +38,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/suggestions', require('./routes/suggestions'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/supermod', require('./routes/supermod'));
+app.use('/api/support', require('./routes/support'));
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI, {
