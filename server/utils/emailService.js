@@ -286,7 +286,7 @@ exports.sendWelcomeEmail = async (email, firstName, generatedPassword) => {
         const contenidoEn = `
             <p>Your <strong>Vialidades</strong> account was successfully created. Use the credentials above to log in. We recommend changing your password after your first login.</p>
         `;
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+        const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com').replace(/\/$/, '');
         const botonAccion = `<a href="${FRONTEND_URL}/login" class="btn">Iniciar Sesión / Login</a>`;
         const html = obtenerPlantillaBase(tituloEs, tituloEn, contenidoEs, contenidoEn, botonAccion);
         await enviarEmailViaAPI({ from: `"Vialidades" <${CORREO_REMITENTE}>`, to: email, subject: "¡Bienvenido! | Welcome!", html });
@@ -423,7 +423,7 @@ exports.sendSupportStatusUpdate = async (email, data) => {
         const meta = STATUS_META[status];
         if (!meta) return;
 
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+        const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com').replace(/\/$/, '');
 
         const contenidoEs = `
             <p>Hola <strong>${requesterName}</strong>,</p>
@@ -456,7 +456,7 @@ exports.sendSupportStatusUpdate = async (email, data) => {
 
             <p style="font-size:13px;color:#9ca3af;">
                 Puedes consultar el estado de tu caso en cualquier momento en
-                <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">vialidades.com/soporte</a>
+                <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">${FRONTEND_URL}/soporte</a>
                 usando tu número de caso <strong>${caseNumber}</strong>.
             </p>
         `;
@@ -501,7 +501,7 @@ exports.sendSupportRequestConfirmation = async (email, data) => {
         const tituloEs = 'Solicitud recibida correctamente ✓';
         const tituloEn = 'Support request received ✓';
 
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com';
+        const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://vialidades-1.onrender.com').replace(/\/$/, '');
 
         const contenidoEs = `
             <p>Hola <strong>${requesterName}</strong>,</p>
@@ -554,7 +554,7 @@ exports.sendSupportRequestConfirmation = async (email, data) => {
             </div>
 
             <p style="font-size:13px;color:#9ca3af;">
-                Puedes consultar el estado de tu caso en cualquier momento en <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">vialidades.com/soporte</a> usando tu número de caso. Guarda este correo como comprobante.
+                Puedes consultar el estado de tu caso en cualquier momento en <a href="${FRONTEND_URL}/soporte" style="color:#6366f1;">${FRONTEND_URL}/soporte</a> usando tu número de caso. Guarda este correo como comprobante.
             </p>
         `;
 
