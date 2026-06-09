@@ -356,7 +356,27 @@ const SupportPage = () => {
 
     const tab = TABS.find(t => t.key === activeTab);
 
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+    const formatPhone = (val) => {
+        const d = val.replace(/\D/g, '').slice(0, 10);
+        if (d.length <= 3) return d;
+        if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+        return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+    };
+
+    const formatCedula = (val) => {
+        const d = val.replace(/\D/g, '').slice(0, 11);
+        if (d.length <= 3) return d;
+        if (d.length <= 10) return `${d.slice(0, 3)}-${d.slice(3)}`;
+        return `${d.slice(0, 3)}-${d.slice(3, 10)}-${d.slice(10)}`;
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        let formatted = value;
+        if (name === 'requesterPhone') formatted = formatPhone(value);
+        if (name === 'requesterCedula') formatted = formatCedula(value);
+        setForm({ ...form, [name]: formatted });
+    };
 
     const handleLookup = async (e) => {
         e.preventDefault();
@@ -649,11 +669,9 @@ const SupportPage = () => {
                                         <div style={{ fontSize: '0.72rem', color: activeTab === t.key ? t.color : 'var(--text-muted)', fontWeight: '600' }}>{t.law}</div>
                                     </div>
                                 </div>
-                                {activeTab === t.key && (
-                                    <p style={{ margin: 0, fontSize: '0.79rem', color: 'var(--text-light)', lineHeight: 1.55 }}>
-                                        {t.description}
-                                    </p>
-                                )}
+                                <p style={{ margin: 0, fontSize: '0.79rem', color: 'var(--text-light)', lineHeight: 1.55 }}>
+                                    {t.description}
+                                </p>
                             </motion.button>
                         ))}
                     </div>
