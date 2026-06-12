@@ -1620,11 +1620,10 @@ html.dark .nav-gradient-overlay {
 .premium-login-form-container {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1.5rem;
   background: var(--bg-page);
-  /* Added premium radial glow for the right panel */
   background-image:
     radial-gradient(circle at center top, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
     radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
@@ -1677,8 +1676,9 @@ html.dark .nav-gradient-overlay {
 
 .premium-login-card {
   width: 100%;
-  max-width: 450px;
-  padding: clamp(1.25rem, 3vh, 2rem) clamp(1.5rem, 3vw, 2.5rem);
+  max-width: 410px;
+  margin: auto 0;
+  padding: 1.5rem 2rem;
   background: var(--surface);
   /* Modern glassmorphism fallback */
   background: color-mix(in srgb, var(--surface) 85%, transparent);
@@ -1742,23 +1742,23 @@ html.dark .nav-gradient-overlay {
 
 .login-header {
   text-align: center;
-  margin-bottom: 1.25rem;
-  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  margin-top: 0;
 }
 
 .login-icon-wrapper {
   display: inline-flex;
   background: linear-gradient(135deg, var(--primary), #a855f7);
-  padding: 0.75rem;
-  border-radius: 16px;
+  padding: 0.6rem;
+  border-radius: 14px;
   color: white;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+  margin-bottom: 0.5rem;
+  box-shadow: 0 8px 20px -5px rgba(99, 102, 241, 0.4);
 }
 
 .login-header h2 {
-  font-size: clamp(1.25rem, 4vw, 1.75rem);
-  margin-bottom: 0.25rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  margin-bottom: 0.2rem;
   color: var(--text-main);
   letter-spacing: -0.5px;
 }
@@ -1812,7 +1812,7 @@ html.dark .nav-gradient-overlay {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .modern-input-group label {
@@ -1836,12 +1836,12 @@ html.dark .nav-gradient-overlay {
 }
 
 .modern-input-group input {
-  padding: 0.75rem 1.25rem 0.75rem 3.25rem;
+  padding: 0.62rem 1.25rem 0.62rem 3.25rem;
   width: 100%;
   border-radius: 12px;
   border: 2px solid var(--border-color);
   background: var(--bg-input);
-  font-size: 0.95rem;
+  font-size: 0.93rem;
   transition: all 0.2s ease;
 }
 
@@ -1869,12 +1869,12 @@ button.premium-btn,
 .premium-btn {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
   color: white !important;
-  padding: 0.85rem;
+  padding: 0.72rem;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.97rem;
   font-weight: 700;
   box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4) !important;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   border: none !important;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1890,7 +1890,7 @@ button.premium-btn:hover,
 
 /* Dividers */
 .login-divider {
-  margin: 1.25rem 0;
+  margin: 0.85rem 0;
   text-align: center;
   position: relative;
 }
@@ -1930,19 +1930,19 @@ button.premium-btn:hover,
 }
 
 .login-footer {
-  margin-top: 0.75rem;
+  margin-top: 0.4rem;
   text-align: center;
 }
 
 .premium-register-link {
   display: block;
   width: 100%;
-  padding: 0.85rem;
+  padding: 0.72rem;
   border-radius: 12px;
   border: 2px solid var(--border-color);
   color: var(--text-main);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.97rem;
   background: transparent;
   transition: all 0.2s ease;
 }

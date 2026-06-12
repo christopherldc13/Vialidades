@@ -1,8 +1,9 @@
-import { useEffect, useState, useContext, useCallback } from 'react';
+import { useEffect, useState, useContext, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
-import { Plus, TrendingUp, MapPin, Calendar, MessageSquare, Mail, Trash2, MoreVertical, Eye, Flag } from 'lucide-react';
+import { Plus, TrendingUp, MapPin, Calendar, MessageSquare, Mail, Trash2, MoreVertical, Eye, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Link, useSearchParams, Navigate } from 'react-router-dom';
 import { Skeleton, Box, ToggleButton, ToggleButtonGroup, CircularProgress, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
@@ -23,6 +24,190 @@ import { MdConstruction } from "react-icons/md";
 import { io } from 'socket.io-client';
 
 const socket = io(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : ''));
+
+const CAT_MAP = {
+    idea:   { label: 'Nueva Idea', color: '#64748b', bg: 'rgba(100,116,139,0.1)', gradient: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+    mejora: { label: 'Mejora',     color: '#64748b', bg: 'rgba(100,116,139,0.1)', gradient: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+    bug:    { label: 'Problema',   color: '#64748b', bg: 'rgba(100,116,139,0.1)', gradient: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+    otro:   { label: 'Otro',       color: '#64748b', bg: 'rgba(100,116,139,0.1)', gradient: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+};
+
+const INTERVAL_MS = 5000;
+
+function FeedbackCarousel({ suggestions }) {
+    const [idx, setIdx] = useState(0);
+    const [dir, setDir] = useState(1);
+    const [paused, setPaused] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const startRef = useRef(Date.now());
+    const rafRef = useRef(null);
+
+    const goTo = (next, direction) => {
+        setDir(direction);
+        setIdx(next);
+        setProgress(0);
+        startRef.current = Date.now();
+    };
+
+    const prev = () => goTo((idx - 1 + suggestions.length) % suggestions.length, -1);
+    const next = () => goTo((idx + 1) % suggestions.length, 1);
+
+    useEffect(() => {
+        if (suggestions.length <= 1) return;
+        const tick = () => {
+            if (!paused) {
+                const elapsed = Date.now() - startRef.current;
+                const p = Math.min(elapsed / INTERVAL_MS, 1);
+                setProgress(p);
+                if (p >= 1) {
+                    setDir(1);
+                    setIdx(i => (i + 1) % suggestions.length);
+                    setProgress(0);
+                    startRef.current = Date.now();
+                }
+            }
+            rafRef.current = requestAnimationFrame(tick);
+        };
+        rafRef.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafRef.current);
+    }, [suggestions.length, paused]);
+
+    const s = suggestions[idx];
+    const cat = s?.category ? (CAT_MAP[s.category] || CAT_MAP.otro) : null;
+    const accentColor = cat?.color || '#64748b';
+
+    const variants = {
+        enter: (d) => ({ x: d > 0 ? 60 : -60, opacity: 0, scale: 0.97 }),
+        center: { x: 0, opacity: 1, scale: 1 },
+        exit:  (d) => ({ x: d > 0 ? -60 : 60, opacity: 0, scale: 0.97 }),
+    };
+
+    const ArrowBtn = ({ onClick, children }) => {
+        const [hovered, setHovered] = useState(false);
+        return (
+            <button
+                onClick={onClick}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+                style={{
+                    width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+                    border: `1.5px solid ${hovered ? accentColor : '#e2e8f0'}`,
+                    background: hovered ? `${accentColor}12` : '#ffffff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'all 0.18s ease',
+                    boxShadow: hovered ? `0 4px 14px ${accentColor}30` : '0 2px 6px rgba(0,0,0,0.08)',
+                    outline: 'none', lineHeight: 0, padding: 0,
+                }}
+            >
+                {children}
+            </button>
+        );
+    };
+
+    return (
+        <div
+            style={{ position: 'relative', userSelect: 'none' }}
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+        >
+            {/* Card */}
+            <div style={{ overflow: 'hidden', borderRadius: '20px' }}>
+                <AnimatePresence initial={false} custom={dir} mode="wait">
+                    <motion.div
+                        key={idx}
+                        custom={dir}
+                        variants={variants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.38, ease: [0.4, 0, 0.2, 1] }}
+                        style={{
+                            background: 'var(--surface-solid)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '20px',
+                            padding: '1.75rem 2rem',
+                            display: 'flex', flexDirection: 'column', gap: '1.1rem',
+                            boxShadow: `0 2px 20px rgba(0,0,0,0.06)`,
+                        }}
+                    >
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
+                                background: cat?.gradient || 'linear-gradient(135deg,#6366f1,#818cf8)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', fontWeight: '900', fontSize: '1.2rem',
+                                boxShadow: `0 6px 18px ${accentColor}35`,
+                            }}>
+                                {s.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: '800', fontSize: '0.97rem', color: 'var(--text-main)' }}>
+                                    {s.name}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.77rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                    <Mail size={11} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 }}>
+                                {cat && (
+                                    <span style={{
+                                        padding: '3px 11px', borderRadius: '99px',
+                                        fontSize: '0.71rem', fontWeight: '700',
+                                        color: cat.color, background: cat.bg,
+                                        border: `1px solid ${cat.color}35`,
+                                    }}>
+                                        {cat.label}
+                                    </span>
+                                )}
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                    {formatDate(s.createdAt)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Divider with accent */}
+                        <div style={{ height: '1px', background: `linear-gradient(90deg, ${accentColor}40, var(--border-color) 60%, transparent)` }} />
+
+                        {/* Quote */}
+                        <p style={{
+                            margin: 0, fontSize: '0.95rem', color: 'var(--text-light)',
+                            lineHeight: 1.75, fontStyle: 'italic', paddingLeft: '0.25rem',
+                            borderLeft: `3px solid ${accentColor}50`,
+                            paddingLeft: '0.85rem',
+                            display: '-webkit-box', WebkitLineClamp: 4,
+                            WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                        }}>
+                            {s.message}
+                        </p>
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {/* Controls */}
+            {suggestions.length > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.85rem', marginTop: '1.1rem' }}>
+                    <ArrowBtn onClick={prev}><ChevronLeft size={16} color={accentColor} strokeWidth={2.5} /></ArrowBtn>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        {suggestions.map((_, i) => (
+                            <motion.button
+                                key={i}
+                                onClick={() => goTo(i, i > idx ? 1 : -1)}
+                                animate={{ width: i === idx ? 22 : 8, background: i === idx ? accentColor : '#cbd5e1' }}
+                                transition={{ duration: 0.25 }}
+                                style={{ height: '8px', borderRadius: '99px', border: 'none', padding: 0, cursor: 'pointer', display: 'block' }}
+                            />
+                        ))}
+                    </div>
+
+                    <ArrowBtn onClick={next}><ChevronRight size={16} color={accentColor} strokeWidth={2.5} /></ArrowBtn>
+                </div>
+            )}
+        </div>
+    );
+}
 
 const DR_PROVINCES = [
     'Azua','Bahoruco','Barahona','Dajabón','Distrito Nacional','Duarte',
@@ -553,77 +738,7 @@ const Dashboard = () => {
                                     </p>
                                 </div>
                             ) : (
-                            <div className="feedback-grid">
-                                {suggestions.map((s) => (
-                                    <div key={s._id} className="stat-card" style={{
-                                        background: 'var(--surface-solid)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '16px',
-                                        padding: '1.25rem',
-                                        display: 'flex', flexDirection: 'column', gap: '0.85rem',
-                                    }}>
-                                        {/* Header */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <div style={{
-                                                width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
-                                                background: 'linear-gradient(135deg, #6366f1, #818cf8)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: 'white', fontWeight: '800', fontSize: '1rem',
-                                                boxShadow: '0 4px 10px rgba(99,102,241,0.3)',
-                                            }}>
-                                                {s.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: '700', fontSize: '0.92rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                    {s.name}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1px' }}>
-                                                    <Mail size={11} />
-                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</span>
-                                                </div>
-                                            </div>
-                                            <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                                {formatDate(s.createdAt)}
-                                            </div>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div style={{ height: '1px', background: 'var(--border-color)' }} />
-
-                                        {/* Category badge */}
-                                        {s.category && (() => {
-                                            const CAT = {
-                                                idea:   { label: 'Nueva Idea', color: '#6366f1', bg: 'rgba(99,102,241,0.1)'  },
-                                                mejora: { label: 'Mejora',     color: '#0ea5e9', bg: 'rgba(14,165,233,0.1)'  },
-                                                bug:    { label: 'Problema',   color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
-                                                otro:   { label: 'Otro',       color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
-                                            };
-                                            const cat = CAT[s.category] || CAT.otro;
-                                            return (
-                                                <span style={{
-                                                    display: 'inline-flex', alignSelf: 'flex-start',
-                                                    padding: '3px 10px', borderRadius: '99px',
-                                                    fontSize: '0.72rem', fontWeight: '700',
-                                                    color: cat.color, background: cat.bg,
-                                                    border: `1px solid ${cat.color}30`,
-                                                }}>
-                                                    {cat.label}
-                                                </span>
-                                            );
-                                        })()}
-
-                                        {/* Message */}
-                                        <p style={{
-                                            margin: 0, fontSize: '0.87rem', color: 'var(--text-light)',
-                                            lineHeight: '1.65', display: '-webkit-box',
-                                            WebkitLineClamp: 5, WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                        }}>
-                                            {s.message}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
+                            <FeedbackCarousel suggestions={suggestions} />
                             )}
                         </div>
                     )}

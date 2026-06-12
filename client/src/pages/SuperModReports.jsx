@@ -5,9 +5,10 @@ import Navbar from '../components/Navbar';
 import MediaGallery from '../components/MediaGallery';
 import ReportDetailModal from '../components/ReportDetailModal';
 import AuthContext from '../context/AuthContext';
-import { ArrowLeft, Info, Inbox, Trash2 } from 'lucide-react';
+import { ArrowLeft, Info, Inbox, Trash2, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { generateReportPDF } from '../utils/generateReportPDF';
 import './DashboardExtras.css';
 
 const getIncidentLabel = (type) => {
@@ -199,7 +200,7 @@ const SuperModReports = () => {
                                     </p>
 
                                     <div style={{
-                                        display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem',
+                                        display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem',
                                         paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)',
                                         marginTop: 'auto',
                                     }}>
@@ -215,6 +216,30 @@ const SuperModReports = () => {
                                             }}
                                         >
                                             <Info size={18} /> Ver Detalles
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await generateReportPDF(report);
+                                                } catch (err) {
+                                                    console.error('[PDF]', err);
+                                                    toast.error('No se pudo generar el PDF');
+                                                }
+                                            }}
+                                            title="Generar certificado PDF"
+                                            style={{
+                                                background: 'rgba(16,185,129,0.08)', color: '#10b981',
+                                                border: '1.5px solid rgba(16,185,129,0.25)',
+                                                padding: '0.85rem 1.1rem',
+                                                borderRadius: '12px', cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontWeight: '800', gap: '0.5rem',
+                                                transition: 'all 0.2s', flexShrink: 0,
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; e.currentTarget.style.color = '#10b981'; }}
+                                        >
+                                            <FileDown size={17} /> PDF
                                         </button>
                                         <button
                                             onClick={() => handleRemove(report)}

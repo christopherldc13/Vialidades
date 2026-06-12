@@ -15,6 +15,7 @@ import SuperModModerators from './pages/SuperModModerators';
 import SuperModSupport from './pages/SuperModSupport';
 import SuperModReports from './pages/SuperModReports';
 import SupportPage from './pages/SupportPage';
+import ReportVerifyPage from './pages/ReportVerifyPage';
 import LandingPage from './pages/LandingPage';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -154,6 +155,7 @@ function App() {
                 </PrivateRoute>
               } />
               <Route path="/soporte" element={<SupportPage />} />
+              <Route path="/reporte/:code" element={<ReportVerifyPage />} />
             </Routes>
           </div>
           <div className="fixed-footer">

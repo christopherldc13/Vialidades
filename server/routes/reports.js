@@ -822,4 +822,22 @@ router.post('/migrate-report-numbers', auth, async (req, res) => {
     }
 });
 
+// Public verification endpoint — no auth required
+router.get('/verify/:code', async (req, res) => {
+    try {
+        const code = req.params.code.toUpperCase().trim();
+        const match = code.match(/^VTI(\d+)$/);
+        if (!match) return res.status(400).json({ msg: 'Código de reporte inválido.' });
+        const num = parseInt(match[1], 10);
+        const report = await Report.findOne({ reportNumber: num, status: 'approved' })
+            .populate('userId', 'username')
+            .populate('moderatorInCharge', 'username')
+            .select('-flags -__v');
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado o no está publicado.' });
+        res.json(report);
+    } catch (err) {
+        res.status(500).json({ msg: err.message });
+    }
+});
+
 module.exports = router;
