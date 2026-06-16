@@ -163,6 +163,10 @@ function Login() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.7, ease: "easeOut" }}
                 >
+                    <Link to="/" className="back-link">
+                        <ArrowLeft size={14} /> Inicio
+                    </Link>
+
                     <div className="login-header">
                         <motion.div
                             className="login-icon-wrapper"
@@ -170,7 +174,7 @@ function Login() {
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ duration: 0.6, delay: 0.2, type: 'spring', bounce: 0.5 }}
                         >
-                            <LogIn size={28} />
+                            <LogIn size={22} />
                         </motion.div>
                         <h2>Bienvenido de Nuevo</h2>
                         <p className="text-muted">Accede a tu cuenta para continuar evaluando las vialidades.</p>
@@ -268,7 +272,7 @@ function Login() {
                         <div className="divider-line"></div>
                     </div>
 
-                    <div className="google-login-wrapper" style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem', marginTop: '0.5rem', width: '100%' }}>
+                    <div className="google-login-wrapper" style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}

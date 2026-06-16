@@ -93,6 +93,17 @@ const CreateReport = () => {
     }, []);
 
 
+    const checkFacesInFile = async (file) => {
+        const fd = new FormData();
+        fd.append('media', file);
+        try {
+            const { data } = await axios.post('/api/reports/check-faces', fd);
+            return data.hasFaces === true;
+        } catch {
+            return false;
+        }
+    };
+
     const processFiles = (fileList, inputEl = null) => {
         const validFiles = [];
         const newPreviews = [];
@@ -112,8 +123,6 @@ const CreateReport = () => {
             setFiles(prev => [...prev, ...validFiles]);
             setPreviews(prev => [...prev, ...newPreviews]);
         }
-
-        // Resetea el input para que el mismo archivo pueda seleccionarse de nuevo
         if (inputEl) inputEl.value = '';
     };
 
@@ -121,7 +130,7 @@ const CreateReport = () => {
         if (e.target.files?.length > 0) processFiles(e.target.files, e.target);
     };
 
-    const handleDrop = (e) => {
+    const handleDrop = async (e) => {
         e.preventDefault();
         setIsDragging(false);
         if (e.dataTransfer.files?.length > 0) processFiles(e.dataTransfer.files);
@@ -264,6 +273,43 @@ const CreateReport = () => {
             return;
         }
 
+        // ── Face detection check ──────────────────────────────────────────
+        const imageFiles = files.filter(f => f.type.startsWith('image/'));
+        if (imageFiles.length > 0) {
+            try {
+                const results = await Promise.all(imageFiles.map(checkFacesInFile));
+                if (results.some(Boolean)) {
+                    const confirmed = await Swal.fire({
+                        title: 'Rostros detectados',
+                        html: `
+                            <div style="background:rgba(239,68,68,0.06);border:1.5px solid rgba(239,68,68,0.18);border-radius:10px;padding:0.75rem 0.9rem;text-align:left;font-size:0.78rem;line-height:1.6;color:#374151;">
+                                <div style="font-weight:700;color:#ef4444;margin-bottom:0.3rem;font-size:0.8rem;">⚖️ Responsabilidad Legal</div>
+                                Se detectaron <strong>rostros</strong> en tus imágenes. Al enviar asumes responsabilidad civil y penal conforme a:<br/>
+                                • <strong>Ley 172-13</strong> – Protección de Datos Personales RD<br/>
+                                • <strong>Código Penal Dominicano</strong><br/>
+                                <em style="font-size:0.74rem;color:#6b7280;">Vialidades queda eximida de responsabilidad por uso indebido.</em>
+                            </div>
+                        `,
+                        icon: 'warning',
+                        width: 380,
+                        showCancelButton: true,
+                        confirmButtonText: 'Entiendo, enviar',
+                        cancelButtonText: 'Cancelar',
+                        buttonsStyling: false,
+                        reverseButtons: true,
+                        customClass: {
+                            popup: 'swal2-lumina-popup',
+                            title: 'swal2-lumina-title',
+                            confirmButton: 'swal2-lumina-confirm-primary',
+                            cancelButton: 'swal2-lumina-cancel',
+                            actions: 'swal2-lumina-actions',
+                        },
+                    });
+                    if (!confirmed.isConfirmed) return;
+                }
+            } catch { /* fail silently */ }
+        }
+
         const formData = new FormData();
         // userId is handled by backend from token
         formData.append('type', finalType);
@@ -300,7 +346,12 @@ const CreateReport = () => {
                 showCancelButton: true,
                 confirmButtonText: 'Ir al Panel Principal',
                 cancelButtonText: 'Crear Otro Reporte',
-                confirmButtonColor: 'var(--primary)'
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'swal2-lumina-confirm-primary',
+                    cancelButton: 'swal2-lumina-cancel',
+                    popup: 'swal2-lumina-popup',
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
                     navigate('/dashboard');
@@ -597,7 +648,6 @@ const CreateReport = () => {
                                                     <input type="file" accept={accept} capture={capture} multiple={multiple} onChange={handleFileChange} style={{ display: 'none' }} id={id} />
                                                     <label
                                                         htmlFor={id}
-                                                        onClick={() => setRefreshLocationTrigger(p => p + 1)}
                                                         style={{
                                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                                             gap: '0.4rem', padding: '1.1rem 0.5rem',

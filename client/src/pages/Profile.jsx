@@ -1,9 +1,10 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X, Star, CheckCircle, Trash2, Download } from 'lucide-react';
+import { User, Trophy, ThumbsUp, Minus, AlertTriangle, Camera, Edit2, Check, X, Star, CheckCircle, Trash2, Download, Pencil, Eye, EyeOff, ImagePlus, KeyRound } from 'lucide-react';
 import { FaPhoneAlt, FaUserEdit } from "react-icons/fa";
 import { LiaIdCard, LiaBirthdayCakeSolid } from "react-icons/lia";
 import { BsGenderFemale, BsGenderMale } from "react-icons/bs";
@@ -97,8 +98,18 @@ const Profile = () => {
     const repData = getReputationData(user.reputation);
 
     const [uploading, setUploading] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState(false);
+    const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+    const [avatarMenuPos, setAvatarMenuPos] = useState({ top: 0, left: 0 });
+    const avatarMenuRef = useRef(null);
+    const pencilBtnRef = useRef(null);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [showPwdModal, setShowPwdModal] = useState(false);
+    const [pwdForm, setPwdForm] = useState({ current: '', newPwd: '', confirm: '' });
+    const [pwdShow, setPwdShow] = useState({ current: false, newPwd: false, confirm: false });
+    const [pwdFocused, setPwdFocused] = useState(null);
+    const [pwdSaving, setPwdSaving] = useState(false);
 
     const [editForm, setEditForm] = useState({
         firstName: user?.firstName || '',
@@ -142,6 +153,41 @@ const Profile = () => {
     // Helper to trigger file input
     const triggerFileInput = () => {
         document.getElementById('avatarInput').click();
+    };
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target)) {
+                setAvatarMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const handleRemoveAvatar = async () => {
+        const result = await Swal.fire({
+            title: 'Eliminar foto',
+            text: '¿Seguro que deseas quitar tu foto de perfil?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+        });
+        if (!result.isConfirmed) return;
+        try {
+            setUploading(true);
+            const token = localStorage.getItem('token');
+            const res = await axios.delete('/api/auth/avatar', { headers: { 'x-auth-token': token } });
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+            toast.success('Foto eliminada');
+        } catch {
+            toast.error('No se pudo eliminar la foto');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleImageUpload = async (e) => {
@@ -364,7 +410,7 @@ const Profile = () => {
                         { dataKey: 'fecha',   header: 'FECHA' },
                     ],
                     body: data.reportes.map(rep => ({
-                        tipo:   rep.tipo,
+                        tipo:   ({ Traffic: 'Tráfico Pesado', Accident: 'Accidente de Tránsito', Violation: 'Infracción Vial', Hazard: 'Peligro en la Vía', RoadWork: 'Obra en la Vía', Pothole: 'Bache Peligroso', Flood: 'Inundación' })[rep.tipo] || rep.tipo,
                         desc:   rep.descripcion?.length > 60 ? rep.descripcion.slice(0, 57) + '…' : rep.descripcion,
                         dir:    rep.ubicacion?.address || `${rep.ubicacion?.lat?.toFixed(4)}, ${rep.ubicacion?.lng?.toFixed(4)}`,
                         estado: statusLabel[rep.estado] || rep.estado,
@@ -483,6 +529,45 @@ const Profile = () => {
         });
     };
 
+    const handleChangePassword = () => {
+        setPwdForm({ current: '', newPwd: '', confirm: '' });
+        setPwdShow({ current: false, newPwd: false, confirm: false });
+        setShowPwdModal(true);
+    };
+
+    const submitChangePassword = async () => {
+        const { current, newPwd, confirm } = pwdForm;
+        if (!current || !newPwd || !confirm) { toast.error('Completa todos los campos'); return; }
+        if (newPwd.length < 6) { toast.error('La nueva contraseña debe tener al menos 6 caracteres'); return; }
+        if (newPwd !== confirm) { toast.error('Las contraseñas no coinciden'); return; }
+        setPwdSaving(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put('/api/auth/change-password', { currentPassword: current, newPassword: newPwd }, { headers: { 'x-auth-token': token } });
+            toast.success('Contraseña actualizada correctamente');
+            setShowPwdModal(false);
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Error al cambiar la contraseña');
+        } finally {
+            setPwdSaving(false);
+        }
+    };
+
+    const getPwdStrength = (p) => {
+        if (!p) return null;
+        const checks = { length: p.length >= 6, upper: /[A-Z]/.test(p), number: /[0-9]/.test(p), symbol: /[^A-Za-z0-9]/.test(p) };
+        let score = 0;
+        if (checks.length) score++;
+        if (p.length >= 10) score++;
+        if (checks.upper) score++;
+        if (checks.number) score++;
+        if (checks.symbol) score++;
+        const missing = [!checks.length && 'Mín. 6 car.', !checks.upper && 'Mayúscula', !checks.number && 'Número', !checks.symbol && 'Símbolo'].filter(Boolean);
+        if (score <= 2) return { label: 'Débil', color: '#ef4444', width: '33%', missing };
+        if (score <= 4) return { label: 'Media', color: '#f59e0b', width: '66%', missing };
+        return { label: 'Fuerte', color: '#10b981', width: '100%', missing };
+    };
+
     const handleDeleteAccount = async () => {
         const isDark   = theme === 'dark';
         const bg       = isDark ? '#1e2025' : '#ffffff';
@@ -576,7 +661,18 @@ const Profile = () => {
         </div>
     );
 
+    const menuItemStyle = {
+        display: 'flex', alignItems: 'center', gap: '0.65rem',
+        width: '100%', padding: '0.5rem 0.6rem',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        fontSize: '0.84rem', fontWeight: '600', color: 'var(--text-main)',
+        textAlign: 'left', borderRadius: '9px',
+        transition: 'background 0.15s',
+        fontFamily: 'inherit',
+    };
+
     return (
+        <>
         <div className="pf-page">
             <Navbar />
             <style>{`@keyframes pf-spin { to { transform: rotate(360deg); } }`}</style>
@@ -601,9 +697,91 @@ const Profile = () => {
                                 }
                             </div>
                             <input type="file" id="avatarInput" className="avatar-input-hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
-                            <button className="pf-cam-btn" onClick={triggerFileInput} disabled={uploading} style={{ background: uploading ? 'var(--text-muted)' : 'var(--primary)', cursor: uploading ? 'default' : 'pointer' }}>
-                                <Camera size={16} color="#fff" />
-                            </button>
+
+                            {/* Pencil button + dropdown */}
+                            <div style={{ position: 'absolute', bottom: 2, right: 2, zIndex: 20 }}>
+                                <button
+                                    ref={pencilBtnRef}
+                                    className="pf-cam-btn"
+                                    onClick={() => {
+                                        if (!avatarMenuOpen && pencilBtnRef.current) {
+                                            const r = pencilBtnRef.current.getBoundingClientRect();
+                                            setAvatarMenuPos({ top: r.bottom + 8, left: r.right });
+                                        }
+                                        setAvatarMenuOpen(o => !o);
+                                    }}
+                                    disabled={uploading}
+                                    title="Opciones de foto"
+                                    style={{ background: uploading ? 'var(--text-muted)' : 'var(--primary)', cursor: uploading ? 'default' : 'pointer' }}
+                                >
+                                    <Pencil size={14} color="#fff" />
+                                </button>
+
+                                {avatarMenuOpen && (
+                                    <div ref={avatarMenuRef} style={{
+                                        position: 'fixed',
+                                        top: avatarMenuPos.top,
+                                        left: avatarMenuPos.left,
+                                        transform: 'translateX(-100%)',
+                                        background: 'var(--surface-solid, #ffffff)',
+                                        border: '1px solid var(--border-light)',
+                                        borderRadius: '16px',
+                                        boxShadow: '0 20px 48px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(99,102,241,0.08)',
+                                        minWidth: '190px', zIndex: 9000,
+                                        overflow: 'hidden',
+                                        animation: 'menuPop 0.18s cubic-bezier(0.34,1.56,0.64,1)',
+                                    }}>
+                                        {/* Header label */}
+                                        <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border-color)' }}>
+                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Foto de perfil</span>
+                                        </div>
+
+                                        <div style={{ padding: '6px' }}>
+                                        {user.avatar && (
+                                            <button
+                                                onClick={() => { setAvatarPreview(true); setAvatarMenuOpen(false); }}
+                                                style={menuItemStyle}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.07)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <span style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))', color: '#6366f1', borderRadius: '8px', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <Eye size={14} />
+                                                </span>
+                                                Ver foto
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => { triggerFileInput(); setAvatarMenuOpen(false); }}
+                                            style={menuItemStyle}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.07)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <span style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.15))', color: '#6366f1', borderRadius: '8px', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <ImagePlus size={14} />
+                                            </span>
+                                            {user.avatar ? 'Cambiar foto' : 'Agregar foto'}
+                                        </button>
+                                        </div>
+
+                                        {user.avatar && (
+                                            <div style={{ borderTop: '1px solid var(--border-color)', padding: '6px' }}>
+                                                <button
+                                                    onClick={() => { handleRemoveAvatar(); setAvatarMenuOpen(false); }}
+                                                    style={{ ...menuItemStyle, color: '#ef4444' }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.07)'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                >
+                                                    <span style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', borderRadius: '8px', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                        <Trash2 size={14} />
+                                                    </span>
+                                                    Eliminar foto
+                                                </button>
+                                            </div>
+                                        )}
+                                        <style>{`@keyframes menuPop { from { opacity:0; transform:translateX(-100%) scale(0.93) } to { opacity:1; transform:translateX(-100%) scale(1) } }`}</style>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {!isEditing ? (
@@ -731,7 +909,7 @@ const Profile = () => {
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignSelf: 'flex-start' }}>
                         <button
                             onClick={handleDownloadModal}
                             style={{
@@ -745,6 +923,20 @@ const Profile = () => {
                             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}
                         >
                             <Download size={15} /> Descargar información
+                        </button>
+                        <button
+                            onClick={handleChangePassword}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                padding: '0.6rem 1.2rem', borderRadius: '8px',
+                                border: '1.5px solid var(--primary)', background: 'transparent',
+                                color: 'var(--primary)', fontSize: '0.875rem', fontWeight: '600',
+                                cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}
+                        >
+                            <KeyRound size={15} /> Cambiar contraseña
                         </button>
                         <button
                             onClick={handleDeleteAccount}
@@ -764,6 +956,160 @@ const Profile = () => {
                 </div>
             </div>
         </div>
+
+        {/* ── Change Password Modal ── */}
+        {showPwdModal && createPortal((() => {
+            const dk = theme === 'dark';
+            const C = {
+                card:    dk ? '#1a1a2e' : '#ffffff',
+                border:  dk ? '#2d2d4e' : '#e2e8f0',
+                inputBg: dk ? '#12122a' : '#f8fafc',
+                text:    dk ? '#e8e8f2' : '#1e293b',
+                muted:   dk ? '#8888aa' : '#64748b',
+                primary: '#6366f1',
+            };
+            const strength = getPwdStrength(pwdForm.newPwd);
+
+            const pwdField = (label, fieldKey) => (
+                <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: C.muted, marginBottom: '0.4rem', letterSpacing: '0.03em' }}>{label}</div>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type={pwdShow[fieldKey] ? 'text' : 'password'}
+                            placeholder={label}
+                            value={pwdForm[fieldKey]}
+                            onChange={e => setPwdForm(p => ({ ...p, [fieldKey]: e.target.value }))}
+                            onFocus={() => setPwdFocused(fieldKey)}
+                            onBlur={() => setPwdFocused(null)}
+                            style={{ display: 'block', width: '100%', boxSizing: 'border-box', padding: '0.75rem 2.8rem 0.75rem 0.9rem', border: `1.5px solid ${pwdFocused === fieldKey ? C.primary : C.border}`, borderRadius: 10, background: C.inputBg, color: C.text, fontSize: '0.92rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s' }}
+                        />
+                        <span
+                            onMouseDown={e => { e.preventDefault(); setPwdShow(p => ({ ...p, [fieldKey]: !p[fieldKey] })); }}
+                            style={{ position: 'absolute', right: '0.8rem', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: pwdShow[fieldKey] ? C.primary : C.muted, display: 'flex', lineHeight: 0, userSelect: 'none' }}
+                        >
+                            {pwdShow[fieldKey] ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </span>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div onClick={() => setShowPwdModal(false)} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ position: 'relative', background: C.card, border: `1px solid ${C.border}`, borderRadius: 20, padding: '1.75rem', width: '100%', maxWidth: 420, boxShadow: '0 24px 64px rgba(0,0,0,0.25)', fontFamily: 'inherit' }}>
+
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.5rem' }}>
+                            <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <KeyRound size={20} color={C.primary} />
+                            </div>
+                            <div>
+                                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: C.text, lineHeight: 1.2 }}>Cambiar contraseña</div>
+                                <div style={{ fontSize: '0.82rem', color: C.muted, marginTop: 3 }}>Actualiza tu clave de acceso</div>
+                            </div>
+                        </div>
+
+                        {pwdField('Contraseña actual', 'current')}
+                        {pwdField('Nueva contraseña', 'newPwd')}
+
+                        {strength && (
+                            <div style={{ marginTop: '-0.4rem', marginBottom: '1rem' }}>
+                                <div style={{ height: 5, background: C.border, borderRadius: 99, overflow: 'hidden', marginBottom: 5 }}>
+                                    <div style={{ height: '100%', borderRadius: 99, background: strength.color, width: strength.width, transition: 'width 0.3s,background 0.3s' }} />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                    <span style={{ color: strength.missing.length ? C.muted : '#10b981' }}>
+                                        {strength.missing.length ? `Falta: ${strength.missing.join(', ')}` : '✓ Contraseña segura'}
+                                    </span>
+                                    <span style={{ fontWeight: 700, color: strength.color }}>{strength.label}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {pwdField('Confirmar nueva contraseña', 'confirm')}
+
+                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                            <button type="button" onClick={() => setShowPwdModal(false)} style={{ flex: 1, padding: '0.72rem', borderRadius: 10, border: `1.5px solid ${C.border}`, background: 'transparent', color: C.text, fontWeight: 600, fontSize: '0.92rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                Cancelar
+                            </button>
+                            <button type="button" onClick={submitChangePassword} disabled={pwdSaving} style={{ flex: 1, padding: '0.72rem', borderRadius: 10, border: 'none', background: C.primary, color: '#fff', fontWeight: 700, fontSize: '0.92rem', cursor: pwdSaving ? 'not-allowed' : 'pointer', opacity: pwdSaving ? 0.7 : 1, fontFamily: 'inherit' }}>
+                                {pwdSaving ? 'Guardando…' : 'Cambiar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        })(), document.body)}
+
+        {/* Avatar preview modal */}
+        {avatarPreview && user.avatar && (
+            <div
+                onClick={() => setAvatarPreview(false)}
+                style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(8, 8, 20, 0.82)',
+                    backdropFilter: 'blur(16px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    animation: 'avFadeIn 0.22s ease',
+                }}
+            >
+                {/* Close button top-right */}
+                <button
+                    onClick={() => setAvatarPreview(false)}
+                    style={{
+                        position: 'fixed', top: '1.25rem', right: '1.25rem',
+                        width: 42, height: 42, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.18)',
+                        border: '1.5px solid rgba(255,255,255,0.4)',
+                        color: 'white', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                        transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
+                >
+                    <X size={20} strokeWidth={2.5} />
+                </button>
+
+                <div onClick={e => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', animation: 'avPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
+
+                    {/* Glow rings */}
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ position: 'absolute', width: 320, height: 320, borderRadius: '50%', border: '1px solid rgba(99,102,241,0.25)', animation: 'avPulse 2.5s ease-in-out infinite' }} />
+                        <div style={{ position: 'absolute', width: 290, height: 290, borderRadius: '50%', border: '1px solid rgba(99,102,241,0.15)' }} />
+
+                        {/* Photo circle */}
+                        <div style={{
+                            width: 260, height: 260,
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            border: '3px solid rgba(255,255,255,0.2)',
+                            boxShadow: '0 0 0 6px rgba(99,102,241,0.2), 0 32px 80px rgba(0,0,0,0.6)',
+                        }}>
+                            <img src={user.avatar} alt="Foto de perfil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    </div>
+
+                    {/* Name + username */}
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ color: 'white', fontWeight: '800', fontSize: '1.2rem', letterSpacing: '-0.3px' }}>
+                            {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', marginTop: '2px' }}>
+                            @{user.username}
+                        </div>
+                    </div>
+                </div>
+
+                <style>{`
+                    @keyframes avFadeIn { from { opacity:0 } to { opacity:1 } }
+                    @keyframes avPopIn  { from { transform:scale(0.8) translateY(20px); opacity:0 } to { transform:scale(1) translateY(0); opacity:1 } }
+                    @keyframes avPulse  { 0%,100% { transform:scale(1); opacity:0.6 } 50% { transform:scale(1.04); opacity:1 } }
+                `}</style>
+            </div>
+        )}
+        </>
     );
 };
 

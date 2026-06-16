@@ -61,32 +61,51 @@ const UserDetailModal = ({ user: initialUser, isOpen, onClose, onSanctionUpdate 
 
     const handleSanction = async (action) => {
         const labels = {
-            reduce:  { title: 'Reducir sanción', text: '¿Quitar 1 sanción y restaurar 25 pts de reputación?', confirm: 'Sí, reducir' },
-            clear:   { title: 'Eliminar todas las sanciones', text: '¿Eliminar todas las sanciones, restaurar reputación a 100 y levantar el bloqueo?', confirm: 'Sí, limpiar' },
-            add:     { title: 'Añadir sanción manual', text: '¿Aplicar 1 sanción y reducir 25 pts de reputación?', confirm: 'Sí, sancionar' },
-            unblock: { title: 'Levantar bloqueo', text: 'El usuario podrá iniciar sesión de nuevo. Las sanciones acumuladas se mantienen.', confirm: 'Sí, levantar bloqueo' },
+            reduce:  { title: 'Reducir sanción', confirm: 'Sí, reducir', placeholder: 'Ej. El usuario apeló correctamente su situación.', confirmClass: 'swal2-lumina-confirm-amber' },
+            clear:   { title: 'Eliminar todas las sanciones', confirm: 'Sí, limpiar todo', placeholder: 'Ej. Sanciones aplicadas por error del sistema.', confirmClass: 'swal2-lumina-confirm-green' },
+            add:     { title: 'Aplicar sanción manual', confirm: 'Sí, sancionar', placeholder: 'Ej. Publicación de contenido falso reiterado.', confirmClass: 'swal2-lumina-confirm' },
+            unblock: { title: 'Levantar bloqueo', text: 'El usuario podrá iniciar sesión de nuevo. Las sanciones acumuladas se mantienen.', confirm: 'Sí, levantar bloqueo', confirmClass: 'swal2-lumina-confirm-green' },
         };
-        const { title, text, confirm } = labels[action];
-        const confirmClass = action === 'add' ? 'swal2-lumina-confirm' : (action === 'clear' || action === 'unblock') ? 'swal2-lumina-confirm-green' : 'swal2-lumina-confirm-amber';
-        const result = await Swal.fire({
-            title, text, icon: 'warning', showCancelButton: true,
-            confirmButtonText: confirm, cancelButtonText: 'Cancelar',
-            buttonsStyling: false, reverseButtons: true,
-            customClass: {
-                popup: 'swal2-lumina-popup',
-                title: 'swal2-lumina-title',
-                htmlContainer: 'swal2-lumina-html',
-                confirmButton: confirmClass,
-                cancelButton: 'swal2-lumina-cancel',
-            }
-        });
-        if (!result.isConfirmed) return;
+        const cfg = labels[action];
+
+        // Unblock doesn't need a reason
+        if (action === 'unblock') {
+            const result = await Swal.fire({
+                title: cfg.title, text: cfg.text, icon: 'warning', showCancelButton: true,
+                confirmButtonText: cfg.confirm, cancelButtonText: 'Cancelar',
+                buttonsStyling: false, reverseButtons: true,
+                customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: cfg.confirmClass, cancelButton: 'swal2-lumina-cancel' }
+            });
+            if (!result.isConfirmed) return;
+        } else {
+            const result = await Swal.fire({
+                title: cfg.title,
+                html: `<p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:0.75rem;">Indica el motivo de esta acción. El usuario recibirá una notificación con este motivo.</p>`,
+                input: 'textarea',
+                inputPlaceholder: cfg.placeholder,
+                inputAttributes: { style: 'font-size:0.88rem;min-height:90px;resize:vertical;font-family:inherit;' },
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: cfg.confirm,
+                cancelButtonText: 'Cancelar',
+                buttonsStyling: false,
+                reverseButtons: true,
+                customClass: { popup: 'swal2-lumina-popup', title: 'swal2-lumina-title', confirmButton: cfg.confirmClass, cancelButton: 'swal2-lumina-cancel' },
+                inputValidator: (v) => !v?.trim() ? 'El motivo es obligatorio.' : null,
+            });
+            if (!result.isConfirmed) return;
+            var sanctionReason = result.value;
+        }
+
         setLoading(action);
         try {
             const url = action === 'unblock' ? `/api/users/${user._id}/unblock`
-                      : action === 'block' ? `/api/users/${user._id}/block`
+                      : action === 'block'   ? `/api/users/${user._id}/block`
                       : `/api/users/${user._id}/sanctions/${action}`;
-            const { data } = await axios.patch(url, action === 'block' ? { duration: loading } : {});
+            const body = action === 'block' ? { duration: loading }
+                       : action === 'unblock' ? {}
+                       : { reason: sanctionReason };
+            const { data } = await axios.patch(url, body);
             setUser(data);
             onSanctionUpdate?.(data);
         } catch (err) {

@@ -256,6 +256,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0, sanctioned: 0, published: 0 });
     const [suggestions, setSuggestions] = useState([]);
+    const [publicReports, setPublicReports] = useState([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const viewMode = searchParams.get('view') || 'community';
     const { user, loading: authLoading } = useContext(AuthContext);
@@ -285,14 +286,16 @@ const Dashboard = () => {
     const fetchReports = useCallback(async () => {
         try {
             if (isModerator) {
-                const [pendingRes, statsRes, suggestionsRes] = await Promise.all([
+                const [pendingRes, statsRes, suggestionsRes, publicRes] = await Promise.all([
                     axios.get('/api/reports?status=pending'),
                     axios.get('/api/reports/stats'),
                     axios.get('/api/suggestions'),
+                    axios.get('/api/reports/public'),
                 ]);
                 setStats(statsRes.data);
                 setReports(pendingRes.data);
                 setSuggestions(suggestionsRes.data);
+                setPublicReports(publicRes.data || []);
             } else {
                 let res;
                 if (viewMode === 'my') {
@@ -601,9 +604,11 @@ const Dashboard = () => {
                         const typeData = (stats.byType || []).map(t => ({ name: typeLabels[t._id] || t._id, value: t.count }));
                         const dayData  = stats.byDay || [];
 
-                        const total = statusData.reduce((a, c) => a + c.value, 0);
-                        const processed = (stats.approved || 0) + (stats.rejected || 0) + (stats.sanctioned || 0);
-                        const resRate = total > 0 ? Math.round((processed / total) * 100) : 0;
+                        const totalPublished = stats.published || 0;
+                        const totalSanctioned = stats.totalSanctioned || 0;
+                        const resRate = (totalPublished + totalSanctioned) > 0
+                            ? Math.round((totalPublished / (totalPublished + totalSanctioned)) * 100)
+                            : 0;
 
                         const Tip = ({ active, payload, label }) => {
                             if (!active || !payload?.length) return null;
@@ -642,7 +647,7 @@ const Dashboard = () => {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px', padding: '0.4rem 0.85rem' }}>
-                                        <span style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: '700' }}>Tasa de resolución: {resRate}%</span>
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: '700' }}>Contenido limpio: {resRate}%</span>
                                     </div>
                                 </div>
 
@@ -695,6 +700,124 @@ const Dashboard = () => {
                                             </ResponsiveContainer>
                                         </Card>
                                     )}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* ─── INCIDENCIAS POR PROVINCIA ─── */}
+                    {isModerator && publicReports.length > 0 && (() => {
+                        const typeLabelsP = { Traffic: 'Tráfico', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro', RoadWork: 'Obra vial', Pothole: 'Bache', Flood: 'Inundación', Other: 'Otro' };
+                        const typeColorsP = { Traffic: '#6366f1', Accident: '#ef4444', Violation: '#f59e0b', Hazard: '#f97316', RoadWork: '#0ea5e9', Pothole: '#8b5cf6', Flood: '#06b6d4', Other: '#64748b' };
+                        const provinceColorsP = ['#ef4444','#f97316','#f59e0b','#6366f1','#0ea5e9','#8b5cf6','#10b981','#06b6d4'];
+
+                        const getProvince = (address) => {
+                            if (!address) return null;
+                            const cleaned = address.replace(/república dominicana/gi,'').replace(/dominican republic/gi,'').replace(/,\s*$/,'');
+                            const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
+                            return parts[parts.length - 1] || null;
+                        };
+
+                        const typeCountsP = {};
+                        const provinceCountsP = {};
+                        publicReports.forEach(p => {
+                            if (p.type) typeCountsP[p.type] = (typeCountsP[p.type] || 0) + 1;
+                            const prov = getProvince(p.location?.address);
+                            if (prov) provinceCountsP[prov] = (provinceCountsP[prov] || 0) + 1;
+                        });
+                        const topTypesP = Object.entries(typeCountsP).sort((a,b) => b[1]-a[1]);
+                        const topProvincesP = Object.entries(provinceCountsP).sort((a,b) => b[1]-a[1]);
+                        const maxProvP = topProvincesP[0]?.[1] || 1;
+                        const maxTypeP = topTypesP[0]?.[1] || 1;
+
+                        return (
+                            <div style={{ marginBottom: '2.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                                    <div style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', padding: '8px', borderRadius: '10px', color: 'white' }}>
+                                        <MapPin size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: '800', color: 'var(--text-main)' }}>Incidencias por Provincia</h3>
+                                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>Distribución geográfica de reportes publicados</p>
+                                    </div>
+                                </div>
+
+                                {/* Summary cards */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+                                    {[
+                                        { label: 'Reportes publicados', value: publicReports.length, color: '#6366f1' },
+                                        { label: 'Provincia más afectada', value: topProvincesP[0]?.[0] || '—', color: '#ef4444' },
+                                        { label: 'Tipo más frecuente', value: typeLabelsP[topTypesP[0]?.[0]] || '—', color: typeColorsP[topTypesP[0]?.[0]] || '#6366f1' },
+                                        { label: 'Provincias con reportes', value: topProvincesP.length || '—', color: '#10b981' },
+                                    ].map((s, i) => (
+                                        <div key={i} style={{ background: 'var(--surface-solid)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '1rem 1.25rem', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: s.color }} />
+                                            <div style={{ fontSize: 'clamp(1.2rem, 2vw, 1.6rem)', fontWeight: '900', color: s.color, lineHeight: 1.1, wordBreak: 'break-word' }}>{s.value}</div>
+                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '3px' }}>{s.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                                    {/* Provinces */}
+                                    <div style={{ background: 'var(--surface-solid)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.1rem 1.25rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                            <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)' }}>Por provincia</div>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: '#ef4444', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '2px 8px', borderRadius: '99px' }}>{topProvincesP.length} provincias</span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                                            {topProvincesP.map(([prov, count], i) => {
+                                                const color = provinceColorsP[i % provinceColorsP.length];
+                                                const isTop = i === 0;
+                                                return (
+                                                    <div key={prov}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                                                <span style={{ width: '18px', height: '18px', borderRadius: '5px', background: isTop ? color : `${color}22`, border: `1.5px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: '900', color: isTop ? 'white' : color, flexShrink: 0 }}>{i+1}</span>
+                                                                <span style={{ fontSize: '0.82rem', fontWeight: isTop ? '800' : '600', color: isTop ? 'var(--text-main)' : 'var(--text-light)' }}>{prov}</span>
+                                                                {isTop && <span style={{ fontSize: '0.58rem', fontWeight: '900', color, background: `${color}15`, padding: '1px 5px', borderRadius: '99px' }}>MÁS AFECTADA</span>}
+                                                            </div>
+                                                            <span style={{ fontSize: '0.78rem', fontWeight: '800', color }}>{count}</span>
+                                                        </div>
+                                                        <div style={{ height: isTop ? '7px' : '4px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${(count/maxProvP)*100}%` }} transition={{ duration: 0.9, delay: i*0.06, ease: 'easeOut' }}
+                                                                style={{ height: '100%', background: isTop ? color : `${color}88`, borderRadius: '99px' }} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Type breakdown */}
+                                    <div style={{ background: 'var(--surface-solid)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '1.1rem 1.25rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                            <div style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-main)' }}>Por tipo de incidencia</div>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--primary)', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: '99px' }}>{topTypesP.length} tipos</span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                                            {topTypesP.map(([type, count], i) => {
+                                                const color = typeColorsP[type] || '#6366f1';
+                                                const isTop = i === 0;
+                                                return (
+                                                    <div key={type}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                                                <span style={{ width: '9px', height: '9px', borderRadius: '3px', background: color, flexShrink: 0, display: 'inline-block' }} />
+                                                                <span style={{ fontSize: '0.82rem', fontWeight: isTop ? '800' : '600', color: isTop ? 'var(--text-main)' : 'var(--text-light)' }}>{typeLabelsP[type] || type}</span>
+                                                                {isTop && <span style={{ fontSize: '0.58rem', fontWeight: '900', color, background: `${color}15`, padding: '1px 5px', borderRadius: '99px' }}>MAYOR</span>}
+                                                            </div>
+                                                            <span style={{ fontSize: '0.78rem', fontWeight: '800', color }}>{count}</span>
+                                                        </div>
+                                                        <div style={{ height: isTop ? '7px' : '4px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${(count/maxTypeP)*100}%` }} transition={{ duration: 0.9, delay: i*0.06, ease: 'easeOut' }}
+                                                                style={{ height: '100%', background: isTop ? color : `${color}88`, borderRadius: '99px' }} />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -755,8 +878,12 @@ const Dashboard = () => {
                             showCancelButton: true,
                             confirmButtonText: 'Sí, eliminar',
                             cancelButtonText: 'Cancelar',
-                            confirmButtonColor: '#ef4444',
-                            customClass: { popup: 'swal2-lumina-popup', cancelButton: 'swal2-lumina-cancel' }
+                            buttonsStyling: false,
+                            customClass: {
+                                popup: 'swal2-lumina-popup',
+                                confirmButton: 'swal2-lumina-confirm-red',
+                                cancelButton: 'swal2-lumina-cancel',
+                            }
                         });
                         if (!result.isConfirmed) return;
                         try {

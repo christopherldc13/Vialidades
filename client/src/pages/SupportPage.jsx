@@ -617,7 +617,18 @@ const SupportPage = () => {
                         </AnimatePresence>
 
                         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                            <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}>
+                            <Link to="/" onClick={() => window.scrollTo(0, 0)} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                                textDecoration: 'none', color: 'var(--text-main)',
+                                fontWeight: '600', fontSize: '0.9rem',
+                                padding: '0.65rem 1.4rem', borderRadius: '12px',
+                                border: '1.5px solid var(--border-color)',
+                                background: 'var(--surface)',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-main)'; }}
+                            >
                                 ← Volver al inicio
                             </Link>
                         </div>
@@ -834,10 +845,18 @@ const SupportPage = () => {
                     </motion.div>
 
                     <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                        <Link to="/" style={{
-                            color: 'var(--text-muted)', fontSize: '0.85rem',
-                            display: 'inline-flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none',
-                        }}>
+                        <Link to="/" onClick={() => window.scrollTo(0, 0)} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                            textDecoration: 'none', color: 'var(--text-main)',
+                            fontWeight: '600', fontSize: '0.9rem',
+                            padding: '0.65rem 1.4rem', borderRadius: '12px',
+                            border: '1.5px solid var(--border-color)',
+                            background: 'var(--surface)',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.color = 'var(--primary)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-main)'; }}
+                        >
                             ← Volver al inicio
                         </Link>
                     </div>

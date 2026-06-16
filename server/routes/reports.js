@@ -40,6 +40,33 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage });
 const uploadMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
+// Face detection check using Sightengine
+router.post('/check-faces', auth, uploadMemory.single('media'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ msg: 'No file provided' });
+    try {
+        const FormData = require('form-data');
+        const form = new FormData();
+        form.append('media', req.file.buffer, {
+            filename: req.file.originalname || 'image.jpg',
+            contentType: req.file.mimetype || 'image/jpeg'
+        });
+        form.append('models', 'face-attributes');
+        form.append('api_user', (process.env.SIGHTENGINE_API_USER   || '').replace(/[\r\n\t\0 ]+/g, ''));
+        form.append('api_secret', (process.env.SIGHTENGINE_API_SECRET || '').replace(/[\r\n\t\0 ]+/g, ''));
+
+        const { data } = await axios.post('https://api.sightengine.com/1.0/check.json', form, {
+            headers: form.getHeaders(),
+            timeout: 10000
+        });
+
+        const hasFaces = Array.isArray(data.faces) && data.faces.length > 0;
+        res.json({ hasFaces });
+    } catch (err) {
+        console.error('[check-faces] ERROR:', err.message);
+        res.status(200).json({ hasFaces: false });
+    }
+});
+
 // Pre-upload content check (called from frontend on file select)
 router.post('/check-media', auth, uploadMemory.single('media'), async (req, res) => {
     if (!req.file) return res.status(400).json({ msg: 'No file provided' });
@@ -215,7 +242,8 @@ router.post('/', auth, upload.array('media', 5), async (req, res) => {
                 await new Notification({
                     userId: user._id,
                     type: 'warning',
-                    message: `⚠️ Tu reporte fue rechazado porque el sistema detectó contenido inapropiado en las imágenes adjuntas. Recuerda que subir este tipo de contenido está prohibido y puede resultar en la suspensión de tu cuenta (${user.sanctions}/3 sanciones).`
+                    message: `⚠️ Tu reporte fue rechazado porque el sistema detectó contenido inapropiado en las imágenes adjuntas. Recuerda que subir este tipo de contenido está prohibido y puede resultar en la suspensión de tu cuenta (${user.sanctions}/3 sanciones).`,
+                    relatedReportId: savedReport._id
                 }).save();
 
                 const io = require('../socket').getIo();
@@ -308,12 +336,13 @@ router.get('/stats', auth, async (req, res) => {
 
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); sevenDaysAgo.setHours(0, 0, 0, 0);
 
-        const [pending, approved, rejected, sanctioned, published, byType, byDay] = await Promise.all([
+        const [pending, approved, rejected, sanctioned, published, totalSanctioned, byType, byDay] = await Promise.all([
             Report.countDocuments({ status: 'pending' }),
             Report.countDocuments({ status: 'approved', moderatorId, hiddenByUser: { $ne: true } }),
             Report.countDocuments({ status: 'rejected', wasSanctioned: { $ne: true }, moderatorId }),
             Report.countDocuments({ wasSanctioned: true, moderatorId }),
             Report.countDocuments({ status: 'approved', hiddenByUser: { $ne: true } }),
+            Report.countDocuments({ wasSanctioned: true }),
             Report.aggregate([
                 { $match: { hiddenByUser: { $ne: true } } },
                 { $group: { _id: '$type', count: { $sum: 1 } } },
@@ -340,7 +369,7 @@ router.get('/stats', auth, async (req, res) => {
             days.push({ date: key, label, count: dayMap[key] || 0 });
         }
 
-        res.json({ pending, approved, rejected, sanctioned, published, byType, byDay: days });
+        res.json({ pending, approved, rejected, sanctioned, published, totalSanctioned, byType, byDay: days });
     } catch (err) {
         console.error('Error fetching stats:', err.message);
         res.status(500).send('Server Error');
@@ -822,7 +851,7 @@ router.post('/migrate-report-numbers', auth, async (req, res) => {
     }
 });
 
-// Public verification endpoint — no auth required
+// Public verification by sequential code (legacy)
 router.get('/verify/:code', async (req, res) => {
     try {
         const code = req.params.code.toUpperCase().trim();
@@ -830,6 +859,20 @@ router.get('/verify/:code', async (req, res) => {
         if (!match) return res.status(400).json({ msg: 'Código de reporte inválido.' });
         const num = parseInt(match[1], 10);
         const report = await Report.findOne({ reportNumber: num, status: 'approved' })
+            .populate('userId', 'username')
+            .populate('moderatorInCharge', 'username')
+            .select('-flags -__v');
+        if (!report) return res.status(404).json({ msg: 'Reporte no encontrado o no está publicado.' });
+        res.json(report);
+    } catch (err) {
+        res.status(500).json({ msg: err.message });
+    }
+});
+
+// Public verification by MongoDB _id (used by QR codes — non-guessable)
+router.get('/verify-id/:id', async (req, res) => {
+    try {
+        const report = await Report.findOne({ _id: req.params.id, status: 'approved' })
             .populate('userId', 'username')
             .populate('moderatorInCharge', 'username')
             .select('-flags -__v');

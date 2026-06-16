@@ -156,7 +156,7 @@ const NotificationList = ({ className }) => {
                                     if (!n.read) markAsRead(n._id);
                                     if (n.relatedReportId) {
                                         setShowDropdown(false);
-                                        navigate(`/dashboard?reportId=${n.relatedReportId}`);
+                                        navigate(`/dashboard?view=my&reportId=${n.relatedReportId}`);
                                     }
                                 }}
                             >

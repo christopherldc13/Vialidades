@@ -523,6 +523,21 @@ router.patch('/profile', auth, upload.single('avatar'), async (req, res) => {
     }
 });
 
+// Remove avatar
+router.delete('/avatar', auth, async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { $set: { avatar: '' } },
+            { new: true }
+        ).select('-password');
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ msg: 'Error al eliminar la foto' });
+    }
+});
+
 // @route   POST api/auth/forgot-password
 // @desc    Generate password reset token and send email
 // @access  Public
@@ -608,6 +623,31 @@ router.post('/reset-password/:token', async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
+    }
+});
+
+// Change password (authenticated)
+router.put('/change-password', auth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) return res.status(400).json({ msg: 'Completa todos los campos' });
+        if (newPassword.length < 6) return res.status(400).json({ msg: 'La nueva contraseña debe tener al menos 6 caracteres' });
+
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+        if (!user.password) return res.status(400).json({ msg: 'Esta cuenta no tiene contraseña configurada (acceso con Google)' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ msg: 'La contraseña actual es incorrecta' });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Contraseña actualizada correctamente' });
+    } catch (err) {
+        console.error('change-password error:', err.message);
+        res.status(500).json({ msg: 'Error interno del servidor' });
     }
 });
 

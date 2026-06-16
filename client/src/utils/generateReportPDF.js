@@ -22,138 +22,108 @@ const setFill   = (doc, hex) => doc.setFillColor(...hexToRgb(hex));
 const setStroke = (doc, hex) => doc.setDrawColor(...hexToRgb(hex));
 const setColor  = (doc, hex) => doc.setTextColor(...hexToRgb(hex));
 
-function card(doc, x, y, w, h, r, fillHex, strokeHex = null, lw = 0.35) {
-    setFill(doc, fillHex);
-    doc.roundedRect(x, y, w, h, r, r, strokeHex ? 'FD' : 'F');
-    if (strokeHex) {
-        setStroke(doc, strokeHex);
-        doc.setLineWidth(lw);
-        doc.roundedRect(x, y, w, h, r, r, 'S');
-    }
-}
-
-// Draw a proper checkmark with lines (no text character)
-function drawCheckmark(doc, cx, cy, size, colorHex, lw = 1.5) {
-    setStroke(doc, colorHex);
-    doc.setLineWidth(lw);
-    // Left stroke: down-right
-    doc.line(cx - size * 0.45, cy + size * 0.05, cx - size * 0.05, cy + size * 0.45);
-    // Right stroke: up-right
-    doc.line(cx - size * 0.05, cy + size * 0.45, cx + size * 0.55, cy - size * 0.35);
+function drawCheck(doc, cx, cy, r) {
+    setStroke(doc, '#0F172A');
+    doc.setLineWidth(0.5);
+    doc.circle(cx, cy, r, 'S');
+    doc.setLineWidth(0.9);
+    doc.line(cx - r*0.42, cy + r*0.05, cx - r*0.05, cy + r*0.42);
+    doc.line(cx - r*0.05, cy + r*0.42, cx + r*0.52, cy - r*0.32);
 }
 
 export async function generateReportPDF(report) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = 210, H = 297;
+    const M = 18;
+    const CW = W - M * 2;
     const reportCode = `VTI${String(report.reportNumber).padStart(4, '0')}`;
-    const verifyUrl  = `${window.location.origin}/reporte/${reportCode}`;
+    const verifyUrl  = `${window.location.origin}/verificar/${report._id}`;
 
-    // ── BACKGROUND ────────────────────────────────────────────────────────────
-    setFill(doc, '#F8FAFC');
+    // Background
+    setFill(doc, '#FFFFFF');
     doc.rect(0, 0, W, H, 'F');
 
-    // Watermark circles (top-right, bottom-left)
-    setStroke(doc, '#E2E8F0');
-    doc.setLineWidth(0.25);
-    doc.circle(182, 52, 52, 'S');
-    doc.circle(182, 52, 38, 'S');
-    doc.circle(28, 238, 42, 'S');
-    doc.circle(28, 238, 28, 'S');
+    // Top accent bar (simple rect — no rounding issues)
+    setFill(doc, '#0F172A');
+    doc.rect(0, 0, W, 5, 'F');
 
-    // Left accent bar
-    setFill(doc, '#4338CA');
-    doc.rect(0, 0, 5, H, 'F');
-    setFill(doc, '#6366F1');
-    doc.rect(0, 0, 2.5, H, 'F');
+    // ── HEADER ───────────────────────────────────────────────────────────────
+    let y = 16;
 
-    // ── HEADER ────────────────────────────────────────────────────────────────
-    const hX = 14, hW = W - 18;
+    // Date in top-right corner
+    setColor(doc, '#64748B');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text(`${fmtTime(new Date())}  ·  ${fmtDate(new Date())}`, W - M, y - 5, { align: 'right' });
 
-    // Main header card
-    card(doc, hX, 12, hW, 60, 8, '#4F46E5');
+    setColor(doc, '#94A3B8');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('VIALIDADES DE TRÁNSITO  ·  REPÚBLICA DOMINICANA', W / 2, y, { align: 'center' });
+    y += 7;
 
-    // Lighter top gradient band
-    setFill(doc, '#5B54F5');
-    doc.roundedRect(hX, 12, hW, 28, 8, 8, 'F');
-    setFill(doc, '#4F46E5');
-    doc.rect(hX, 28, hW, 12, 'F'); // flat bottom of lighter band
-
-    // Decorative rings inside header
-    setStroke(doc, '#7C75F5');
-    doc.setLineWidth(0.3);
-    doc.circle(hX + hW - 14, 23, 18, 'S');
-    doc.circle(hX + hW - 14, 23, 12, 'S');
-    doc.circle(hX + 10, 65, 13, 'S');
-
-    // Platform label
-    setColor(doc, '#A5B4FC');
+    setColor(doc, '#0F172A');
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(19);
+    doc.text('Certificado Oficial de Reporte Vial', W / 2, y, { align: 'center' });
+    y += 5;
+
+    setColor(doc, '#94A3B8');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
-    doc.text('VIALIDADES DE TRÁNSITO  ·  REPÚBLICA DOMINICANA', W / 2 + 2, 21, { align: 'center' });
-
-    // Title
-    setColor(doc, '#FFFFFF');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('Certificado Oficial de Reporte Vial', W / 2 + 2, 33, { align: 'center' });
+    doc.text('Documento emitido y verificado por la Plataforma Vialidades', W / 2, y, { align: 'center' });
+    y += 7;
 
     // Divider
-    setStroke(doc, '#818CF8');
-    doc.setLineWidth(0.4);
-    doc.line(hX + 25, 38, hX + hW - 25, 38);
+    setStroke(doc, '#CBD5E1');
+    doc.setLineWidth(0.35);
+    doc.line(M, y, W - M, y);
+    y += 8;
 
-    // Subtitle
-    setColor(doc, '#C7D2FE');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Documento emitido y verificado por la Plataforma Vialidades', W / 2 + 2, 44, { align: 'center' });
-
-    // ── REPORT NUMBER PILL ────────────────────────────────────────────────────
-    card(doc, hX + 8, 50, 68, 17, 6, '#FFFFFF');
-    setColor(doc, '#6366F1');
+    // ── META ROW (number | status | date) ────────────────────────────────────
+    // Report number box
+    setStroke(doc, '#CBD5E1');
+    doc.setLineWidth(0.3);
+    doc.roundedRect(M, y, 50, 15, 3, 3, 'S');
+    setColor(doc, '#94A3B8');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    doc.text('N° DE REPORTE', hX + 42, 56.5, { align: 'center' });
-    setColor(doc, '#3730A3');
+    doc.setFontSize(6);
+    doc.text('N° DE REPORTE', M + 25, y + 5, { align: 'center' });
+    setColor(doc, '#0F172A');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text(reportCode, hX + 42, 64.5, { align: 'center' });
+    doc.setFontSize(13);
+    doc.text(reportCode, M + 25, y + 12, { align: 'center' });
 
-    // ── APROBADO PILL ─────────────────────────────────────────────────────────
-    const pillX = hX + 84, pillW = 56, pillH = 17;
-    card(doc, pillX, 50, pillW, pillH, 6, '#10B981');
-
-    // White circle for checkmark bg
-    setFill(doc, '#0EA572');
-    doc.circle(pillX + 11, 58.5, 5.5, 'F');
-    setFill(doc, '#FFFFFF');
-    doc.circle(pillX + 11, 58.5, 4.5, 'F');
-
-    // Draw checkmark manually
-    drawCheckmark(doc, pillX + 11, 58.5, 4, '#10B981', 1.3);
-
-    // APROBADO text
-    setColor(doc, '#FFFFFF');
+    // Status box
+    const sX = M + 58;
+    doc.roundedRect(sX, y, 52, 15, 3, 3, 'S');
+    drawCheck(doc, sX + 10, y + 7.5, 4.5);
+    setColor(doc, '#0F172A');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('APROBADO', pillX + pillW / 2 + 4, 61, { align: 'center' });
+    doc.setFontSize(9.5);
+    doc.text('APROBADO', sX + 33, y + 9, { align: 'center' });
 
-    // Generation date
-    setColor(doc, '#A5B4FC');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.text(`Generado: ${fmtDate(new Date())}`, hX + hW - 4, 55, { align: 'right' });
-    doc.text(fmtTime(new Date()), hX + hW - 4, 63, { align: 'right' });
+    y += 21;
 
-    // ── SECTION: INFO ─────────────────────────────────────────────────────────
-    let y = 82;
+    // Divider
+    setStroke(doc, '#E2E8F0');
+    doc.setLineWidth(0.25);
+    doc.line(M, y, W - M, y);
+    y += 8;
 
-    card(doc, hX, y, hW, 8.5, 3, '#EEF2FF');
-    setColor(doc, '#4F46E5');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.text('INFORMACIÓN DEL INCIDENTE', hX + 5, y + 5.8);
-    y += 11;
+    // ── SECTION LABEL HELPER ─────────────────────────────────────────────────
+    const sectionLabel = (text, yy) => {
+        setFill(doc, '#0F172A');
+        doc.rect(M, yy, 2.5, 5.5, 'F');
+        setColor(doc, '#0F172A');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.text(text, M + 5.5, yy + 4.2);
+        return yy + 9;
+    };
+
+    // ── INFO TABLE ───────────────────────────────────────────────────────────
+    y = sectionLabel('INFORMACIÓN DEL INCIDENTE', y);
 
     const rows = [
         ['Tipo de Incidente', INCIDENT_LABELS[report.type] || report.type],
@@ -168,158 +138,150 @@ export async function generateReportPDF(report) {
         rows.push(['Vehículo', v]);
     }
 
-    const rowH = 9.5;
-    const infoH = rows.length * rowH + 5;
-    card(doc, hX, y, hW, infoH, 4, '#FFFFFF', '#E2E8F0');
+    const rowH = 9;
+    const tableH = rows.length * rowH + 3;
+
+    // Table border (simple rect — fills won't escape)
+    setStroke(doc, '#CBD5E1');
+    doc.setLineWidth(0.3);
+    doc.rect(M, y, CW, tableH, 'S');
 
     rows.forEach(([label, value], i) => {
-        const ry = y + 5 + i * rowH;
-        if (i % 2 === 0) { setFill(doc, '#F8FAFC'); doc.rect(hX + 0.5, ry - 3.8, hW - 1, rowH, 'F'); }
+        const ry = y + 2 + i * rowH;
 
-        // Small accent dot
-        setFill(doc, '#6366F1');
-        doc.circle(hX + 7, ry + 1, 1, 'F');
+        // Row divider (skip first)
+        if (i > 0) {
+            setStroke(doc, '#E2E8F0');
+            doc.setLineWidth(0.2);
+            doc.line(M, ry - 1, M + CW, ry - 1);
+        }
+
+        // Vertical divider between label and value
+        setStroke(doc, '#E2E8F0');
+        doc.setLineWidth(0.2);
+        doc.line(M + 62, ry - 1, M + 62, ry + rowH - 1);
 
         setColor(doc, '#94A3B8');
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
-        doc.text(label, hX + 12, ry + 2);
+        doc.text(label, M + 5, ry + 5.5);
 
         setColor(doc, '#0F172A');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        const lines = doc.splitTextToSize(value, hW - 70);
-        doc.text(lines, hX + 68, ry + 2);
+        const lines = doc.splitTextToSize(value, CW - 68);
+        doc.text(lines, M + 65, ry + 5.5);
     });
-    y += infoH + 8;
 
-    // ── SECTION: DESCRIPTION ─────────────────────────────────────────────────
-    card(doc, hX, y, hW, 8.5, 3, '#EEF2FF');
-    setColor(doc, '#4F46E5');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.text('DESCRIPCIÓN DEL INCIDENTE', hX + 5, y + 5.8);
-    y += 11;
+    y += tableH + 10;
 
-    const descLines = doc.splitTextToSize(`"${report.description}"`, hW - 22);
-    const descH = Math.max(descLines.length * 6.2 + 12, 22);
-    card(doc, hX, y, hW, descH, 4, '#FFFFFF', '#E2E8F0');
+    // ── DESCRIPTION ──────────────────────────────────────────────────────────
+    y = sectionLabel('DESCRIPCIÓN DEL INCIDENTE', y);
 
-    // Accent bar
-    setFill(doc, '#6366F1');
-    doc.roundedRect(hX + 4, y + 5, 2.5, descH - 10, 1.5, 1.5, 'F');
+    const descLines = doc.splitTextToSize(`"${report.description}"`, CW - 16);
+    const descH = Math.max(descLines.length * 6 + 12, 20);
+
+    setStroke(doc, '#CBD5E1');
+    doc.setLineWidth(0.3);
+    doc.rect(M, y, CW, descH, 'S');
+
+    // Left accent bar
+    setFill(doc, '#CBD5E1');
+    doc.rect(M + 5, y + 5, 1.5, descH - 10, 'F');
 
     setColor(doc, '#334155');
     doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9.5);
-    doc.text(descLines, hX + 11, y + 10);
-    y += descH + 8;
+    doc.setFontSize(9);
+    doc.text(descLines, M + 10, y + 9);
+    y += descH + 10;
 
-    // ── SECTION: MODERATOR COMMENT ───────────────────────────────────────────
+    // ── MODERATOR COMMENT ────────────────────────────────────────────────────
     if (report.moderatorComment) {
-        card(doc, hX, y, hW, 8.5, 3, '#ECFDF5');
-        setColor(doc, '#059669');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        doc.text('NOTA DEL MODERADOR', hX + 5, y + 5.8);
-        y += 11;
-        const noteLines = doc.splitTextToSize(report.moderatorComment, hW - 16);
-        const noteH = noteLines.length * 5.5 + 10;
-        card(doc, hX, y, hW, noteH, 4, '#F0FDF4', '#A7F3D0');
-        setColor(doc, '#065F46');
+        y = sectionLabel('NOTA DEL MODERADOR', y);
+        const noteLines = doc.splitTextToSize(report.moderatorComment, CW - 12);
+        const noteH = noteLines.length * 5.5 + 12;
+        setStroke(doc, '#CBD5E1');
+        doc.setLineWidth(0.3);
+        doc.rect(M, y, CW, noteH, 'S');
+        setColor(doc, '#334155');
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
-        doc.text(noteLines, hX + 6, y + 7);
-        y += noteH + 8;
+        doc.text(noteLines, M + 6, y + 8);
+        y += noteH + 10;
     }
 
-    // ── SECTION: QR + VERIFICATION ───────────────────────────────────────────
-    const qrY = Math.max(y + 4, 204);
-    const qrH = 70;
+    // ── QR + VERIFICATION ────────────────────────────────────────────────────
+    const qrH = 68;
+    const qrY = Math.max(y + 10, H - qrH - 20);
 
-    // Dark outer card
-    card(doc, hX, qrY, hW, qrH, 7, '#1E1B4B');
-
-    // Top lighter band with title
-    setFill(doc, '#2D2A6E');
-    doc.roundedRect(hX, qrY, hW, 18, 7, 7, 'F');
-    setFill(doc, '#1E1B4B');
-    doc.rect(hX, qrY + 11, hW, 7, 'F');
-
-    // Decorative circles in QR section
-    setStroke(doc, '#4338CA');
+    // QR card — light bg, simple rect
+    setFill(doc, '#F8FAFC');
+    doc.rect(M, qrY, CW, qrH, 'F');
+    setStroke(doc, '#CBD5E1');
     doc.setLineWidth(0.3);
-    doc.circle(hX + hW - 10, qrY + 10, 18, 'S');
-    doc.circle(hX + hW - 10, qrY + 10, 12, 'S');
+    doc.rect(M, qrY, CW, qrH, 'S');
 
-    // Section title
-    setColor(doc, '#E0E7FF');
+    // Top strip inside card
+    setFill(doc, '#0F172A');
+    doc.rect(M, qrY, CW, 3, 'F');
+
+    // Title
+    setColor(doc, '#0F172A');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('VERIFICACIÓN DE AUTENTICIDAD', W / 2 + 2, qrY + 8, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text('VERIFICACIÓN DE AUTENTICIDAD', W / 2, qrY + 11, { align: 'center' });
 
-    setColor(doc, '#818CF8');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text('Escanea el código QR o visita el enlace para confirmar la veracidad de este documento', W / 2 + 2, qrY + 14, { align: 'center' });
-
-    // QR code — white card
-    const qrSize = 38;
-    const qrCardPad = 2;
-    card(doc, hX + 6, qrY + 20, qrSize + qrCardPad * 2, qrSize + qrCardPad * 2, 4, '#FFFFFF');
-
-    const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-        width: 400, margin: 1,
-        color: { dark: '#1E1B4B', light: '#FFFFFF' },
-        errorCorrectionLevel: 'H',
-    });
-    doc.addImage(qrDataUrl, 'PNG', hX + 6 + qrCardPad, qrY + 20 + qrCardPad, qrSize, qrSize);
-
-    // Small "Vialidades" label under QR
-    setColor(doc, '#6366F1');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
-    doc.text('VIALIDADES', hX + 6 + qrSize / 2 + qrCardPad, qrY + 20 + qrSize + qrCardPad * 2 + 3.5, { align: 'center' });
-
-    // Verification text block
-    const tx = hX + 6 + qrSize + qrCardPad * 2 + 6;
-    const textW = hW - (tx - hX) - 4;
-
-    setColor(doc, '#A5B4FC');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.text('ENLACE DE VERIFICACIÓN', tx, qrY + 26);
-
-    // URL — highlighted
-    card(doc, tx, qrY + 29, textW, 9, 3, '#2D2A6E');
-    setColor(doc, '#818CF8');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    const urlLines = doc.splitTextToSize(verifyUrl, textW - 4);
-    doc.text(urlLines, tx + 3, qrY + 34.5);
-
-    setColor(doc, '#6B7ABA');
+    setColor(doc, '#94A3B8');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
-    doc.text(`Generado el ${fmtFull(new Date())}`, tx, qrY + 44);
+    doc.text('Escanea el código QR o visita el enlace para confirmar la veracidad de este documento', W / 2, qrY + 16.5, { align: 'center' });
 
-    setColor(doc, '#4F5A9A');
-    doc.setFontSize(6.2);
-    const disclaimer = doc.splitTextToSize(
-        'Este certificado es emitido oficialmente por la Plataforma Vialidades de Tránsito. Su contenido ha sido verificado y aprobado.',
+    setStroke(doc, '#E2E8F0');
+    doc.setLineWidth(0.2);
+    doc.line(M + 6, qrY + 19, M + CW - 6, qrY + 19);
+
+    // QR image
+    const qrSize = 34;
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+        width: 400, margin: 1,
+        color: { dark: '#0F172A', light: '#FFFFFF' },
+        errorCorrectionLevel: 'H',
+    });
+    setFill(doc, '#FFFFFF');
+    doc.rect(M + 5, qrY + 21, qrSize + 4, qrSize + 4, 'F');
+    doc.addImage(qrDataUrl, 'PNG', M + 7, qrY + 23, qrSize, qrSize);
+
+    // Right side text
+    const tx = M + qrSize + 18;
+    const textW = CW - (tx - M) - 4;
+
+    setColor(doc, '#64748B');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.text('Escanea para verificar', tx, qrY + 30);
+
+    setColor(doc, '#94A3B8');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    const hint = doc.splitTextToSize(
+        'Este código QR contiene un enlace único y seguro que apunta exclusivamente a este reporte. No es posible acceder a otros reportes modificando el enlace.',
         textW
     );
-    doc.text(disclaimer, tx, qrY + 50);
+    doc.text(hint, tx, qrY + 37);
 
-    // ── PAGE FOOTER ───────────────────────────────────────────────────────────
-    setFill(doc, '#3730A3');
-    doc.rect(0, H - 11, W, 11, 'F');
-    setFill(doc, '#4F46E5');
-    doc.rect(0, H - 11, W, 4, 'F');
-    setColor(doc, '#FFFFFF');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.text('© 2026 Vialidades de Tránsito  ·  Todos los derechos reservados  ·  vialidades.app', W / 2, H - 4, { align: 'center' });
+    setColor(doc, '#CBD5E1');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(`Emitido el ${fmtFull(new Date())}`, tx, qrY + 58);
+
+    // ── FOOTER ───────────────────────────────────────────────────────────────
+    setStroke(doc, '#E2E8F0');
+    doc.setLineWidth(0.3);
+    doc.line(M, H - 11, W - M, H - 11);
+    setColor(doc, '#94A3B8');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('© 2026 Vialidades de Tránsito  ·  Todos los derechos reservados  ·  vialidades.app', W / 2, H - 6, { align: 'center' });
 
     doc.save(`Certificado_${reportCode}.pdf`);
 }

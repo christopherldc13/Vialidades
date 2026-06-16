@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 
 // @route   GET api/users
@@ -151,6 +152,8 @@ const isMod = (req, res) => {
 router.patch('/:id/sanctions/reduce', auth, async (req, res) => {
     try {
         if (!isMod(req, res)) return;
+        const { reason } = req.body;
+        if (!reason?.trim()) return res.status(400).json({ msg: 'Se requiere un motivo.' });
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
         if (user.sanctions <= 0) return res.status(400).json({ msg: 'El usuario no tiene sanciones.' });
@@ -159,6 +162,7 @@ router.patch('/:id/sanctions/reduce', auth, async (req, res) => {
             { $set: { sanctions: Math.max(0, user.sanctions - 1), reputation: Math.min(100, (user.reputation || 0) + 25) } },
             { new: true, runValidators: false }
         ).select('-password');
+        await Notification.create({ userId: user._id, type: 'info', message: `Se redujo 1 sanción de tu cuenta (+25 reputación). Motivo: ${reason.trim()}` });
         res.json(updated);
     } catch (err) { res.status(500).json({ msg: err.message || 'Error al reducir sanción.' }); }
 });
@@ -167,6 +171,8 @@ router.patch('/:id/sanctions/reduce', auth, async (req, res) => {
 router.patch('/:id/sanctions/clear', auth, async (req, res) => {
     try {
         if (!isMod(req, res)) return;
+        const { reason } = req.body;
+        if (!reason?.trim()) return res.status(400).json({ msg: 'Se requiere un motivo.' });
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
         const updated = await User.findByIdAndUpdate(
@@ -174,6 +180,7 @@ router.patch('/:id/sanctions/clear', auth, async (req, res) => {
             { $set: { sanctions: 0, reputation: 100, blockedUntil: null } },
             { new: true, runValidators: false }
         ).select('-password');
+        await Notification.create({ userId: user._id, type: 'success', message: `Todas tus sanciones han sido eliminadas y tu reputación restaurada. Motivo: ${reason.trim()}` });
         res.json(updated);
     } catch (err) { res.status(500).json({ msg: err.message || 'Error al limpiar sanciones.' }); }
 });
@@ -223,6 +230,8 @@ router.patch('/:id/unblock', auth, async (req, res) => {
 router.patch('/:id/sanctions/add', auth, async (req, res) => {
     try {
         if (!isMod(req, res)) return;
+        const { reason } = req.body;
+        if (!reason?.trim()) return res.status(400).json({ msg: 'Se requiere un motivo.' });
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
         const updated = await User.findByIdAndUpdate(
@@ -230,6 +239,7 @@ router.patch('/:id/sanctions/add', auth, async (req, res) => {
             { $set: { sanctions: (user.sanctions || 0) + 1, reputation: Math.max(0, (user.reputation || 100) - 25) } },
             { new: true, runValidators: false }
         ).select('-password');
+        await Notification.create({ userId: user._id, type: 'error', message: `Se aplicó una sanción manual a tu cuenta (-25 reputación). Motivo: ${reason.trim()}` });
         res.json(updated);
     } catch (err) { res.status(500).json({ msg: err.message || 'Error al aplicar sanción.' }); }
 });

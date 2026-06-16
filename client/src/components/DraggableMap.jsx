@@ -143,8 +143,15 @@ const DraggableMap = ({ location, setLocation, setAddress, refreshLocation }) =>
     };
 
     // Solo en el montaje inicial (auto-ubicación de bienvenida)
+    // Si el padre ya tiene una ubicación seleccionada, no sobreescribir
     useEffect(() => {
-        getLocation(false);
+        if (location) {
+            userMovedRef.current = true; // ya hay una ubicación → el usuario la controló
+            setCenter(location);
+            setZoom(16);
+        } else {
+            getLocation(false);
+        }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Cuando el padre fuerza re-ubicación mediante refreshLocation

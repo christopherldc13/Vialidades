@@ -109,7 +109,7 @@ const LandingPage = () => {
     const { user, loading } = useContext(AuthContext);
     const { theme } = useContext(ThemeContext);
     const [heatPoints, setHeatPoints] = useState([]);
-    const [mapType, setMapType] = useState('satellite'); // 'standard' or 'satellite'
+    const [mapType, setMapType] = useState('standard');
 
     // Suggestions Form State
     const [suggestionForm, setSuggestionForm] = useState({
@@ -249,7 +249,8 @@ const LandingPage = () => {
                         transition={{ duration: 0.6, delay: 0.7 }}
                     >
                         <Link to="/register" className="cta-button">
-                            Comenzar Ahora <ArrowRight size={20} />
+                            Comenzar Ahora
+                            <span className="cta-arrow"><ArrowRight size={16} /></span>
                         </Link>
                     </motion.div>
                 </motion.div>
@@ -263,109 +264,40 @@ const LandingPage = () => {
                     <div className="map-showcase">
                         <div className="map-showcase-inner">
                             <MapContainer
-                                center={[18.88, -70.4]} // Approximate center of Dominican Republic
-                                zoom={8}
-                                minZoom={8}
-                                maxBounds={[[17.0, -72.5], [20.5, -68.0]]}
+                                center={[18.7, -70.1]}
+                                zoom={9}
+                                minZoom={9}
+                                maxBounds={[[17.4, -71.85], [20.0, -68.3]]}
+                                maxBoundsViscosity={1.0}
                                 scrollWheelZoom={true}
-                                zoomControl={false} // Disable default controls to look cleaner
+                                zoomControl={false}
                                 attributionControl={false}
                                 style={{ flex: 1, width: '100%', height: '100%', zIndex: 1 }}
                             >
                                 {mapType === 'satellite' ? (
-                                    <TileLayer
-                                        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                                    />
+                                    <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
                                 ) : (
-                                    <TileLayer
-                                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                                    />
+                                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                                 )}
-
                                 {heatPoints.length > 0 && <HeatMapLayer points={heatPoints} />}
-
-                                {/* Overlay Gradient to fade map into background slowly */}
-                                <div style={{
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: '150px',
-                                    background: theme === 'dark' ? 'linear-gradient(to top, transparent, transparent)' : 'linear-gradient(to top, transparent, transparent)', // Removed solid fade
-                                    pointerEvents: 'none',
-                                    zIndex: 5
-                                }}></div>
 
                                 {/* Map Type Toggle */}
                                 <div style={{
-                                    position: 'absolute',
-                                    top: '16px',
-                                    right: '16px',
-                                    zIndex: 1000,
-                                    display: 'flex',
-                                    gap: '8px',
-                                    padding: '6px',
+                                    position: 'absolute', top: '16px', right: '16px', zIndex: 1000,
+                                    display: 'flex', gap: '8px', padding: '6px',
                                     background: theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: '12px',
+                                    backdropFilter: 'blur(10px)', borderRadius: '12px',
                                     border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
                                 }}>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setMapType('standard'); }}
-                                        style={{
-                                            padding: '8px 16px',
-                                            borderRadius: '8px',
-                                            border: 'none',
-                                            background: mapType === 'standard' ? 'var(--primary)' : 'transparent',
-                                            color: mapType === 'standard' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'),
-                                            fontSize: '0.8rem',
-                                            fontWeight: '700',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.3s ease',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
+                                    <button onClick={(e) => { e.stopPropagation(); setMapType('standard'); }} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: mapType === 'standard' ? 'var(--primary)' : 'transparent', color: mapType === 'standard' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'), fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <CiLocationOn size={16} /> Callejero
                                     </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setMapType('satellite'); }}
-                                        style={{
-                                            padding: '8px 16px',
-                                            borderRadius: '8px',
-                                            border: 'none',
-                                            background: mapType === 'satellite' ? 'var(--primary)' : 'transparent',
-                                            color: mapType === 'satellite' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'),
-                                            fontSize: '0.8rem',
-                                            fontWeight: '700',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.3s ease',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
+                                    <button onClick={(e) => { e.stopPropagation(); setMapType('satellite'); }} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: mapType === 'satellite' ? 'var(--primary)' : 'transparent', color: mapType === 'satellite' ? 'white' : (theme === 'dark' ? 'white' : '#1e2025'), fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <LiaSatelliteSolid size={18} /> Satélite
                                     </button>
                                 </div>
-                                <div style={{
-                                    position: 'absolute',
-                                    bottom: '24px',
-                                    right: '24px',
-                                    zIndex: 10,
-                                    background: theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
-                                    padding: '0.75rem 1.25rem',
-                                    borderRadius: '2rem',
-                                    backdropFilter: 'blur(10px)',
-                                    color: theme === 'dark' ? 'white' : '#1e2025',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 'bold',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-                                }}>
+
+                                <div style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10, background: theme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)', padding: '0.75rem 1.25rem', borderRadius: '2rem', backdropFilter: 'blur(10px)', color: theme === 'dark' ? 'white' : '#1e2025', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
                                     <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 10px #ef4444' }}></span>
                                     Radio Activos
                                 </div>
@@ -374,6 +306,128 @@ const LandingPage = () => {
                     </div>
                 </motion.div>
             </header>
+
+            {/* ─── Public Stats Section ─── */}
+            {heatPoints.length > 0 && (() => {
+                const typeLabels = { Traffic: 'Tráfico', Accident: 'Accidente', Violation: 'Infracción', Hazard: 'Peligro', RoadWork: 'Obra vial', Pothole: 'Bache', Flood: 'Inundación', Other: 'Otro' };
+                const typeColors = { Traffic: '#6366f1', Accident: '#ef4444', Violation: '#f59e0b', Hazard: '#f97316', RoadWork: '#0ea5e9', Pothole: '#8b5cf6', Flood: '#06b6d4', Other: '#64748b' };
+                const provinceColors = ['#ef4444','#f97316','#f59e0b','#6366f1','#0ea5e9','#8b5cf6','#10b981','#06b6d4'];
+
+                const getProvince = (address) => {
+                    if (!address) return null;
+                    const cleaned = address
+                        .replace(/república dominicana/gi, '')
+                        .replace(/dominican republic/gi, '')
+                        .replace(/,\s*$/, '');
+                    const parts = cleaned.split(',').map(p => p.trim()).filter(Boolean);
+                    return parts[parts.length - 1] || null;
+                };
+
+                const typeCounts = {};
+                const provinceCounts = {};
+                heatPoints.forEach(p => {
+                    typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
+                    const prov = getProvince(p.address);
+                    if (prov) provinceCounts[prov] = (provinceCounts[prov] || 0) + 1;
+                });
+                const topTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+                const topProvinces = Object.entries(provinceCounts).sort((a, b) => b[1] - a[1]);
+                const maxProv = topProvinces[0]?.[1] || 1;
+                const maxType = topTypes[0]?.[1] || 1;
+                const topProv = topProvinces[0]?.[0];
+
+                return (
+                    <section style={{ padding: '5rem 1.5rem 4rem', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '1000px', height: '600px', background: 'radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)', filter: 'blur(60px)', zIndex: -1, pointerEvents: 'none' }} />
+
+                        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                            {/* Header */}
+                            <motion.div style={{ textAlign: 'center', marginBottom: '3rem' }} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 1.1rem', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '99px', color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                                    <Layers size={15} /> Estadísticas en Tiempo Real
+                                </div>
+                                <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: '0.6rem' }}>
+                                    Incidencias en <span style={{ background: 'linear-gradient(135deg, var(--primary), #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>República Dominicana</span>
+                                </h2>
+                                <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', maxWidth: '460px', margin: '0 auto', lineHeight: 1.6 }}>
+                                    Datos en tiempo real basados en reportes publicados por la comunidad.
+                                </p>
+                            </motion.div>
+
+                            {/* Summary cards — info only, no counts */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                                {[
+                                    { label: 'Provincia más afectada', value: topProv || '—', color: '#ef4444' },
+                                    { label: 'Tipo más frecuente', value: typeLabels[topTypes[0]?.[0]] || '—', color: typeColors[topTypes[0]?.[0]] || '#6366f1' },
+                                ].map((s, i) => (
+                                    <motion.div key={i} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.07 }}
+                                        style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '1.4rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', position: 'relative', overflow: 'hidden' }}>
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: `linear-gradient(90deg, ${s.color}, ${s.color}88)`, borderRadius: '18px 18px 0 0' }} />
+                                        <span style={{ fontSize: 'clamp(1.2rem, 2.5vw, 1.7rem)', fontWeight: '900', color: s.color, lineHeight: 1.1, wordBreak: 'break-word' }}>{s.value}</span>
+                                        <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</span>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            {/* Province ranking + type breakdown */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+
+                                {/* Provinces */}
+                                <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}
+                                    style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                                    <div style={{ fontWeight: '800', fontSize: '0.92rem', color: 'var(--text-main)', marginBottom: '1.4rem' }}>Incidencias por provincia</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {topProvinces.map(([prov, count], i) => {
+                                            const pct = Math.round((count / maxProv) * 100);
+                                            const color = provinceColors[i % provinceColors.length];
+                                            const isTop = i === 0;
+                                            return (
+                                                <div key={prov}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '6px' }}>
+                                                        <span style={{ width: '20px', height: '20px', borderRadius: '6px', background: isTop ? color : `${color}22`, border: `1.5px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '900', color: isTop ? 'white' : color, flexShrink: 0 }}>{i + 1}</span>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: isTop ? '800' : '600', color: isTop ? 'var(--text-main)' : 'var(--text-light)' }}>{prov}</span>
+                                                        {isTop && <span style={{ fontSize: '0.62rem', fontWeight: '900', color, background: `${color}15`, padding: '1px 6px', borderRadius: '99px', letterSpacing: '0.05em' }}>MÁS AFECTADA</span>}
+                                                    </div>
+                                                    <div style={{ height: isTop ? '8px' : '5px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                                        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }} transition={{ duration: 0.9, delay: 0.1 + i * 0.06, ease: 'easeOut' }}
+                                                            style={{ height: '100%', background: isTop ? color : `${color}88`, borderRadius: '99px' }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+
+                                {/* Type breakdown */}
+                                <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
+                                    style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                                    <div style={{ fontWeight: '800', fontSize: '0.92rem', color: 'var(--text-main)', marginBottom: '1.4rem' }}>Tipo de incidencia</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {topTypes.map(([type, count], i) => {
+                                            const color = typeColors[type] || '#6366f1';
+                                            const pct = Math.round((count / maxType) * 100);
+                                            const isTop = i === 0;
+                                            return (
+                                                <div key={type}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '6px' }}>
+                                                        <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: color, flexShrink: 0, display: 'inline-block' }} />
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: isTop ? '800' : '600', color: isTop ? 'var(--text-main)' : 'var(--text-light)' }}>{typeLabels[type] || type}</span>
+                                                        {isTop && <span style={{ fontSize: '0.62rem', fontWeight: '900', color, background: `${color}15`, padding: '1px 6px', borderRadius: '99px' }}>MAYOR</span>}
+                                                    </div>
+                                                    <div style={{ height: isTop ? '8px' : '5px', background: 'var(--bg-input)', borderRadius: '99px', overflow: 'hidden' }}>
+                                                        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }} transition={{ duration: 0.9, delay: 0.1 + i * 0.06, ease: 'easeOut' }}
+                                                            style={{ height: '100%', background: isTop ? color : `${color}88`, borderRadius: '99px' }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
+                            </div>
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* Moderation Flow Timeline with background Glow */}
             <section style={{ position: 'relative', zIndex: 10, background: 'transparent', padding: '1rem 0', overflow: 'hidden' }}>
@@ -745,13 +799,13 @@ const LandingPage = () => {
                                 maxWidth: '720px', margin: '0 auto',
                             }}
                         >
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #dc2626, #6366f1)', borderRadius: '24px 24px 0 0' }} />
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#dc2626', borderRadius: '24px 24px 0 0' }} />
 
                             {/* Icon + title */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{
                                     width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
-                                    background: 'linear-gradient(135deg, #dc2626, #6366f1)',
+                                    background: '#dc2626',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
                                 }}>
@@ -815,7 +869,7 @@ const LandingPage = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                             <div style={{
                                 width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
-                                background: 'linear-gradient(135deg, #dc2626, #6366f1)',
+                                background: '#dc2626',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 boxShadow: '0 6px 20px rgba(220,38,38,0.25)',
                             }}>
@@ -907,13 +961,13 @@ const LandingPage = () => {
                                 whileHover={{ y: -4, boxShadow: `0 16px 40px -12px ${rule.color}30` }}
                             >
                                 {/* Top accent bar */}
-                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: rule.gradient, borderRadius: '24px 24px 0 0' }} />
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: rule.color, borderRadius: '24px 24px 0 0' }} />
 
                                 {/* Icon + subtitle */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
                                     <div style={{
                                         width: '44px', height: '44px', borderRadius: '14px',
-                                        background: rule.gradient, flexShrink: 0,
+                                        background: rule.color, flexShrink: 0,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         boxShadow: `0 6px 16px ${rule.color}40`,
                                     }}>

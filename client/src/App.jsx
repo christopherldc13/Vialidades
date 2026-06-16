@@ -17,6 +17,7 @@ import SuperModReports from './pages/SuperModReports';
 import SupportPage from './pages/SupportPage';
 import ReportVerifyPage from './pages/ReportVerifyPage';
 import LandingPage from './pages/LandingPage';
+import TermsPage from './pages/TermsPage';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
@@ -156,16 +157,20 @@ function App() {
               } />
               <Route path="/soporte" element={<SupportPage />} />
               <Route path="/reporte/:code" element={<ReportVerifyPage />} />
+              <Route path="/verificar/:id" element={<ReportVerifyPage />} />
+              <Route path="/terminos" element={<TermsPage />} />
             </Routes>
           </div>
           <div className="fixed-footer">
             <div className="footer-content">
               <span className="footer-dot"></span>
-              © 2026 VIALIDADES DE TRÁNSITO. TODOS LOS DERECHOS RESERVADOS.
+              <a href="/terminos" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                © 2026 VIALIDADES DE TRÁNSITO. TODOS LOS DERECHOS RESERVADOS.
+              </a>
               <span className="footer-dot"></span>
             </div>
           </div>
-          <Toaster position="top-right" />
+          <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
         </Router>
       </AuthProvider>
     </ThemeProvider>
