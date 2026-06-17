@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Calendar, Hash } from 'lucide-react';
@@ -39,65 +40,53 @@ const createPinIcon = (color) => {
     });
 };
 
-const IncidentPopup = ({ p }) => {
+const createStackedPinIcon = (colors, count) => {
+    const c1 = colors[0];
+    const c2 = colors[1] || colors[0];
+    const html = `
+        <div style="position:relative;width:38px;height:50px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="34"
+                style="position:absolute;top:8px;left:10px;opacity:0.75;">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24S24 21 24 12C24 5.373 18.627 0 12 0z"
+                    fill="${c2}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+                <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="27" height="40"
+                style="position:absolute;top:0;left:0;">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24S24 21 24 12C24 5.373 18.627 0 12 0z"
+                    fill="${c1}" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+                <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+            </svg>
+            <div style="position:absolute;top:-3px;right:-3px;background:#1e293b;color:white;border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid white;">${count}</div>
+        </div>`;
+    return L.divIcon({
+        className: '',
+        html,
+        iconSize: [38, 50],
+        iconAnchor: [14, 50],
+        popupAnchor: [5, -54],
+    });
+};
+
+const ReportDetail = ({ p }) => {
     const cfg = TYPE_CONFIG[p.type] || TYPE_CONFIG.Other;
     const date = formatDate(p.timestamp);
-
     return (
-        <div style={{
-            fontFamily: "'Inter', 'Segoe UI', sans-serif",
-            width: '240px',
-            padding: 0,
-            overflow: 'hidden',
-            borderRadius: '10px',
-        }}>
-            {/* Color accent bar */}
-            <div style={{ height: '3px', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)` }} />
-
-            <div style={{ padding: '12px 14px 10px' }}>
-                {/* Type badge */}
-                <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    background: cfg.bg, borderRadius: '8px',
-                    padding: '4px 9px', marginBottom: '8px',
-                }}>
-                    <span style={{ color: cfg.color, fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}>
-                        {cfg.icon}
-                    </span>
-                    <span style={{ color: cfg.color, fontWeight: '700', fontSize: '0.8rem' }}>
-                        {cfg.label}
-                    </span>
-                </div>
-
-                {/* Description */}
+        <div>
+            <div style={{ height: '3px', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)`, margin: '0 -1px' }} />
+            <div style={{ padding: '10px 14px 12px' }}>
                 <p style={{
-                    margin: '0 0 10px 0',
-                    fontSize: '0.82rem',
-                    color: '#374151',
-                    lineHeight: '1.5',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                    margin: '0 0 10px', fontSize: '0.82rem', color: '#374151', lineHeight: '1.5',
+                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                 }}>
                     {p.description || 'Sin descripción proporcionada.'}
                 </p>
-
-                {/* Divider */}
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '0 0 8px' }} />
-
-                {/* Meta info */}
+                <div style={{ height: '1px', background: '#f1f5f9', marginBottom: '8px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {p.address && (
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '5px' }}>
                             <MapPin size={11} color={cfg.color} style={{ marginTop: '2px', flexShrink: 0 }} />
-                            <span style={{
-                                fontSize: '0.73rem', color: '#6b7280', lineHeight: '1.4',
-                                display: '-webkit-box', WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                            }}>
-                                {p.address}
-                            </span>
+                            <span style={{ fontSize: '0.73rem', color: '#6b7280', lineHeight: '1.4' }}>{p.address}</span>
                         </div>
                     )}
                     {date && (
@@ -120,21 +109,108 @@ const IncidentPopup = ({ p }) => {
     );
 };
 
+const IncidentPopup = ({ p }) => {
+    const cfg = TYPE_CONFIG[p.type] || TYPE_CONFIG.Other;
+    return (
+        <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif", width: '240px', padding: 0, overflow: 'hidden', borderRadius: '10px' }}>
+            <div style={{ height: '3px', background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}88)` }} />
+            <div style={{ padding: '12px 14px 10px' }}>
+                <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    background: cfg.bg, borderRadius: '8px', padding: '4px 9px', marginBottom: '8px',
+                }}>
+                    <span style={{ color: cfg.color, fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}>{cfg.icon}</span>
+                    <span style={{ color: cfg.color, fontWeight: '700', fontSize: '0.8rem' }}>{cfg.label}</span>
+                </div>
+                <ReportDetail p={p} />
+            </div>
+        </div>
+    );
+};
+
+const MultiIncidentPopup = ({ reports }) => {
+    const [selected, setSelected] = useState(0);
+    const p = reports[selected];
+    const cfg = TYPE_CONFIG[p.type] || TYPE_CONFIG.Other;
+
+    return (
+        <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif", width: '250px', padding: 0, overflow: 'hidden', borderRadius: '10px' }}>
+            {/* Header */}
+            <div style={{ background: '#1e293b', padding: '7px 12px' }}>
+                <span style={{ color: 'white', fontSize: '0.77rem', fontWeight: '700' }}>
+                    {reports.length} reportes en este lugar
+                </span>
+            </div>
+
+            {/* Type tabs */}
+            <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '4px',
+                padding: '8px 10px', background: '#f8fafc',
+                borderBottom: '1px solid #e2e8f0',
+            }}>
+                {reports.map((r, i) => {
+                    const c = TYPE_CONFIG[r.type] || TYPE_CONFIG.Other;
+                    const active = selected === i;
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => setSelected(i)}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                padding: '3px 8px', borderRadius: '6px', border: 'none',
+                                background: active ? c.color : `${c.color}18`,
+                                color: active ? 'white' : c.color,
+                                fontSize: '0.69rem', fontWeight: '700', cursor: 'pointer',
+                                outline: active ? 'none' : `1px solid ${c.color}33`,
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            <span style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center' }}>{c.icon}</span>
+                            {c.label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Selected report */}
+            <ReportDetail p={p} />
+        </div>
+    );
+};
+
 const HeatMapLayer = ({ points }) => {
     if (!points || points.length === 0) return null;
 
+    // Group by location (4 decimal places ≈ 11m precision)
+    const groups = {};
+    points.forEach(p => {
+        const key = `${parseFloat(p.lat).toFixed(4)},${parseFloat(p.lng).toFixed(4)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(p);
+    });
+
     return (
         <>
-            {points.map((p, index) => {
-                const color = (TYPE_CONFIG[p.type] || TYPE_CONFIG.Other).color;
+            {Object.values(groups).map((group, idx) => {
+                const p = group[0];
+                const count = group.length;
+                const colors = group.map(r => (TYPE_CONFIG[r.type] || TYPE_CONFIG.Other).color);
+
+                const icon = count === 1
+                    ? createPinIcon(colors[0])
+                    : createStackedPinIcon(colors, count);
+
                 return (
                     <Marker
-                        key={index}
-                        position={[p.lat, p.lng]}
-                        icon={createPinIcon(color)}
+                        key={idx}
+                        position={[parseFloat(p.lat), parseFloat(p.lng)]}
+                        icon={icon}
                     >
-                        <Popup className="landing-map-popup" maxWidth={260} minWidth={240}>
-                            <IncidentPopup p={p} />
+                        <Popup className="landing-map-popup" maxWidth={270} minWidth={250}>
+                            {count === 1
+                                ? <IncidentPopup p={p} />
+                                : <MultiIncidentPopup reports={group} />
+                            }
                         </Popup>
                     </Marker>
                 );

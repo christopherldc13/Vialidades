@@ -424,8 +424,8 @@ const SuperModDashboard = () => {
                 <p style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 0.75rem' }}>Moderadores</p>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
                     <StatCard icon={<Users size={20} />} label="Total Moderadores" sublabel="Registrados en el sistema" value={loading ? '...' : stats?.total} color="#6366f1" bg="rgba(99,102,241,0.10)" onClick={() => navigate('/supermoderador/moderadores')} linkText="Ver moderadores" />
-                    <StatCard icon={<UserCheck size={20} />} label="Activos" sublabel="Con acceso habilitado" value={loading ? '...' : stats?.activos} color="#6366f1" bg="rgba(99,102,241,0.10)" onClick={() => navigate('/supermoderador/moderadores')} linkText="Ver moderadores" />
-                    <StatCard icon={<UserX size={20} />} label="Inactivos" sublabel="Con acceso deshabilitado" value={loading ? '...' : stats?.inactivos} color="#ef4444" bg="rgba(239,68,68,0.10)" onClick={() => navigate('/supermoderador/moderadores')} linkText="Ver moderadores" />
+                    <StatCard icon={<UserCheck size={20} />} label="Activos" sublabel="Con acceso habilitado" value={loading ? '...' : stats?.activos} color="#6366f1" bg="rgba(99,102,241,0.10)" onClick={() => navigate('/supermoderador/moderadores?status=activo')} linkText="Ver moderadores" />
+                    <StatCard icon={<UserX size={20} />} label="Inactivos" sublabel="Con acceso deshabilitado" value={loading ? '...' : stats?.inactivos} color="#ef4444" bg="rgba(239,68,68,0.10)" onClick={() => navigate('/supermoderador/moderadores?status=inactivo')} linkText="Ver moderadores" />
                     <StatCard icon={<ClipboardList size={20} />} label="Reportes Moderados" sublabel="Total procesados" value={loading ? '...' : stats?.reportesTotal} color="#6366f1" bg="rgba(99,102,241,0.10)" />
                 </div>
 

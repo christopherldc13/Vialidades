@@ -264,10 +264,12 @@ const LandingPage = () => {
                     <div className="map-showcase">
                         <div className="map-showcase-inner">
                             <MapContainer
-                                center={[18.7, -70.1]}
-                                zoom={9}
-                                minZoom={9}
-                                maxBounds={[[17.4, -71.85], [20.0, -68.3]]}
+                                center={[18.85, -70.3]}
+                                zoom={8.8}
+                                minZoom={8.8}
+                                zoomSnap={0.1}
+                                zoomDelta={0.5}
+                                maxBounds={[[17.0, -72.3], [20.3, -67.0]]}
                                 maxBoundsViscosity={1.0}
                                 scrollWheelZoom={true}
                                 zoomControl={false}

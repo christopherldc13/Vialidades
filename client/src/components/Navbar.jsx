@@ -100,9 +100,11 @@ const Navbar = () => {
                                     <ShieldCheck size={20} />
                                 </button>
                             )}
-                            <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
-                                <TbReportSearch size={22} />
-                            </button>
+                            {!['admin', 'supermoderador'].includes(user.role) && (
+                                <button onClick={() => navigate('/dashboard?view=my')} className="modern-nav-btn" title="Mis Reportes">
+                                    <TbReportSearch size={22} />
+                                </button>
+                            )}
                             <button onClick={() => navigate('/profile')} className="modern-nav-btn" title="Mi Perfil">
                                 <User size={20} />
                             </button>
@@ -127,9 +129,11 @@ const Navbar = () => {
                                             <ShieldCheck size={16} /> Ver Moderadores
                                         </button>
                                     )}
-                                    <button className="mobile-dropdown-item" onClick={() => { navigate('/dashboard?view=my'); closeMobileMenu(); }}>
-                                        <TbReportSearch size={16} /> Mis Reportes
-                                    </button>
+                                    {!['admin', 'supermoderador'].includes(user.role) && (
+                                        <button className="mobile-dropdown-item" onClick={() => { navigate('/dashboard?view=my'); closeMobileMenu(); }}>
+                                            <TbReportSearch size={16} /> Mis Reportes
+                                        </button>
+                                    )}
                                     <button className="mobile-dropdown-item" onClick={() => { navigate('/profile'); closeMobileMenu(); }}>
                                         <User size={16} /> Mi Perfil
                                     </button>

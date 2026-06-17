@@ -810,8 +810,8 @@ const Profile = () => {
                         )}
                     </div>
 
-                    {/* Stats */}
-                    <div className="pf-card pf-stats-card">
+                    {/* Stats — solo para usuarios normales */}
+                    {(!user.role || user.role === 'user') && <div className="pf-card pf-stats-card">
                         <div className="pf-stat" style={{ borderColor: 'rgba(16,185,129,0.2)', background: 'rgba(16,185,129,0.07)' }}>
                             <Star size={22} color="var(--success)" />
                             <div className="pf-stat-body">
@@ -835,7 +835,7 @@ const Profile = () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div>}
                 </div>
 
                 {/* ── RIGHT COLUMN ── */}

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import AuthContext from '../context/AuthContext';
@@ -118,6 +118,8 @@ const ModDetailModal = ({ mod, onClose, onToggle, toggling }) => {
 const SuperModModerators = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+    const statusFilter = new URLSearchParams(location.search).get('status');
     const [moderators, setModerators] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -239,7 +241,12 @@ const SuperModModerators = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {moderators.map((mod, i) => {
+                                    {(statusFilter === 'activo'
+                                        ? moderators.filter(m => m.isActive !== false)
+                                        : statusFilter === 'inactivo'
+                                            ? moderators.filter(m => m.isActive === false)
+                                            : moderators
+                                    ).map((mod, i) => {
                                         const isActive = mod.isActive !== false;
                                         return (
                                             <tr key={mod._id}
