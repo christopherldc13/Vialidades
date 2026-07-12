@@ -609,6 +609,7 @@ const Dashboard = () => {
                         const resRate = (totalPublished + totalSanctioned) > 0
                             ? Math.round((totalPublished / (totalPublished + totalSanctioned)) * 100)
                             : 0;
+                        const total = statusData.reduce((sum, i) => sum + i.value, 0);
 
                         const Tip = ({ active, payload, label }) => {
                             if (!active || !payload?.length) return null;
