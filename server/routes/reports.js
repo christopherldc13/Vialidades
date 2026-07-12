@@ -337,7 +337,7 @@ router.get('/stats', auth, async (req, res) => {
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); sevenDaysAgo.setHours(0, 0, 0, 0);
 
         const [pending, approved, rejected, sanctioned, published, totalSanctioned, byType, byDay] = await Promise.all([
-            Report.countDocuments({ status: 'pending' }),
+            Report.countDocuments({ status: { $in: ['pending', 'In Process', 'needs_review'] } }),
             Report.countDocuments({ status: 'approved', moderatorId, hiddenByUser: { $ne: true } }),
             Report.countDocuments({ status: 'rejected', wasSanctioned: { $ne: true }, moderatorId }),
             Report.countDocuments({ wasSanctioned: true, moderatorId }),
